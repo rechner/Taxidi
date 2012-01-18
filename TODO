@@ -1,0 +1,9 @@
+========= database backend =========
+- Combine phone fields and allow for international formats
+	¤ Still perform search by last n digits
+	¤ Store as integers 
+	¤ Format numbers; '334832|1234' '015225428548' '+49|1606128338'
+	¤ Mask options: US, International, No formatting (numbers only)
+	¤ > SELECT ... WHERE phone LIKE '%'+Query
+		
+

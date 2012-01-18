@@ -1,0 +1,21 @@
+For switching between 'pages' of the GUI, use WX's Panel constructor instead and use the .Hide() and .Show() attributes accordingly.  Each panel should be an individual class.  (perhaps see also freeze and thaw methods).
+
+class PanelOne(wx.Panel):
+	def __init__(self,parent):
+	wx.Panel.__init__(self, parent=parent)
+	#controls go here
+	
+class PanelTwo(wx.Panel):
+	... etc.
+	
+class MyForm(wxFrame):
+	def __init__(self):
+		wx.Frame.__init__(self, None, wx.ID_ANY)
+		self.panel_one = PanelOne(self)
+		...
+		
+	def SwitchPanels(self, event):
+		if self.panel_one.IsShown():
+			... .Hide()
+			... .Show()
+		self.Layout() #make the panels visible
