@@ -1,9 +1,11 @@
-Taxídí is a free database program and check-in system similar to Excellerate
-and Fellowship one's nursery system.  It is designed to be independent,
-extensible, and free to use by anyone.  Taxídí was written for Journey
-Church in Millbrook, Alabama.
+Taxídí is a free database program and check-in system similar to 
+Excellerate and Fellowship one's nursery system.  It is designed to be 
+independent, extensible, and free to use by anyone.  Taxídí was written 
+for Journey Church in Millbrook, Alabama.
 
-User Fields:  Name, lName, DoB, Activity, Room, Grade, Phone, (Mobile? as bool), MobileCarrier, Primary, Parent1, Parent2, ParentEmail, Medical, JoinDate, LastSeen, Count, Barcode, Picture, Notes
+User Fields:  Name, lName, DoB, Activity, Room, Grade, Phone, (Mobile? 
+as bool), MobileCarrier, Primary, Parent1, Parent2, ParentEmail, Medical, 
+JoinDate, LastSeen, Count, Barcode, Picture, Notes
 
 Command line options: (for setting log level)
 usage: ./main.py [--help] [--log=LEVEL]
@@ -14,3 +16,22 @@ optional arguments:
 
 log levels:		DEBUG, INFO, WARNING, ERROR, CRITICAL
 
+
+Development guidelines:
+========================================================================
+Additional modules which can implement logging can do so using:
+
+import logging
+logger = logging.getLogger(__name__)
+logger.info("Hello world!") #emit a message
+
+Messages can be emmitted based on severity using the debug(), info(), 
+	warn(), error(), and critical() functions.
+	
+	
+Additional guidelines and information can be found at:
+	- https://launchpad.net/taxidi
+	- https://jkltech.net/taxidi/
+	- https://jkltech.net/taxidi/wiki/
+	- https://github.com/jkltechinc/Taxidi
+	

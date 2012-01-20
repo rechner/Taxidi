@@ -23,19 +23,14 @@ import cli
 import logging, logging.handlers
 import sysinfo
 
-logFile = 'logs/error.log'
+logFile = 'error.log'  #send this somewhere else for production (/tmp/?)
 loglevel = cli.parse()
 
 #set up local file logging
 logging.basicConfig(filename=logFile, filemode='a',
 	format='[%(asctime)s] %(module)-6s  [%(levelname)-8s]  %(message)s',
 	level=getattr(logging, loglevel.upper()))
-	
-# setup log rotation after 66046 bytes
-logrotate = logging.handlers.RotatingFileHandler(logFile, mode='a',
-	maxBytes=8000, backupCount=5)
-#logrotate.doRollover()
-	
+
 # create logger
 logger = logging.getLogger('taxidi')
 logger.setLevel(logging.DEBUG)
@@ -64,6 +59,7 @@ logger.addHandler(ch)		# add ch to logger
 #logger.critical('critical message')
 
 import conf 	#import settings for application and database
+				#do this first?  (for logfile settings?)
 
 logger.debug("Loading database module for SQLite3 ('sqlite')")
 import dblib.sqlite as sqlite

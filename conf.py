@@ -11,5 +11,5 @@ appPath = os.path.abspath(os.path.dirname(os.path.join(sys.argv[0])))
 inifile = os.path.join(appPath, 'config.ini')
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+#logger.setLevel(logging.DEBUG)
 logger.info("Reading configuration from '{}'".format(inifile))
