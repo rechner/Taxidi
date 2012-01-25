@@ -20,6 +20,7 @@
 # MA 02110-1301, USA.
 
 import cli
+import time
 import logging, logging.handlers
 import sysinfo
 
@@ -35,6 +36,7 @@ logging.basicConfig(filename=logFile, filemode='a',
 logger = logging.getLogger('taxidi')
 logger.setLevel(logging.DEBUG)
 logger.debug('\n')
+logger.debug('Logger started at {}'.format(time.ctime()))
 logger.debug('Logging started with format [time] (module) [level] message...')
 
 # print system information later error reporting and debugging
@@ -71,4 +73,22 @@ except TypeError as e:
 	logger.warn('Unable to open database (file write-protected?)')
 	#display an error dialogue and exit
 
+
+db.Register("Zac", "Sturgeon", "1993-05-13", "3174555832", "V-5832", "Blah")
+
+db.AddCategory(u"Cafe", 0)
+db.AddCategory("Parking", 0)
+db.AddCategory("Tech", 1)
+print db.GetCategories()
+db.RemoveCategory(2)
+print "\n"
+print db.GetCategories()
+db.UpdateCategory(1, u"Café", 1)
+print "\n"
+print db.GetCategories()
+db.RemoveCategory(0) #remove all
+print "\n"
+print db.GetCategories()
+db.commit()
+exit()
 
