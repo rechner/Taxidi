@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#-*- coding:utf-8 -*-.
+#-*- coding:utf-8 -*-
 
 # dblib/sqlite.py
 # SQLite3 database driver for Taxídí.
