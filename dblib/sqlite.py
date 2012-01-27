@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
-# dblib/sqlite.py
+# dblib/sqlite.py (spaces, not tabs)
 # SQLite3 database driver for Taxídí.
 # Zac Sturgeon <admin@jkltech.net>
 
@@ -33,6 +33,7 @@
 
 #TODO:
 # - Code to check if database file is writeable
+# - Implement fulltext search extension.
 # - Combine phone fields and allow for international formats?
 #       ¤ Still perform search by last n digits
 #       ¤ Phone as text; '334|832|1234' '015225428548' '+49|1606128338'
@@ -52,14 +53,14 @@ class Database:
     def __init__(self, file, log=''):
         """
         Open connections to sqlite file; create if it doesn't exist.
-        Takes a file and optional loger handler as init arugments.
+        Takes a file and optional logger handler as init arugments.
         """
-        
+
         #convert $log to global if a handle was passed:
         if log:
             global logger
             logger = log
-        
+
         #check if file exists/is readable
         try:
             fh = open(file, 'r')
@@ -73,20 +74,20 @@ class Database:
             self.createTables()
             self.conn.commit()
             self.conn.close()
-            
+
         #check if database can be written to (modification/creation)
         if not os.access(file, os.W_OK):
             logger.critical(
                 'the file {} does not have write permissions!'.format(file))
             logger.critical('Unable to open database.')
             return 127 #Causes TypeException in the calling module.
-        
+
         #open database for writing and query
         self.conn = sqlite.connect(file)
         self.cursor = self.conn.cursor()
         logger.info("Created sqlite3 database instance using file '{}'".
             format(file))
-        
+
     def createTables(self):
         """Initializes the database, creating required tables."""
         logger.warning('Tables did not exist. Creating...')
@@ -94,10 +95,10 @@ class Database:
         self.execute("""CREATE TABLE data(id integer primary key,
             name text, lastname text,  dob text, activity integer,
             room integer, grade string, phone string,
-            mobileCarrier integer, primaryKey text, parent1 text, 
-            parent2 text, parent1Link text, parent2Link text, 
-            parentEmail text, medical text, joinDate text, 
-            lastSeen text, lastModified text, count integer, 
+            mobileCarrier integer, primaryKey text, parent1 text,
+            parent2 text, parent1Link text, parent2Link text,
+            parentEmail text, medical text, joinDate text,
+            lastSeen text, lastModified text, count integer,
             visitor integer, noParentTag integer,
             barcode string, picture text, notes text);""")
         #volunteers
@@ -118,7 +119,7 @@ class Database:
         self.execute("""CREATE TABLE users(id integer primary key,
             user text, hash text, salt text, admin integer);""")
         #activities
-        self.execute("""CREATE TABLE activites(id integer primary key,
+        self.execute("""CREATE TABLE activities(id integer primary key,
             name text, theme text);""")
         #services
         self.execute("""CREATE TABLE services(id integer primary key,
@@ -130,11 +131,11 @@ class Database:
             admin integer, email text, mobile text, carrier integer);""")
         #carriers
         self.execute("""CREATE TABLE carriers(id integer primary key,
-            name text, region text, address text, subject text, 
+            name text, region text, address text, subject text,
             message text);""")
         #statistics
         self.execute("""CREATE TABLE statistics(id integer primary key,
-            person integer, date text, time text, location text, 
+            person integer, date text, time text, location text,
             volunteer integer);""")
         logger.info('Tables created')
         self.conn.commit()
@@ -142,80 +143,134 @@ class Database:
         return 0
 
     # == End __init__  ==
-    
 
+
+    # == data functions ==
     # Populate all fields for registering a child only. Entries without
-    #   a default are mandatory.  Form should check for missing stuff.          
+    #   a default are mandatory.  Form should check for missing stuff.
     def Register(self, name, lastname, dob, phone, primaryKey, parent1,
-            mobileCarrier=0, activity=0, room=0, grade='', parent2='', 
+            mobileCarrier=0, activity=0, room=0, grade='', parent2='',
             parent1Link='', parent2Link='', parentEmail='',
             medical='', joinDate='', lastSeen='', lastModified='',
             visitor=False, noParentTag=False, barcode='', picture='',
             notes=''):
         """Enter a new child's record into the data table.
-            
-        name, lastname, dob, phone, primaryKey, and parent1 are mandatory.  
-        Defaults are as follows: mobileCarrier=0, activity=0, room=0, grade='', 
-        parent2='', parent1Link='', parent2Link='', parentEmail='', medical='', 
-        joinDate='', lastSeen='', lastModified='', visitor=False, 
+
+        name, lastname, dob, phone, primaryKey, and parent1 are mandatory.
+        Defaults are as follows: mobileCarrier=0, activity=0, room=0, grade='',
+        parent2='', parent1Link='', parent2Link='', parentEmail='', medical='',
+        joinDate='', lastSeen='', lastModified='', visitor=False,
         noParentTag=False, barcode='', picture='',  notes=''
         """
-        
+
         #set dates:
         if joinDate == '': #Generally should always be true (unless
             joinDate = str(datetime.date.today()) #importing from script
-            
+
         if lastSeen == '':
             lastSeen = datetime.date.today()
-            
+
         if lastModified == '':
             lastModified = time.ctime() #should be plain ISO format
-            
+
         count = 0 #should always be nil; no check-ins yet.
         #escape and execute
-        self.execute("""INSERT INTO data(name, lastname, dob, phone, 
-        primaryKey, parent1, mobileCarrier, activity, room, grade, 
+        self.execute("""INSERT INTO data(name, lastname, dob, phone,
+        primaryKey, parent1, mobileCarrier, activity, room, grade,
         parent2, parent1Link, parent2Link, parentEmail, medical,
-        joinDate, lastSeen, lastModified, count, visitor, noParentTag, 
-        barcode, picture, notes) VALUES 
+        joinDate, lastSeen, lastModified, count, visitor, noParentTag,
+        barcode, picture, notes) VALUES
         (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);""",
-        [name, lastname, dob, phone, primaryKey, parent1, mobileCarrier, 
+        [name, lastname, dob, phone, primaryKey, parent1, mobileCarrier,
         activity, room, grade, parent2, parent1Link, parent2Link,
-        parentEmail, medical, joinDate, lastSeen, lastModified, count, 
+        parentEmail, medical, joinDate, lastSeen, lastModified, count,
         int(visitor), int(noParentTag), barcode, picture, notes])
-        
-    
+
+    def Delete(self, index):
+        """Delete a row in the data table by index."""
+        self.execute("DELETE FROM data WHERE id = ?;", [index])
+
+    def Update(self, index, name, lastname, dob, phone, primaryKey,
+            parent1, mobileCarrier=0, activity=0, room=0, grade='',
+            parent2='', parent1Link='', parent2Link='', parentEmail='',
+            medical='', joinDate='', lastSeen='', visitor=False,
+            noParentTag=False, barcode='', picture='', notes=''):
+        """Update a record.  Pass index as first argument.  lastModified automatically set.
+
+        name, lastname, dob, phone, primaryKey, and parent1 are mandatory.
+        Defaults are as follows: mobileCarrier=0, activity=0, room=0, grade='',
+        parent2='', parent1Link='', parent2Link='', parentEmail='', medical='',
+        joinDate='', lastSeen='', visitor=False,
+        noParentTag=False, barcode='', picture='',  notes=''
+        """
+        self.execute("UPDATE data SET name=?, lastname=? WHERE id=?;", (name, lastname, index))
+        self.execute("UPDATE data SET dob=? WHERE id=?;", (dob, index))
+        self.execute("UPDATE data SET phone=?, primarykey=? WHERE id=?;",(phone, primaryKey, index))
+        self.execute("UPDATE data SET mobileCarrier=? WHERE id=?;",
+            (mobileCarrier, index))
+        self.execute("""UPDATE data SET parent1=?, parent2=?,
+            parent1Link=?, parent2Link=? WHERE id=?""", (parent1,
+            parent2, parent1Link, parent2Link, index))
+        self.execute("UPDATE data SET activity=?, room=?, grade=? WHERE id=?;",
+            (activity, room, grade, index))
+        self.execute("UPDATE data SET parentEmail=?, medical=? WHERE id=?;",
+            (parentEmail, medical, index))
+        self.execute("UPDATE data SET joinDate=?, lastSeen=?, lastModified=? WHERE id=?;",
+            (joinDate, lastSeen, time.ctime(), index))
+        self.execute("""UPDATE data SET visitor=?, noParentTag=?, barcode=?,
+            picture=?, notes=? WHERE id=?;""", (int(visitor), int(noParentTag),
+            barcode, picture, notes, index))
+
+    #return all entries (for browsing)
+    def GetAll(self):
+        """Returns all rows. (useful for browsing)"""
+        return self.execute("SELECT * FROM data;")
+
+
+    def Search(self, query):
+        """Generic search function.
+
+        Searches first through `data`, then passes to SearchVolunteer()
+        Accepts query as first argument.  Searches the following in order:
+        - Last four digits of phone number (if len == 4)
+        - primaryKey
+        - lastname
+        - firstname
+        """
+
+    # == end data functions ==
+
     # Add a volunteer
-    def RegisterVolunteer(name, lastname, dob, phoneHome, email='',
+    def RegisterVolunteer(self, name, lastname, dob, phoneHome, email='',
             username='', phoneMobile='', mobileCarrier=0,
-            backgroundCheck=False, backgroundDocuments='', 
-            profession='', title='', company='', jobContact='', 
+            backgroundCheck=False, backgroundDocuments='',
+            profession='', title='', company='', jobContact='',
             address='', city='', zipcode='', state='', country='',
             nametag=False, category='', subtitle='', services='',
             rooms='', availability='', joinDate='', lastSeen='',
             lastModified='', picture='', notes=''):
         """Register a volunteer.
-        
+
         name, lastname, dob, and phoneHome are mandatory.
         Defaults are as follows:  email='', username='', phoneMobile='',
-        mobileCarrier=0, backgroundCheck=False, backgroundDocuments='', 
-        profession='', title='', company='', jobContact='',  address='', 
-        city='', zipcode='', state='', country='', nametag=False, 
-        category='', subtitle='', services='', rooms='', availability='', 
+        mobileCarrier=0, backgroundCheck=False, backgroundDocuments='',
+        profession='', title='', company='', jobContact='',  address='',
+        city='', zipcode='', state='', country='', nametag=False,
+        category='', subtitle='', services='', rooms='', availability='',
         joinDate='', lastSeen='',  lastModified='', picture='', notes=''
         """
-        
+
         #set dates:
         if joinDate == '': #Generally should always be true (unless
             joinDate = datetime.date.today() #importing from script
-            
+
         if lastSeen == '':
             joinDate = datetime.date.today()
-            
+
         if lastModified == '':
-            lastModified == time.ctime() #should be plain ISO format    
-        
-        #execute                
+            lastModified == time.ctime() #should be plain ISO format
+
+        #execute
         self.execute("""INSERT INTO volunteers(name, lastname, dob,
             phoneHome, email, username, phoneMobile, mobileCarrier,
             backgroundCheck, backgroundDocuments, profession, title,
@@ -224,55 +279,57 @@ class Database:
             joinDate, lastSeen, lastModified, picture, notes) VALUES
             (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);""",
             name, lastname, dob, phoneHome, email, username, phoneMobile,
-            mobileCarrier, int(backgroundCheck), backgroundDocuments, 
-            profession, title, company, jobContact, address, city, 
+            mobileCarrier, int(backgroundCheck), backgroundDocuments,
+            profession, title, company, jobContact, address, city,
             zipcode, state, country, int(nametag), category, subtitle,
-            services, rooms, availability, joinDate, lastSeen, 
+            services, rooms, availability, joinDate, lastSeen,
             lastModified, picture, notes)
-        
-        
+
+
     # == category functions ==
     def GetCategories(self):
         """Returns all categories"""
         return self.execute("SELECT * FROM categories;")
-        
+
     def AddCategory(self, name, admin=0):
         """Add a category (ministry): Parking, café, etc."""
         self.execute("INSERT INTO categories(name, admin) VALUES (?,?);",
-            [name, admin])
-        
-    def RemoveCategory(self, index):
+            (name, admin))
+
+    def DeleteCategory(self, index):
         """Delete a category by index. Pass 0 to delete all."""
         if index == 0:
             logger.warning("Deleting all rows in table 'categories'")
             self.execute("DELETE FROM categories;") #deletes all rows
         else:
             self.execute("DELETE FROM categories WHERE id = ?;", [index])
-        
+
     def UpdateCategory(self, index, name, admin='0'):
         """Update name or admin status in categories table"""
         self.execute("UPDATE categories SET name = ? WHERE id = ?;",
             (name, admin))
-            
+
     # == end categories ==
-    
-    
-    # == generic SQL functions ==    
+
+
+    # == generic SQL functions ==
     def execute(self, sql, args=('')):
         """Executes SQL, reporting debug to the log. For internal use."""
         sql = sql.replace('    ', '').replace('\n', ' ')  #make it pretty
-        logger.debug((sql, args))                               
+        logger.debug((sql, args))
         try:
-            return self.cursor.execute(sql, args).fetchall()
+            data = self.cursor.execute(sql, args)
+            return data.fetchall()
         except sqlite.OperationalError as e:
             logger.error('SQLite3 returned operational error: {}'
                 .format(e))
-        
+            if self.conn:
+                self.conn.rollback()    #drop any changes to preserve db.
+
     #To keep things speedy we need to be able to commit from the calling module
     def commit(self):
         """Commit SQL to the database. Use sparingly for best performance."""
+        logger.debug('Committed database')
         return self.conn.commit()   # Should be used sparingly otherwise
-        
+
     # == end generic functions ==
-
-
