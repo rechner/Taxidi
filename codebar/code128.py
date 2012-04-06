@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#3 space indents.
 """
 This class generate code 128 (http://en.wikipedia.org/wiki/Code_128) bar code,
 it requires PIL (python imaging library) installed.
@@ -22,6 +24,7 @@ Create bar code sample :
 Modified by Zac (Sun 18 March, 2012) to add argument for disabling text and changing filename.
 Original source from http://barcode128.blogspot.de/
 
+06.04.2012 13:35:10 Added code for native resize for better quality.
 """
 
 # courbB08.pil PIL Font file uuencoded
@@ -247,7 +250,7 @@ class Code128:
       return strCode
 
 
-   def getImage(self, value, filename, height = 50, extension = "PNG",
+   def getImage(self, value, filename, width = 0, height = 50, extension = "PNG",
                 text = False):
       """ Get an image with PIL library
       value code barre value
@@ -263,7 +266,7 @@ class Code128:
       bits = self.makeCode(value)
 
       # Create a new image
-      position = 8
+      position = 2
       im = Image.new("1",(len(bits)+position,height))
 
       # Create drawer
@@ -288,6 +291,10 @@ class Code128:
          if bits[bit] == '1':
                draw.rectangle(((bit+position,0),(bit+position,height)),fill=0)
 
+      # Resize if needed
+      if width != 0:
+         im = im.resize((width, height))
+
       # Save the result image
       im.save(filename, upper(extension))
 
@@ -311,8 +318,9 @@ def testWithChecksum():
 def testImage():
    """ Test images generation with PIL """
    bar = Code128()
-   bar.getImage("9782212110708",'test.gif',50,"gif")
-   bar.getImage("978221211070",'test.png',50,"png")
+   #bar.getImage("9782212110708", 'test.gif', 100, 50, "gif")
+   #bar.getImage("978221211070", 'test.png', 100, 50, "png")
+   bar.getImage('5c55', 'test.png', 300, 200, 'png')
 
 def test():
    """ Execute all tests """

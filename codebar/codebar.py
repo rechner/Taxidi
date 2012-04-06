@@ -24,8 +24,12 @@ import barcode
 from barcode.writer import ImageWriter
 from code128 import Code128
 
-def gen(encoding, fileName, text):
-    """Returns 0 success; all else are errors."""
+def gen(encoding, fileName, text, width=300, height=100):
+    """Returns 0 success; all else are errors.
+    gen(encoding, fileName, text, width=300, height=100)
+    note: geometry settings only valid for code128.
+    """
+
     if encoding not in codes:
         raise NotImplementedError("Unsupported encoding")
         return 2
@@ -41,7 +45,7 @@ def gen(encoding, fileName, text):
     elif encoding == 'code128':
         #generate using Code128() by Jostein Leira
         bar = Code128()
-        bar.getImage(text, fileName, 50)
+        bar.getImage(text, fileName, 300, 100)
         return 0
 
     else:
@@ -66,5 +70,5 @@ def supported():
 
 if __name__ == '__main__':
     gen('code128', 'test128.png', 'testing')
-    gen('code39', 'test39.png', 'testing')
-    gen('qr', 'testQR.png', 'testing')
+    #gen('code39', 'test39.png', 'testing')
+    #gen('qr', 'testQR.png', 'testing')
