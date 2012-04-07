@@ -320,7 +320,7 @@ def testImage():
    bar = Code128()
    #bar.getImage("9782212110708", 'test.gif', 100, 50, "gif")
    #bar.getImage("978221211070", 'test.png', 100, 50, "png")
-   bar.getImage('5c55', 'test.png', 300, 200, 'png')
+   bar.getImage('Z99', 'secure.png', 300, 200, 'png')
 
 def test():
    """ Execute all tests """

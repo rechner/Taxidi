@@ -69,6 +69,6 @@ def supported():
     return codes
 
 if __name__ == '__main__':
-    gen('code128', 'test128.png', 'testing')
+    gen('code128', 'test128.png', '5c55')
     #gen('code39', 'test39.png', 'testing')
     #gen('qr', 'testQR.png', 'testing')
