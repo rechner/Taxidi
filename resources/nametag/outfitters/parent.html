@@ -1,0 +1,112 @@
+<!--taxidi-barcodes:  parent-link.png, parent-secure.png-->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <style type="text/css" media="screen">
+            h1 {font-size:2em}
+            #autosize {
+                font-size:1.3em;
+                margin-bottom: 10px; }
+        </style>
+</head>
+<body style="font-family: Sans-serif; margin:0px 0px; padding 0;">
+
+    <table border=0 width=335>
+        <tr>
+            <td style="vertical-align:top;" width=140>
+                <div class="not" style="font-size: 0.6em; margin 0px 5px">%date% %time%<br>
+                                               %room%<br></div>
+                <div style="text-align: center; font-family: Papyrus, fantasy; font-size: 0.9em;"><b>SECURITY RECEIPT<br>
+                                                Watch for paging: %code%</b></div>
+
+            </td>
+            <td align="right" style="vertical-align:top" width=152>
+                <img src="outfitters.png" width=150 />
+            </td>
+        </tr>
+    </table>
+
+    <table border=0 width=335>
+        <tr>
+            <td>
+                <div style="font-size:0.6em;">
+                    Please keep this security receipt to retrieve your child from
+                    the nursery.  If this ticket is lost, please report it to a
+                    volunteer.  This ticket is only valid for today's check-in.
+                    Scan the QR code to the right to access
+                    your account and update your information.
+                    (%s%)
+                </div>
+            </td>
+            <td>
+                <img src="parent-link.png" width=100 id="qr">
+            </td>
+        </tr>
+    </table>
+
+    <table border=0 width=335>
+        <tr>
+            <td align="center">
+                <div id="autosize" class="autosize">%first% %last%</div>
+            </td>
+        </tr>
+        <tr>
+            <td align="center">
+                <img src="parent-secure.png" height=35 width=300 />
+            </td>
+        </tr>
+    </table>
+
+    <img src="black.gif" width=335 height=3 style="margin-top: 14px; margin-bottom: 14px;" />
+
+    <!-- and now the reverse: -->
+    <div style="-webkit-transform: rotate(180deg); position: absolute; left:0px;">
+
+        <table border=0 width=335>
+            <tr>
+                <td style="vertical-align:top;" width=140>
+                    <div class="not" style="font-size: 0.6em; margin 0px 5px">%date% %time%<br>
+                                                   %room%<br></div>
+                    <div style="text-align: center; font-family: Papyrus, fantasy; font-size: 0.9em;"><b>SECURITY RECEIPT<br>
+                                                    Watch for paging: %code%</b></div>
+
+                </td>
+                <td align="right" style="vertical-align:top" width=152>
+                    <img src="outfitters.png" width=150 />
+                </td>
+            </tr>
+        </table>
+
+        <table border=0 width=335>
+            <tr>
+                <td>
+                    <div style="font-size:0.6em;">
+                        Please keep this security receipt to retrieve your child from
+                        the nursery.  If this ticket is lost, please report it to a
+                        volunteer.  This ticket is only valid for today's check-in.
+                        Scan the QR code to the right to access
+                        your account and update your information.
+                        (%s%)
+                    </div>
+                </td>
+                <td>
+                    <img src="parent-link.png" id="qr" width=100>
+                </td>
+            </tr>
+        </table>
+
+        <table border=0 width=335>
+            <tr>
+                <td align="center">
+                    <div id="autosize">%first% %last%</div>
+                </td>
+            </tr>
+            <tr>
+                <td align="center">
+                    <img src="parent-secure.png" id="secure" height=35 width=300 />
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
