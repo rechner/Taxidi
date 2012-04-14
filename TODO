@@ -6,4 +6,4 @@
 	¤ Mask options: US, International, No formatting (numbers only)
 	¤ > SELECT ... WHERE phone LIKE '%'+Query
 		
-
+- Use spellcheck/gtkspell if available(?) (for generic inputs such as medical tag, memo, etc.)
