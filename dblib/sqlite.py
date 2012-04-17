@@ -120,7 +120,8 @@ class Database:
             user text, hash text, salt text, admin integer);""")
         #activities
         self.execute("""CREATE TABLE activities(id integer primary key,
-            name text, theme text);""")
+            name text, theme text, secure text, parentLink bool,
+            childBarcode bool, parentBarcode bool, link text);""")
         #services
         self.execute("""CREATE TABLE services(id integer primary key,
             name text, day integer, time);""")
