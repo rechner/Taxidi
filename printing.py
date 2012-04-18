@@ -10,7 +10,6 @@
 
 # TODO: respect locale's date/time format when doing substitution. Hard coded for now.
 # TODO: abstract barcode generation in themes. Hard coded for now.
-# TODO: convenience functions to generate barcodes and render PDF.
 # TODO: a bunch of caching and restructuring.
 # TODO: code for multiple copies, if needed.
 # TODO: speed up batch printing with multi-page patched wkhtmltopdf?
@@ -35,7 +34,8 @@ wkhtmltopdf = '/usr/bin/wkhtmltopdf' #path to wkhtmltopdf binary
 #TODO: Option to select native or builtin wkhtmltopdf
 
 nametags = os.path.join('resources', 'nametag') #path where html can be found.
-#For distribution this may be moved to /usr/share/taxidi/ in UNIX.
+#For distribution this may be moved to /usr/share/taxidi/ in UNIX, but should be
+#copied to user's ~/.taxidi/ as write access is needed.
 lpr = '/usr/bin/lpr' #path to LPR program (CUPS/Unix only).
 
 class Printer:
@@ -51,9 +51,10 @@ class Printer:
             self.log.warning("Unsupported platform. Printing by preview only.")
 
     def buildArguments(self, config, section='default'):
-        """Returns list of arguments to pass to wkhtmltopdf. Requires config dictionary
-        and section name to read (if None reads [default]).  Works all in lowercase.
-        If section name does not exist, will use default instead.
+        """Returns list of arguments to pass to wkhtmltopdf. Requires config
+        dictionary and section name to read (if None reads [default]).
+        Works all in lowercase. If section name does not exist, will use
+        values from [default] instead.
         """
 
         try: #attempt to read passed section. If invalid, use default instead.
@@ -147,6 +148,18 @@ class Printer:
                     return 1
                 return 0
             elif sys.platform == 'linux2': #linux
+                #~ try: #attempt to use evince-previewer instead
+                    #~ self.log.debug('Attempting to preview file {0} with evince.'
+                        #~ .format(fileName))
+                    #~ ret=subprocess.call(('/usr/bin/evince-previewer', fileName))
+                    #~ if ret != 0:
+                        #~ self.log.error('evince returned non-zero exit code {0}'
+                            #~ .format(ret))
+                        #~ return 1
+                    #~ return 0
+                #~ except OSError:
+                    #~ self.log.debug('evince unavailable.')
+
                 self.log.debug('Attempting to preview file {0} via xdg-open'
                     .format(fileName))
                 ret = subprocess.call(('/usr/bin/xdg-open', fileName))
@@ -175,7 +188,9 @@ class Printer:
         return self.con.listPrinters()
 
     def getPrinters(self):
-        """Returns dictionary of printer name, description, location, and URI (proxy)"""
+        """
+        Returns dictionary of printer name, description, location, and URI (proxy)
+        """
         return self.con.getPrinters()
 
 class Nametag:
@@ -185,12 +200,27 @@ class Nametag:
         fetch barcode encoding options from global config; otherwise accepts
         barcode=False as the initialization argument.
         """
-        #TODO: source config options for barcode encodings, etc. from global config.
+        #TODO: source config options for barcode, etc. from global config.
         self.barcodeEnable = barcode
         self.log = logging.getLogger(__name__)
 
+        #Setup and compile regex replacements:
+        self.date_re = re.compile(r'%DATE%', re.IGNORECASE)       #date
+        self.time_re = re.compile(r'%TIME%', re.IGNORECASE)       #time
+        self.room_re = re.compile(r'%ROOM%', re.IGNORECASE)       #room
+        self.first_re = re.compile(r'%FIRST%', re.IGNORECASE)     #name
+        self.last_re = re.compile(r'%LAST%', re.IGNORECASE)       #surname
+        self.medical_re = re.compile(r'%MEDICAL%', re.IGNORECASE) #medical
+        self.code_re = re.compile(r'%CODE%', re.IGNORECASE)       #paging code
+        self.secure_re = re.compile(r'%S%', re.IGNORECASE)        #security code
+
+        self.medicalIcon_re = re.compile(
+            r"window\.onload\s=\shide\('medical'\)\;", re.IGNORECASE)
+        self.volunteerIcon_re = re.compile(
+            r"window\.onload\s=\shide\('volunteer'\)\;", re.IGNORECASE)
+
     def listTemplates(self, directory=nametags):
-        """Returns a list of the installed nametag templates"""
+        """Returns a list of the installed nametag themes"""
         #TODO: add more stringent validation against config and html.
         directory = os.path.abspath(directory)
         self.log.debug("Searching for html templates in {0}".format(directory))
@@ -218,7 +248,10 @@ class Nametag:
         return valid
 
     def _getTemplateFile(self, theme, directory=nametags):
-        """Returns full path to .conf file for an installed template pack and check it exists."""
+        """
+        Returns full path to .conf file for an installed template pack and
+        check it exists.
+        """
         directory = os.path.abspath(directory)
         path = os.path.join(directory, theme, '{0}.conf'.format(theme))
         #TODO: more stringent checks (is there a matching HTML file?)
@@ -233,15 +266,20 @@ class Nametag:
 
 
     def readConfig(self, theme):
-        """Reads the configuration for a specified template pack. Returns dictionary."""
+        """
+        Reads the configuration for a specified template pack. Returns
+        dictionary.
+        """
         inifile = self._getTemplateFile(theme)
-        self.log.info("Reading template configuration from '{0}'".format(inifile))
+        self.log.info("Reading template configuration from '{0}'"
+            .format(inifile))
         config = ConfigObj(inifile)
         try: #check for default section
             default = config['default']
         except KeyError as e:
             self.log.error(e)
-            self.log.error("{0} contains no [default] section and is invalid.".format(inifile))
+            self.log.error("{0} contains no [default] section and is invalid."
+                .format(inifile))
             raise KeyError
         del default
         return config
@@ -249,11 +287,11 @@ class Nametag:
     def nametag(self, template='default', room='', first='', last='', medical='',
                 code='', secure='', barcode=True):
         """
-        Convenience function for generating nametag html and the coresponding barcodes.
-        Applies data to a nametag template and returns the resulting HTML.
-        Does not query database; pass barcode bool to disable.
-        Accepts template theme from listTemplates() as first argument; 'default' if none.
-        Accepts the following formats (defaults are blank):
+        Convenience function for generating nametag html and the coresponding
+        barcodes. Applies data to a nametag template and returns the resulting
+        HTML. Does not query database; pass barcode bool to disable.
+        Accepts template theme from listTemplates() as first argument; 'default'
+        if none. Accepts the following formats (defaults are blank):
             - room
             - first
             - last
@@ -276,119 +314,66 @@ class Nametag:
         try:
             directory = self._getTemplatePath(template)
         except KeyError:
-            self.log.error("Unable to process template '{0}'. Aborting.".format(template))
+            self.log.error("Unable to process template '{0}'. Aborting."
+                .format(template))
             return None
 
         #read in the HTML
         self.log.debug('Generating nametag with nametag()')
-        self.log.debug('Reading {0}...'.format(os.path.join(directory, 'default.html')))
+        self.log.debug('Reading {0}...'.format(os.path.join(directory,
+            'default.html')))
         f = open(os.path.join(directory, 'default.html'))
         html = f.read()
         f.close()
+
+        if len(html) == 0: #template file is empty: use default instead.
+            self.log.warn('HTML template file {0} is blank.'.format(
+                          os.path.join(directory, 'default.html')))
 
         #generate barcode of secure code, code128:
         if barcode:
             try:
                 if secure == '':
-                    codebar.gen('code128', os.path.join(directory, 'default-secure.png'), code)
+                    codebar.gen('code128', os.path.join(directory,
+                        'default-secure.png'), code)
                 else:
-                    codebar.gen('code128', os.path.join(directory, 'default-secure.png'), secure)
+                    codebar.gen('code128', os.path.join(directory,
+                        'default-secure.png'), secure)
             except NotImplementedError as e:
                 self.log.error('Unable to generate barcode: {0}'.format(e))
-                html = self.disableBarcode(html, 'default-secure.png') #replace with white.gif
+                html = html.replace(u'default-secure.png', u'white.gif')
         else:
             #replace barcode image with white.gif
-            html = self.disableBarcode(html, 'default-secure.png')
+            html = html.replace(u'default-secure.png', u'white.gif')
             self.log.debug("Disabled barcode.")
 
-        #perform regex replacement
-        html = self._nametag(room=room, first=first, last=last, medical=medical,
-                             code=code, secure=secure, _templatePath=directory, html=html)
-
-        return html
-
-
-    def disableBarcode(self, html, ref):
-        """
-        Pass html and reference to replace with 'white.gif'
-        """
-        regex = re.compile(r'{0}'.format(ref), re.IGNORECASE)
-        return regex.sub('white.gif', html)
-
-
-    def _nametag(self, template='default', room='', first='', last='', medical='',
-                code='', secure='', _templatePath=None, html=''):
-        #TODO: respect system locale's strftime formatting
-        #TODO: source local config. and generate barcode if needed.
-        """
-        Applies data to a nametag template and returns the resulting HTML.
-        Accepts template theme from listTemplates() as first argument; 'default' if none.
-        Accepts the following formats (defaults are blank):
-            - room
-            - first
-            - last
-            - medical
-            - code
-            - secure
-
-        This method processes default.html only. _templatePath is a convenience
-        for cases where the template has already been determined.
-        """
-        #Check that theme specified is valid:
-        if not _templatePath:
-            if template != 'default':
-                themes = self.listTemplates()
-                if template not in themes:
-                    self.log.error("Bad theme specified.  Using default instead.")
-                    template = 'default'
-            #Read in the HTML from template.
-            try:
-                directory = self._getTemplatePath(template)
-            except KeyError:
-                self.log.error("Unable to process template '{0}'. Aborting.".format(template))
-                return None
-        else:
-            directory = _templatePath
-        if len(html) == 0:
-            self.log.debug('Generating child tag using {0} from {1}'
-                .format('default.html', directory))
-            f = open(os.path.join(directory, 'default.html'))
-            html = f.read()
-            f.close()
-
+        #get the current date/time
         now = datetime.datetime.now()
 
         #Perform substitutions:
-        regex = re.compile(r'%DATE%', re.IGNORECASE)        #date
-        html = regex.sub(now.strftime("%a %d %b, %Y"), html)
-        regex = re.compile(r'%TIME%', re.IGNORECASE)        #time
-        html = regex.sub(now.strftime("%H:%M:%S"), html)
-        regex = re.compile(r'%ROOM%', re.IGNORECASE)        #room
-        html = regex.sub(room, html)
-        regex = re.compile(r'%FIRST%', re.IGNORECASE)       #name
-        html = regex.sub(first, html)
-        regex = re.compile(r'%LAST%', re.IGNORECASE)        #surname
-        html = regex.sub(last, html)
-        regex = re.compile(r'%MEDICAL%', re.IGNORECASE)     #medical
-        html = regex.sub(medical, html)
-        regex = re.compile(r'%CODE%', re.IGNORECASE)        #paging code
-        html = regex.sub(code, html)
-        regex = re.compile(r'%S%', re.IGNORECASE)           #security code
-        html = regex.sub(secure, html)
+        html = self.date_re.sub(now.strftime("%a %d %b, %Y"), html)
+        html = self.time_re.sub(now.strftime("%H:%M:%S"), html)
+        html = self.room_re.sub(room, html)
+        html = self.first_re.sub(first, html)
+        html = self.last_re.sub(last, html)
+        html = self.medical_re.sub(medical, html)
+        html = self.code_re.sub(code, html)
+        html = self.secure_re.sub(secure, html)
+
 
         #show medical icon
         if len(medical) > 0:
-            regex = re.compile(r"window\.onload\s=\shide\('medical'\)\;", re.IGNORECASE)
-            html = regex.sub('', html)
+            html = self.medicalIcon_re.sub('', html)
 
         return html
+
 
     def parent(self, template='default', room='', first='', last='',
                code='', secure='', link='', barcode=True):
         """
         Applies data to a nametag template and returns the resulting HTML.
-        Accepts template theme from listTemplates() as first argument; 'default' if none.
-        Accepts the following formats (defaults are blank):
+        Accepts template theme from listTemplates() as first argument; 'default'
+        if None.  Accepts the following formats (defaults are blank):
             - room
             - first
             - last
@@ -409,7 +394,8 @@ class Nametag:
         try:
             directory = self._getTemplatePath(template)
         except KeyError:
-            self.log.error("Unable to process template '{0}'. Aborting.".format(template))
+            self.log.error("Unable to process template '{0}'. Aborting."
+                .format(template))
             return None
         self.log.debug('Generating child tag using {0} from {1}'
             .format('parent.html', directory))
@@ -421,15 +407,17 @@ class Nametag:
         if barcode:
             try:
                 if secure == '':
-                    codebar.gen('code128', os.path.join(directory, 'parent-secure.png'), code)
+                    codebar.gen('code128', os.path.join(directory,
+                        'parent-secure.png'), code)
                 else:
-                    codebar.gen('code128', os.path.join(directory, 'parent-secure.png'), secure)
+                    codebar.gen('code128', os.path.join(directory,
+                        'parent-secure.png'), secure)
             except NotImplementedError as e:
                 self.log.error('Unable to generate barcode: {0}'.format(e))
-                html = self.disableBarcode(html, 'parent-secure.png') #replace with white.gif
+                inp = inp.replace(u'parent-secure.png', u'white.gif')
         else:
             #replace barcode image with white.gif
-            html = self.disableBarcode(html, 'parent-secure.png')
+            inp = inp.replace(u'parent-secure.png', u'white.gif')
             self.log.debug("Disabled barcode.")
 
         #Generate QR code if needed:
@@ -440,30 +428,22 @@ class Nametag:
         now = datetime.datetime.now()
 
         #Perform substitutions:
-        regex = re.compile(r'%DATE%', re.IGNORECASE)        #date
-        inp = regex.sub(now.strftime("%a %d %b, %Y"), inp)
-        regex = re.compile(r'%TIME%', re.IGNORECASE)        #time
-        inp = regex.sub(now.strftime("%H:%M:%S"), inp)
-        regex = re.compile(r'%ROOM%', re.IGNORECASE)        #room
-        inp = regex.sub(room, inp)
-        regex = re.compile(r'%FIRST%', re.IGNORECASE)       #name
-        inp = regex.sub(first, inp)
-        regex = re.compile(r'%LAST%', re.IGNORECASE)        #surname
-        inp = regex.sub(last, inp)
-        regex = re.compile(r'%CODE%', re.IGNORECASE)        #paging code
-        inp = regex.sub(code, inp)
-        regex = re.compile(r'%S%', re.IGNORECASE)           #security code
-        inp = regex.sub(secure, inp)
+        inp = self.date_re.sub(now.strftime("%a %d %b, %Y"), inp)  #date
+        inp = self.time_re.sub(now.strftime("%H:%M:%S"), inp)      #time
+        inp = self.room_re.sub(room, inp)     #room
+        inp = self.first_re.sub(first, inp)   #first name
+        inp = self.last_re.sub(last, inp)     #surname
+        inp = self.code_re.sub(code, inp)     #paging code
+        inp = self.secure_re.sub(secure, inp) #security code
 
         return inp
 
-
     def volunteer(self, template='default', room='', first='', last='',
-               ministry=''):
+                  ministry=''):
         """
         Applies data to a nametag template and returns the resulting HTML.
-        Accepts template theme from listTemplates() as first argument; 'default' if none.
-        Accepts the following formats (defaults are blank):
+        Accepts template theme from listTemplates() as first argument; 'default'
+        if none. Accepts the following formats (defaults are blank):
             - room
             - first
             - last
@@ -487,31 +467,24 @@ class Nametag:
         self.log.debug('Generating child tag using {0} from {1}'
             .format('volunteer.html', directory))
         f = open(os.path.join(directory, 'volunteer.html'))
-        inp = f.read()
+        html = f.read()
         f.close()
 
         now = datetime.datetime.now()
 
         #Perform substitutions:
-        regex = re.compile(r'%DATE%', re.IGNORECASE)        #date
-        inp = regex.sub(now.strftime("%a %d %b, %Y"), inp)
-        regex = re.compile(r'%TIME%', re.IGNORECASE)        #time
-        inp = regex.sub(now.strftime("%H:%M:%S"), inp)
-        regex = re.compile(r'%ROOM%', re.IGNORECASE)        #room
-        inp = regex.sub(room, inp)
-        regex = re.compile(r'%FIRST%', re.IGNORECASE)       #name
-        inp = regex.sub(first, inp)
-        regex = re.compile(r'%LAST%', re.IGNORECASE)        #surname
-        inp = regex.sub(last, inp)
-        regex = re.compile(r'%MEDICAL%', re.IGNORECASE)     #paging code
-        inp = regex.sub(ministry, inp)
+        html = self.date_re.sub(now.strftime("%a %d %b, %Y"), html)
+        html = self.time_re.sub(now.strftime("%H:%M:%S"), html)
+        html = self.room_re.sub(room, html)
+        html = self.first_re.sub(first, html)
+        html = self.last_re.sub(last, html)
+        html = self.medical_re.sub(ministry, html)
 
         #show icon
         if len(ministry) > 0:
-            regex = re.compile(r"window\.onload\s=\shide\('volunteer'\)\;", re.IGNORECASE)
-            inp = regex.sub('', inp)
+            html = self.volunteerIcon_re.sub('', html)
 
-        return inp
+        return html
 
 
 
@@ -526,11 +499,15 @@ class _CUPS:
         self.con = cups.Connection()
 
     def listPrinters(self):
-        """Returns a list of the names of available system printers"""
+        """
+        Returns a list of the names of available system printers.
+        """
         return self.con.getPrinters().keys()
 
     def getPrinters(self):
-        """Returns dictionary of printer name, description, location, and URI (CUPS)"""
+        """
+        Returns dictionary of printer name, description, location, and URI.
+        """
         a = dict()
         printers = self.con.getPrinters()
         for item in printers:
@@ -623,6 +600,23 @@ class Main:
         os.unlink(tmpname)
         return self.pdf
 
+    def volunteer(self, theme='default', room='', first='', last='',
+                  ministry='', section='volunteer'):
+        self.section = section
+        self.conf = self.tag.readConfig(theme) #theme
+        self.args = self.con.buildArguments(self.conf, section) #section
+
+        tmpname = os.path.join(self.tag._getTemplatePath(theme), 'temp.html')
+        stuff = self.tag.volunteer(template=theme, room=room, first=first,
+            last=last, ministry=ministry)
+        html = open(tmpname, 'w')
+        html.write(stuff)
+        html.close()
+
+        self.pdf = self.con.writePdf(self.args, tmpname)
+        os.unlink(tmpname)
+        return self.pdf
+
     def preview(self, filename=None):
         if filename == None:
             filename = self.pdf
@@ -642,11 +636,22 @@ class Main:
 if __name__ == '__main__':
 
     con = Main()
-    con.nametag(room='Green Room', first='Johnothan', last='Churchgoer', medical='Peanuts', code='O-9999', secure='Z59', barcode=True)
-    #con.printout()
-    con.cleanup()
-
-    con.parent(room='Green Room', first='Johnothan', last='Churchgoer',
-        code='O-9999', secure='Z59', link='http://blahblahblah.com/church/taxidi/parent.cgi?id=12682862')
-    #con.printout()
+    con.nametag(theme='outfitters', room='Green Room', first='Johnothan',
+                last='Churchgoer', medical='Peanuts', code='O-9999',
+                secure='5C55', barcode=True)
     con.preview()
+    #~ con.printout()
+
+    #con.volunteer(room='Jungle Room', first='Zac', last='Sturgeon', ministry='Tech')
+    #con.printout()
+    #con.preview()
+    #con.cleanup()
+
+    #~ con.parent(room='Green Room', first='Johnothan', last='Churchgoer',
+        #~ code='O-9999', secure='9999:Z99', link='http://blahblahblah.com/church/taxidi/parent.cgi?id=12682862')
+    #~ con.preview()
+    #~ con.printout()
+    #con.cleanup()
+
+    raw_input(">")
+    con.cleanup()
