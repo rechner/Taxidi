@@ -45,10 +45,6 @@ class NotificationError(Exception):
         def __str__(self):
             return repr(self.error)
 
-
-#TODO: Check: should return {"results": {"success": true}}
-#TODO: Catch 404, server errors, not found, etc.
-
 if __name__ == '__main__':
     alert = "Parents: watch for your child's number - E-9999"
     server = '192.168.2.103'
