@@ -2,7 +2,7 @@
 #TODO: rewrite this with logging and make it pretty.
 #TODO: Add password checking, keep user/pass prompt open until checking is done.
 
-#BUG: RCX incorrectly complains "Cannot load resources from file" despite loading them anyways. (?)
+#FIXME: RCX incorrectly complains "Cannot load resources from file" despite loading them anyways. (?)
 
 import os
 import wx
@@ -107,7 +107,8 @@ def useTemporaryDialog(filePath, resourceName, mayCancel,
 # --- Sample Dialog ---
 def askLogin(defaultUser='', defaultPassword='', mayCancel=True):
     """Return None if user cancels; otherwise (user, password) as unicode."""
-    result = useTemporaryDialog('rcx/username.xrc', 'UsernameDialog', mayCancel,
+    result = useTemporaryDialog(os.path.join('xrc', 'username.xrc'),
+                                'UsernameDialog', mayCancel,
                                 'username', 'password',
                                 username=defaultUser,
                                 password=defaultPassword)
@@ -115,10 +116,10 @@ def askLogin(defaultUser='', defaultPassword='', mayCancel=True):
 
 def askPass(defaultUser='', defaultPassword='', mayCancel=True):
     """Return None if user cancels; otherwise (user, password) as unicode."""
-    result = useTemporaryDialog('rcx/password.xrc', 'PasswordDialog', mayCancel,
+    result = useTemporaryDialog(os.path.join('xrc', 'password.xrc'),
+                                'PasswordDialog', mayCancel,
                                 'password',
-                                password=defaultPassword,
-                                )
+                                password=defaultPassword)
     if result:
         return result[0]
     return result
@@ -129,7 +130,6 @@ def askPass(defaultUser='', defaultPassword='', mayCancel=True):
 import sys
 
 if __name__ == '__main__':
-	#print askLogin('john_doe', '123', mayCancel=False)
-	print askLogin()
-	print askPass()
-
+    #print askLogin('john_doe', '123', mayCancel=False)
+    print askLogin()
+    print askPass()

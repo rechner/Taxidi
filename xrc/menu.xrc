@@ -1,0 +1,1229 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<resource xmlns="http://www.wxwindows.org/wxxrc" version="2.3.0.1">
+    <object class="wxFrame" name="MyFrame">
+        <style>wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL</style>
+        <size>1020,700</size>
+        <title>Taxidi Alpha</title>
+        <object class="wxPanel" name="MainMenu">
+            <style>wxTAB_TRAVERSAL|wxTRANSPARENT_WINDOW</style>
+            <size>1024,815</size>
+            <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                    <option>1</option>
+                    <flag>wxEXPAND|wxTOP</flag>
+                    <border>5</border>
+                    <object class="wxFlexGridSizer">
+                        <rows>3</rows>
+                        <cols>3</cols>
+                        <vgap>0</vgap>
+                        <hgap>0</hgap>
+                        <growablecols>0,1,2</growablecols>
+                        <growablerows></growablerows>
+                        <object class="spacer">
+                            <option>1</option>
+                            <flag>wxEXPAND</flag>
+                            <border>5</border>
+                            <size>0,0</size>
+                        </object>
+                        <object class="sizeritem">
+                            <option>1</option>
+                            <flag>wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                    <option>1</option>
+                                    <flag>wxALL|wxEXPAND</flag>
+                                    <border>5</border>
+                                    <object class="wxButton" name="begin">
+                                        <size>220,60</size>
+                                        <font>
+                                            <family>default</family>
+                                            <style>normal</style>
+                                            <weight>bold</weight>
+                                            <underlined>0</underlined>
+                                        </font>
+                                        <label>Begin Check-in</label>
+                                        <default>0</default>
+                                    </object>
+                                </object>
+                                <object class="sizeritem">
+                                    <option>1</option>
+                                    <flag>wxALL|wxEXPAND</flag>
+                                    <border>5</border>
+                                    <object class="wxButton" name="configure">
+                                        <size>220,60</size>
+                                        <font>
+                                            <family>default</family>
+                                            <style>normal</style>
+                                            <weight>bold</weight>
+                                            <underlined>0</underlined>
+                                        </font>
+                                        <label>Configure</label>
+                                        <default>0</default>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                        <object class="spacer">
+                            <option>1</option>
+                            <flag>wxEXPAND</flag>
+                            <border>5</border>
+                            <size>0,0</size>
+                        </object>
+                        <object class="spacer">
+                            <option>1</option>
+                            <flag>wxEXPAND</flag>
+                            <border>5</border>
+                            <size>0,0</size>
+                        </object>
+                        <object class="sizeritem">
+                            <option>1</option>
+                            <flag>wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                    <option>1</option>
+                                    <flag>wxALL|wxEXPAND</flag>
+                                    <border>5</border>
+                                    <object class="wxButton" name="about">
+                                        <size>220,60</size>
+                                        <font>
+                                            <family>default</family>
+                                            <style>normal</style>
+                                            <weight>bold</weight>
+                                            <underlined>0</underlined>
+                                        </font>
+                                        <label>About Taxídí</label>
+                                        <default>0</default>
+                                    </object>
+                                </object>
+                                <object class="sizeritem">
+                                    <option>1</option>
+                                    <flag>wxALL|wxEXPAND</flag>
+                                    <border>5</border>
+                                    <object class="wxButton" name="services">
+                                        <size>220,60</size>
+                                        <font>
+                                            <family>default</family>
+                                            <style>normal</style>
+                                            <weight>bold</weight>
+                                            <underlined>0</underlined>
+                                        </font>
+                                        <label>Manage Services</label>
+                                        <default>0</default>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                        <object class="spacer">
+                            <option>1</option>
+                            <flag>wxEXPAND</flag>
+                            <border>5</border>
+                            <size>0,0</size>
+                        </object>
+                        <object class="spacer">
+                            <option>1</option>
+                            <flag>wxEXPAND</flag>
+                            <border>5</border>
+                            <size>0,0</size>
+                        </object>
+                        <object class="sizeritem">
+                            <option>1</option>
+                            <flag>wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                    <option>1</option>
+                                    <flag>wxALL|wxEXPAND</flag>
+                                    <border>5</border>
+                                    <object class="wxButton" name="quit">
+                                        <size>220,60</size>
+                                        <font>
+                                            <family>default</family>
+                                            <style>normal</style>
+                                            <weight>bold</weight>
+                                            <underlined>0</underlined>
+                                        </font>
+                                        <label>Quit</label>
+                                        <default>0</default>
+                                    </object>
+                                </object>
+                                <object class="sizeritem">
+                                    <option>1</option>
+                                    <flag>wxALL|wxEXPAND</flag>
+                                    <border>5</border>
+                                    <object class="wxButton" name="activities">
+                                        <size>220,60</size>
+                                        <font>
+                                            <family>default</family>
+                                            <style>normal</style>
+                                            <weight>bold</weight>
+                                            <underlined>0</underlined>
+                                        </font>
+                                        <label>Manage Activities</label>
+                                        <default>0</default>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                        <object class="spacer">
+                            <option>0</option>
+                            <flag>wxEXPAND</flag>
+                            <border>5</border>
+                            <size>0,0</size>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+
+            <!-- Right-handed search interface. -->
+                <object class="wxPanel" name="RightHandSearch">
+        <style>wxTAB_TRAVERSAL</style>
+        <size>967,407</size>
+        <object class="wxBoxSizer">
+            <orient>wxHORIZONTAL</orient>
+            <object class="sizeritem">
+                <option>10</option>
+                <flag></flag>
+                <border>5</border>
+                <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                        <option>1</option>
+                        <flag>wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxBoxSizer">
+                            <orient>wxVERTICAL</orient>
+                            <object class="sizeritem">
+                                <option>0</option>
+                                <flag>wxEXPAND|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxFlexGridSizer">
+                                    <rows>2</rows>
+                                    <cols>2</cols>
+                                    <vgap>0</vgap>
+                                    <hgap>0</hgap>
+                                    <growablecols>1</growablecols>
+                                    <growablerows></growablerows>
+                                    <object class="sizeritem">
+                                        <option>0</option>
+                                        <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL</flag>
+                                        <border>5</border>
+                                        <object class="wxStaticText" name="st1">
+                                            <font>
+                                                <size>14</size>
+                                                <family>default</family>
+                                                <style>normal</style>
+                                                <weight>normal</weight>
+                                                <underlined>0</underlined>
+                                            </font>
+                                            <label>Search:</label>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <option>1</option>
+                                        <flag>wxEXPAND|wxRIGHT</flag>
+                                        <border>10</border>
+                                        <object class="wxBoxSizer">
+                                            <orient>wxHORIZONTAL</orient>
+                                            <object class="sizeritem">
+                                                <option>1</option>
+                                                <flag>wxEXPAND|wxTOP|wxBOTTOM|wxLEFT</flag>
+                                                <border>5</border>
+                                                <object class="wxTextCtrl" name="Search">
+                                                    <style>wxTE_PROCESS_ENTER</style>
+                                                    <size>-1,50</size>
+                                                    <font>
+                                                        <size>20</size>
+                                                        <family>default</family>
+                                                        <style>normal</style>
+                                                        <weight>normal</weight>
+                                                        <underlined>0</underlined>
+                                                    </font>
+                                                    <value></value>
+                                                    <maxlength>0</maxlength>
+                                                </object>
+                                            </object>
+                                            <object class="sizeritem">
+                                                <option>0</option>
+                                                <flag>wxALIGN_CENTER_VERTICAL|wxEXPAND|wxFIXED_MINSIZE|wxTOP|wxBOTTOM|wxRIGHT</flag>
+                                                <border>5</border>
+                                                <object class="wxBitmapButton" name="ClearButton">
+                                                    <style>wxBU_AUTODRAW</style>
+                                                    <size>50,50</size>
+                                                    <bitmap>../resources/icons/edit-clear.png</bitmap>
+                                                    <default>0</default>
+                                                </object>
+                                            </object>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <option>0</option>
+                                        <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL</flag>
+                                        <border>10</border>
+                                        <object class="wxStaticText" name="st2">
+                                            <label>Search by:</label>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <option>1</option>
+                                        <flag>wxEXPAND</flag>
+                                        <border>5</border>
+                                        <object class="wxBoxSizer">
+                                            <orient>wxHORIZONTAL</orient>
+                                            <object class="sizeritem">
+                                                <option>0</option>
+                                                <flag>wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</flag>
+                                                <border>5</border>
+                                                <object class="wxRadioButton" name="SearchAny">
+                                                    <tooltip>Return any results for:\n— Last 4 digits of phone number\n— Barcode\n— Surname\n— Name\n— Security/Check-out code</tooltip>
+                                                    <label>Any</label>
+                                                    <value>0</value>
+                                                </object>
+                                            </object>
+                                            <object class="sizeritem">
+                                                <option>0</option>
+                                                <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND</flag>
+                                                <border>5</border>
+                                                <object class="wxRadioButton" name="SearchName">
+                                                    <tooltip>Return only results from the first name field.</tooltip>
+                                                    <label>Name</label>
+                                                    <value>0</value>
+                                                </object>
+                                            </object>
+                                            <object class="sizeritem">
+                                                <option>0</option>
+                                                <flag>wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL</flag>
+                                                <border>5</border>
+                                                <object class="wxRadioButton" name="SearchBarcode">
+                                                    <label>Barcode</label>
+                                                    <value>0</value>
+                                                </object>
+                                            </object>
+                                            <object class="sizeritem">
+                                                <option>0</option>
+                                                <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND</flag>
+                                                <border>5</border>
+                                                <object class="wxRadioButton" name="SearchPhone">
+                                                    <label>Phone</label>
+                                                    <value>0</value>
+                                                </object>
+                                            </object>
+                                            <object class="sizeritem">
+                                                <option>0</option>
+                                                <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND</flag>
+                                                <border>5</border>
+                                                <object class="wxRadioButton" name="SearchSecure">
+                                                    <label>Secure code</label>
+                                                    <value>0</value>
+                                                </object>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <option>0</option>
+                                <flag>wxALL|wxEXPAND</flag>
+                                <border>5</border>
+                                <object class="wxBoxSizer">
+                                    <orient>wxHORIZONTAL</orient>
+                                    <object class="sizeritem">
+                                        <option>1</option>
+                                        <flag>wxALL|wxEXPAND</flag>
+                                        <border>5</border>
+                                        <object class="wxButton" name="StatisticsButton">
+                                            <size>-1,60</size>
+                                            <label>Statistics</label>
+                                            <default>0</default>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <option>1</option>
+                                        <flag>wxALL|wxEXPAND</flag>
+                                        <border>5</border>
+                                        <object class="wxButton" name="EmergencyListButton">
+                                            <size>-1,60</size>
+                                            <label>Emergency List</label>
+                                            <default>0</default>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <option>1</option>
+                                        <flag>wxALL|wxEXPAND</flag>
+                                        <border>5</border>
+                                        <object class="wxButton" name="ExitButton">
+                                            <size>-1,60</size>
+                                            <label>Exit</label>
+                                            <default>0</default>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <option>0</option>
+                                <flag>wxEXPAND|wxBOTTOM</flag>
+                                <border>10</border>
+                                <object class="wxFlexGridSizer">
+                                    <rows>1</rows>
+                                    <cols>3</cols>
+                                    <vgap>0</vgap>
+                                    <hgap>0</hgap>
+                                    <growablecols>1,2</growablecols>
+                                    <growablerows></growablerows>
+                                    <object class="sizeritem">
+                                        <option>0</option>
+                                        <flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+                                        <border>5</border>
+                                        <object class="wxStaticText" name="st3">
+                                            <font>
+                                                <size>14</size>
+                                                <family>default</family>
+                                                <style>normal</style>
+                                                <weight>normal</weight>
+                                                <underlined>0</underlined>
+                                            </font>
+                                            <label>Current Service:</label>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <option>0</option>
+                                        <flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL</flag>
+                                        <border>5</border>
+                                        <object class="wxChoice" name="ServiceSelection">
+                                            <size>-1,50</size>
+                                            <font>
+                                                <size>14</size>
+                                                <family>default</family>
+                                                <style>normal</style>
+                                                <weight>normal</weight>
+                                                <underlined>0</underlined>
+                                            </font>
+                                            <selection>0</selection>
+                                            <content>
+                                                <item>First Service</item>
+                                                <item>Second Service</item>
+                                                <item>Third Service</item>
+                                            </content>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <option>0</option>
+                                <flag>wxEXPAND</flag>
+                                <border>5</border>
+                                <object class="wxFlexGridSizer">
+                                    <rows>1</rows>
+                                    <cols>3</cols>
+                                    <vgap>0</vgap>
+                                    <hgap>0</hgap>
+                                    <growablecols>2</growablecols>
+                                    <growablerows></growablerows>
+                                    <object class="sizeritem">
+                                        <option>0</option>
+                                        <flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+                                        <border>5</border>
+                                        <object class="wxStaticBitmap" name="UserIcon">
+                                            <bitmap>../resources/icons/stock_person-32.png</bitmap>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <option>0</option>
+                                        <flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+                                        <border>5</border>
+                                        <object class="wxButton" name="UserButton">
+                                            <style>wxNO_BORDER</style>
+                                            <font>
+                                                <family>default</family>
+                                                <style>slant</style>
+                                                <weight>normal</weight>
+                                                <underlined>0</underlined>
+                                            </font>
+                                            <label>Current User: admin</label>
+                                            <default>0</default>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <option>0</option>
+                                        <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                                        <border>5</border>
+                                        <object class="wxButton" name="SwitchUserButton">
+                                            <label>Switch User</label>
+                                            <default>0</default>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+            <object class="sizeritem">
+                <option>5</option>
+                <flag>wxBOTTOM|wxEXPAND|wxFIXED_MINSIZE|wxLEFT|wxRIGHT</flag>
+                <border>15</border>
+                <object class="wxGridSizer">
+                    <rows>4</rows>
+                    <cols>3</cols>
+                    <vgap>0</vgap>
+                    <hgap>0</hgap>
+                    <object class="sizeritem">
+                        <option>0</option>
+                        <flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="b1">
+                            <font>
+                                <family>default</family>
+                                <style>normal</style>
+                                <weight>bold</weight>
+                                <underlined>0</underlined>
+                            </font>
+                            <label>1</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>0</option>
+                        <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="b2">
+                            <font>
+                                <family>default</family>
+                                <style>normal</style>
+                                <weight>bold</weight>
+                                <underlined>0</underlined>
+                            </font>
+                            <label>2</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>0</option>
+                        <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="b3">
+                            <font>
+                                <family>default</family>
+                                <style>normal</style>
+                                <weight>bold</weight>
+                                <underlined>0</underlined>
+                            </font>
+                            <label>3</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>0</option>
+                        <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="b4">
+                            <font>
+                                <family>default</family>
+                                <style>normal</style>
+                                <weight>bold</weight>
+                                <underlined>0</underlined>
+                            </font>
+                            <label>4</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>0</option>
+                        <flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="b5">
+                            <font>
+                                <size>10</size>
+                                <family>default</family>
+                                <style>normal</style>
+                                <weight>bold</weight>
+                                <underlined>0</underlined>
+                            </font>
+                            <label>5</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>0</option>
+                        <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="b6">
+                            <font>
+                                <family>default</family>
+                                <style>normal</style>
+                                <weight>bold</weight>
+                                <underlined>0</underlined>
+                            </font>
+                            <label>6</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>0</option>
+                        <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="b7">
+                            <font>
+                                <family>default</family>
+                                <style>normal</style>
+                                <weight>bold</weight>
+                                <underlined>0</underlined>
+                            </font>
+                            <label>7</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>0</option>
+                        <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="b8">
+                            <font>
+                                <family>default</family>
+                                <style>normal</style>
+                                <weight>bold</weight>
+                                <underlined>0</underlined>
+                            </font>
+                            <label>8</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>0</option>
+                        <flag>wxALL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="b9">
+                            <font>
+                                <family>default</family>
+                                <style>normal</style>
+                                <weight>bold</weight>
+                                <underlined>0</underlined>
+                            </font>
+                            <label>9</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>0</option>
+                        <flag>wxALL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="clear">
+                            <font>
+                                <family>default</family>
+                                <style>normal</style>
+                                <weight>normal</weight>
+                                <underlined>0</underlined>
+                            </font>
+                            <label>Clr</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>0</option>
+                        <flag>wxALL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="b0">
+                            <font>
+                                <family>default</family>
+                                <style>normal</style>
+                                <weight>bold</weight>
+                                <underlined>0</underlined>
+                            </font>
+                            <label>0</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>0</option>
+                        <flag>wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="accept">
+                            <label>OK</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                </object>
+            </object>
+            <object class="sizeritem">
+                <option>3</option>
+                <flag>wxEXPAND|wxBOTTOM</flag>
+                <border>20</border>
+                <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                        <option>1</option>
+                        <flag>wxALL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="SearchButton">
+                            <font>
+                                <family>default</family>
+                                <style>normal</style>
+                                <weight>bold</weight>
+                                <underlined>0</underlined>
+                            </font>
+                            <label>Search</label>
+                            <default>1</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>1</option>
+                        <flag>wxALL|wxEXPAND</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="RegisterButton">
+                            <label>Register</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>1</option>
+                        <flag>wxALL|wxEXPAND</flag>
+                        <border>7</border>
+                        <object class="wxButton" name="QuickRegisterButton">
+                            <label>Quick Register</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <option>1</option>
+                        <flag>wxALL|wxEXPAND</flag>
+                        <border>7</border>
+                        <object class="wxButton" name="LockKioskButton">
+                            <label>Lock Kiosk</label>
+                            <default>0</default>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+    </object>
+
+        <!-- Left-handed search interface: -->
+        <object class="wxPanel" name="LeftHandSearch">
+            <style>wxTAB_TRAVERSAL</style>
+            <size>1028,407</size>
+            <object class="wxBoxSizer">
+                <orient>wxHORIZONTAL</orient>
+                <object class="sizeritem">
+                    <option>3</option>
+                    <flag>wxEXPAND|wxBOTTOM</flag>
+                    <border>20</border>
+                    <object class="wxBoxSizer">
+                        <orient>wxVERTICAL</orient>
+                        <object class="sizeritem">
+                            <option>1</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="SearchButton">
+                                <font>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>bold</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <label>Search</label>
+                                <default>1</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>1</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="RegisterButton">
+                                <label>Register</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>1</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>7</border>
+                            <object class="wxButton" name="QuickRegisterButton">
+                                <label>Quick Register</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>1</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>7</border>
+                            <object class="wxButton" name="LockKioskButton">
+                                <label>Lock Kiosk</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+                <object class="sizeritem">
+                    <option>5</option>
+                    <flag>wxBOTTOM|wxEXPAND|wxFIXED_MINSIZE|wxLEFT|wxRIGHT</flag>
+                    <border>15</border>
+                    <object class="wxGridSizer">
+                        <rows>4</rows>
+                        <cols>3</cols>
+                        <vgap>0</vgap>
+                        <hgap>0</hgap>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="b1">
+                                <font>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>bold</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <label>1</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="b2">
+                                <font>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>bold</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <label>2</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="b3">
+                                <font>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>bold</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <label>3</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="b4">
+                                <font>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>bold</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <label>4</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="b5">
+                                <font>
+                                    <size>10</size>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>bold</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <label>5</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="b6">
+                                <font>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>bold</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <label>6</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="b7">
+                                <font>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>bold</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <label>7</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="b8">
+                                <font>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>bold</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <label>8</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="b9">
+                                <font>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>bold</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <label>9</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="clear">
+                                <font>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>normal</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <label>Clr</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="b0">
+                                <font>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>bold</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <label>0</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="accept">
+                                <label>OK</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+                <object class="sizeritem">
+                    <option>10</option>
+                    <flag>wxEXPAND|wxFIXED_MINSIZE</flag>
+                    <border>5</border>
+                    <object class="wxBoxSizer">
+                        <orient>wxVERTICAL</orient>
+                        <object class="sizeritem">
+                            <option>1</option>
+                            <flag>wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxBoxSizer">
+                                <orient>wxVERTICAL</orient>
+                                <object class="sizeritem">
+                                    <option>0</option>
+                                    <flag>wxEXPAND|wxALL</flag>
+                                    <border>5</border>
+                                    <object class="wxFlexGridSizer">
+                                        <rows>2</rows>
+                                        <cols>2</cols>
+                                        <vgap>0</vgap>
+                                        <hgap>0</hgap>
+                                        <growablecols>1</growablecols>
+                                        <growablerows></growablerows>
+                                        <object class="sizeritem">
+                                            <option>0</option>
+                                            <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="st1">
+                                                <font>
+                                                    <size>14</size>
+                                                    <family>default</family>
+                                                    <style>normal</style>
+                                                    <weight>normal</weight>
+                                                    <underlined>0</underlined>
+                                                </font>
+                                                <label>Search:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <option>1</option>
+                                            <flag>wxEXPAND|wxRIGHT</flag>
+                                            <border>10</border>
+                                            <object class="wxBoxSizer">
+                                                <orient>wxHORIZONTAL</orient>
+                                                <object class="sizeritem">
+                                                    <option>1</option>
+                                                    <flag>wxEXPAND|wxTOP|wxBOTTOM|wxLEFT</flag>
+                                                    <border>5</border>
+                                                    <object class="wxTextCtrl" name="Search">
+                                                        <flag>wxTE_PROCESS_ENTER</flag>
+                                                        <size>-1,50</size>
+                                                        <font>
+                                                            <size>20</size>
+                                                            <family>default</family>
+                                                            <style>normal</style>
+                                                            <weight>normal</weight>
+                                                            <underlined>0</underlined>
+                                                        </font>
+                                                        <value></value>
+                                                        <maxlength>0</maxlength>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <option>0</option>
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxEXPAND|wxFIXED_MINSIZE|wxTOP|wxBOTTOM|wxRIGHT</flag>
+                                                    <border>5</border>
+                                                    <object class="wxBitmapButton" name="ClearButton">
+                                                        <style>wxBU_AUTODRAW</style>
+                                                        <size>50,50</size>
+                                                        <bitmap>../resources/icons/edit-clear.png</bitmap>
+                                                        <default>0</default>
+                                                    </object>
+                                                </object>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <option>0</option>
+                                            <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL</flag>
+                                            <border>10</border>
+                                            <object class="wxStaticText" name="st2">
+                                                <label>Search by:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <option>1</option>
+                                            <flag>wxEXPAND</flag>
+                                            <border>5</border>
+                                            <object class="wxBoxSizer">
+                                                <orient>wxHORIZONTAL</orient>
+                                                <object class="sizeritem">
+                                                    <option>0</option>
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND</flag>
+                                                    <border>5</border>
+                                                    <object class="wxRadioButton" name="SearchAny">
+                                                        <tooltip>Return any results for:\n— Last 4 digits of phone number\n— Barcode\n— Surname\n— Name\n— Security/Check-out code</tooltip>
+                                                        <label>Any</label>
+                                                        <value>0</value>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <option>0</option>
+                                                    <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND</flag>
+                                                    <border>5</border>
+                                                    <object class="wxRadioButton" name="SearchName">
+                                                        <tooltip>Return only results from the first name field.</tooltip>
+                                                        <label>Name</label>
+                                                        <value>0</value>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <option>0</option>
+                                                    <flag>wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxRadioButton" name="SearchBarcode">
+                                                        <label>Barcode</label>
+                                                        <value>0</value>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <option>0</option>
+                                                    <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND</flag>
+                                                    <border>5</border>
+                                                    <object class="wxRadioButton" name="SearchPhone">
+                                                        <label>Phone</label>
+                                                        <value>0</value>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <option>0</option>
+                                                    <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND</flag>
+                                                    <border>5</border>
+                                                    <object class="wxRadioButton" name="SearchSecure">
+                                                        <label>Secure code</label>
+                                                        <value>0</value>
+                                                    </object>
+                                                </object>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                                <object class="sizeritem">
+                                    <option>0</option>
+                                    <flag>wxALL|wxEXPAND</flag>
+                                    <border>5</border>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxHORIZONTAL</orient>
+                                        <object class="sizeritem">
+                                            <option>1</option>
+                                            <flag>wxALL|wxEXPAND</flag>
+                                            <border>5</border>
+                                            <object class="wxButton" name="StatisticsButton">
+                                                <size>-1,60</size>
+                                                <label>Statistics</label>
+                                                <default>0</default>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <option>1</option>
+                                            <flag>wxALL|wxEXPAND</flag>
+                                            <border>5</border>
+                                            <object class="wxButton" name="EmergencyListButton">
+                                                <size>-1,60</size>
+                                                <label>Emergency List</label>
+                                                <default>0</default>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <option>1</option>
+                                            <flag>wxALL|wxEXPAND</flag>
+                                            <border>5</border>
+                                            <object class="wxButton" name="ExitButton">
+                                                <size>-1,60</size>
+                                                <label>Exit</label>
+                                                <default>0</default>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                                <object class="sizeritem">
+                                    <option>0</option>
+                                    <flag>wxEXPAND|wxBOTTOM</flag>
+                                    <border>10</border>
+                                    <object class="wxFlexGridSizer">
+                                        <rows>1</rows>
+                                        <cols>3</cols>
+                                        <vgap>0</vgap>
+                                        <hgap>0</hgap>
+                                        <growablecols>1,2</growablecols>
+                                        <growablerows></growablerows>
+                                        <object class="sizeritem">
+                                            <option>0</option>
+                                            <flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="st3">
+                                                <font>
+                                                    <size>14</size>
+                                                    <family>default</family>
+                                                    <style>normal</style>
+                                                    <weight>normal</weight>
+                                                    <underlined>0</underlined>
+                                                </font>
+                                                <label>Current Service:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <option>0</option>
+                                            <flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL</flag>
+                                            <border>5</border>
+                                            <object class="wxChoice" name="ServiceSelection">
+                                                <size>-1,50</size>
+                                                <font>
+                                                    <size>14</size>
+                                                    <family>default</family>
+                                                    <style>normal</style>
+                                                    <weight>normal</weight>
+                                                    <underlined>0</underlined>
+                                                </font>
+                                                <selection>0</selection>
+                                                <content>
+                                                    <item>First Service</item>
+                                                    <item>Second Service</item>
+                                                    <item>Third Service</item>
+                                                </content>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                                <object class="sizeritem">
+                                    <option>0</option>
+                                    <flag>wxEXPAND</flag>
+                                    <border>5</border>
+                                    <object class="wxFlexGridSizer">
+                                        <rows>1</rows>
+                                        <cols>3</cols>
+                                        <vgap>0</vgap>
+                                        <hgap>0</hgap>
+                                        <growablecols>2</growablecols>
+                                        <growablerows></growablerows>
+                                        <object class="sizeritem">
+                                            <option>0</option>
+                                            <flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticBitmap" name="UserIcon">
+                                                <bitmap>../resources/icons/stock_person-32.png</bitmap>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <option>0</option>
+                                            <flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+                                            <border>5</border>
+                                            <object class="wxButton" name="UserButton">
+                                                <style>wxNO_BORDER</style>
+                                                <font>
+                                                    <family>default</family>
+                                                    <style>slant</style>
+                                                    <weight>normal</weight>
+                                                    <underlined>0</underlined>
+                                                </font>
+                                                <label>Current User: admin</label>
+                                                <default>0</default>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <option>0</option>
+                                            <flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+                                            <border>5</border>
+                                            <object class="wxButton" name="SwitchUserButton">
+                                                <label>Switch User</label>
+                                                <default>0</default>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+
+    </object>
+</resource>

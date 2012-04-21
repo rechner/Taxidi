@@ -18,7 +18,7 @@
                         <flag>wxTOP|wxLEFT</flag>
                         <border>5</border>
                         <object class="wxStaticBitmap" name="icon">
-                            <bitmap>../resources/locked.png</bitmap>
+                            <bitmap>../resources/icons/locked-84.png</bitmap>
                         </object>
                     </object>
                     <object class="sizeritem">
