@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
+# 2012-04-23: Initial work.
+# 2012-04-25: Fixed bug in ultimatelistctrl with background colour.
+
+#TODO: Display 'status' column.
 
 import wx
-from wx.lib.agw import ultimatelistctrl as ULC
+try:
+    from ulc import ultimatelistctrl as ULC
+except ImportError:
+    from wx.lib.agw import ultimatelistctrl as ULC
 import taxidi
 
 LIST_AUTOSIZE_FILL = -3
@@ -30,7 +37,7 @@ class SearchResultsPanel(wx.Panel):
 
         self.ultimateList = ULC.UltimateListCtrl(self, agwStyle = ULC.ULC_REPORT
                                             | ULC.ULC_HAS_VARIABLE_ROW_HEIGHT
-                                            | ULC.ULC_HRULES )
+                                            | ULC.ULC_HRULES)
 
         info = ULC.UltimateListItem()
         info._format = wx.LIST_FORMAT_CENTRE
@@ -138,6 +145,12 @@ class SearchResultsPanel(wx.Panel):
             self.ultimateList.SetStringItem(pos, 2, results[i]['activity'])
             self.ultimateList.SetStringItem(pos, 3, results[i]['room'])
 
+            #Set the name column to bold:
+            item = self.ultimateList.GetItem(i, 1)
+            item.SetMask(ULC.ULC_MASK_FONT)
+            item.SetFont(self.boldfont)
+            self.ultimateList.SetItem(item)
+
             self.checkboxes.append(wx.ToggleButton(self.ultimateList, id=i,
                 label="", size=(50, 50)))
             self.Bind(wx.wx.EVT_TOGGLEBUTTON, self.ButtonPress,
@@ -148,12 +161,12 @@ class SearchResultsPanel(wx.Panel):
             self.ultimateList.SetItemWindow(pos, col=0, wnd=self.checkboxes[i],
                 expand=False)
 
-            if i % 2 == 1:
+            if i % 2 == 1: #Make every other row a light grey for legibility.
                 self.ultimateList.SetItemBackgroundColour(i, wx.Colour(220, 220, 220))
-            #Commenting this out will show the rows with the background colours I want.
-            self.ultimateList.SetItemFont(i, self.font) #This shows the correct font,
-                                                   #but turns the background colour
-                                                   #back to white.
+            #Note: Due to a bug in ultimatelistctrl, coloured backgrounds with
+            # a font in this way only works with the included version of
+            # ultimatelistctrl.
+            self.ultimateList.SetItemFont(i, self.font)
 
 
 ########################################################################
