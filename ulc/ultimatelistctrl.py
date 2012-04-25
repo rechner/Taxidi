@@ -1250,7 +1250,11 @@ class UltimateListItemAttr(object):
     def HasTextColour(self):
         """ Returns ``True`` if the currently set text colour is valid. """
 
-        return self._colText.Ok()
+        #FIXME: Workaround. I have no idea why but this prevents DeleteAllItems from working.
+        if isinstance(self._colText, str):
+            return True
+        else:
+            return self._colText.Ok()
 
 
     def HasBackgroundColour(self):

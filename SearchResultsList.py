@@ -78,7 +78,7 @@ class SearchResultsPanel(wx.Panel):
         info._text = 'Status'
         info._font = self.boldfont
         info._image = []
-        self.ultimateList.InsertColumnInfo(2, info)
+        self.ultimateList.InsertColumnInfo(4, info)
 
         self.SetFont(self.boldfont)
         self.checkboxes = []
@@ -88,14 +88,19 @@ class SearchResultsPanel(wx.Panel):
         self.ultimateList.SetColumnWidth(1, LIST_AUTOSIZE_FILL)
         self.ultimateList.SetColumnWidth(2, 160)
         self.ultimateList.SetColumnWidth(3, 160)
+        self.ultimateList.SetColumnWidth(4, 160)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.ultimateList, 1, wx.EXPAND)
         self.SetSizer(sizer)
         self.Bind(ULC.EVT_LIST_ITEM_SELECTED, self.Click, self.ultimateList)
 
+        self
+
     def Click(self, event):
-        print self.ultimateList.GetFirstSelected()
+        #TODO: external event triggering.  (Pub/sub?)
+        #~ print self.ultimateList.GetFirstSelected()
+        pass
 
     def ButtonPress(self, event):
         i = event.GetEventObject().id
@@ -107,10 +112,12 @@ class SearchResultsPanel(wx.Panel):
 
     def DeleteAllItems(self):
         """Deletes all entries currently in the list"""
-        #BUG: for some reason, UltimateListCtrl.DeleteAllItems() has troubles.
-        #  So we'll do deletion manually.
+        #FIXME: for some reason, UltimateListCtrl.DeleteAllItems() has troubles.
+        #  So we'll do deletion manually.  UPDATE: I left this code for a few
+        #  hours and suddenly it broke.  Work around is in place in
+        #  ultimatelistctrl.py
         items = self.ultimateList.GetItemCount()
-        for i in reversed(range(items)):
+        for i in reversed(xrange(items)):
             self.ultimateList.DeleteItem(i)
         del self.checkboxes
         self.checkboxes = []
@@ -144,12 +151,16 @@ class SearchResultsPanel(wx.Panel):
             self.ultimateList.SetStringItem(pos, 1, results[i]['name'])
             self.ultimateList.SetStringItem(pos, 2, results[i]['activity'])
             self.ultimateList.SetStringItem(pos, 3, results[i]['room'])
+            if results[i]['status'] == taxidi.STATUS_CHECKED_IN:
+                self.ultimateList.SetStringItem(pos, 4, 'Checked-in')
+                self.SetCellTextColour(pos, 4, '#2F6617')
+            elif results[i]['status'] == taxidi.STATUS_CHECKED_OUT:
+                self.ultimateList.SetStringItem(pos, 4,
+                    'Checked-out\n%s' % results[i]['checkout-time'])
+                self.SetCellTextColour(pos, 4, wx.RED)
 
             #Set the name column to bold:
-            item = self.ultimateList.GetItem(i, 1)
-            item.SetMask(ULC.ULC_MASK_FONT)
-            item.SetFont(self.boldfont)
-            self.ultimateList.SetItem(item)
+            self.SetCellFont(i, 1, self.boldfont)
 
             self.checkboxes.append(wx.ToggleButton(self.ultimateList, id=i,
                 label="", size=(50, 50)))
@@ -162,11 +173,49 @@ class SearchResultsPanel(wx.Panel):
                 expand=False)
 
             if i % 2 == 1: #Make every other row a light grey for legibility.
-                self.ultimateList.SetItemBackgroundColour(i, wx.Colour(220, 220, 220))
+                colour = self.hex_to_rgb('#DCDCDC')
+                self.ultimateList.SetItemBackgroundColour(i, wx.Colour(colour[0], colour[1], colour[2]))
             #Note: Due to a bug in ultimatelistctrl, coloured backgrounds with
             # a font in this way only works with the included version of
-            # ultimatelistctrl.
+            # ultimatelistctrl.  The local version has a few work-arounds.
             self.ultimateList.SetItemFont(i, self.font)
+
+    def SetCellFont(self, row, col, font, colour=None):
+        """
+        Sets an individual cell's font [and optionally colour].
+
+        :param `row`: The item's identifying row.
+        :param `col`: The item's identifying column.
+        :param `font`: A valid wx.Font to apply.
+        :param `colour`: (opt.) A valid wx.Colour to apply.
+        """
+        item = self.ultimateList.GetItem(row, col)
+        if colour:
+            item.SetMask(ULC.ULC_MASK_FONT | ULC.ULC_MASK_FONTCOLOUR)
+            item.SetTextColour(colour)
+        else:
+            item.SetMask(ULC.ULC_MASK_FONT)
+        item.SetFont(font)
+        self.ultimateList.SetItem(item)
+
+    def SetCellTextColour(self, row, col, colour):
+        """
+        Sets an individual cell's text colour.
+        """
+        item = self.ultimateList.GetItem(row, col)
+        item.SetMask(ULC.ULC_MASK_FONTCOLOUR)
+        item.SetTextColour(colour)
+        #item.SetFont(item.GetFont())
+        self.ultimateList.SetItem(item)
+
+    def hex_to_rgb(self, value):
+        """
+        Converts an HTML hex colour to (r,g,b).
+        For some reason some parts of ULC require an wx.Colour object.
+        """
+        value = value.lstrip('#')
+        lv = len(value)
+        return tuple(int(value[i:i+lv/3], 16) for i in range(0, lv, lv/3))
 
 
 ########################################################################
@@ -183,9 +232,9 @@ class TestFrame(wx.Frame):
 
 #----------------------------------------------------------------------
 if __name__ == "__main__":
-    results = [ {'name':'Johnathan Churchgoer', 'activity':'Explorers',  'room':'Jungle Room', 'status':taxidi.STATUS_NONE},
+    results = [ {'name':'Johnathan Churchgoer', 'activity':'Explorers',  'room':'Jungle Room', 'status':taxidi.STATUS_CHECKED_IN},
                 {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_CHECKED_IN},
-                {'name':'Joseph Flint',         'activity':'Outfitters', 'room':u'—',          'status':taxidi.STATUS_CHECKED_OUT} ]
+                {'name':'Joseph Flint',         'activity':'Outfitters', 'room':u'—',          'status':taxidi.STATUS_CHECKED_OUT, 'checkout-time':'11:46:34'} ]
     app = wx.App(False)
     frame = TestFrame()
     app.MainLoop()
