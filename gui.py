@@ -6,6 +6,14 @@
 #TODO: Set radiobutton background colours if possible.
 #TODO: Clean up XML.
 
+__version__ = '0.70.00-dev'
+
+userHand = 'right'
+
+themeBackgroundColour = '#005889'
+themeTextColour = 'white'
+themeBanner = 'resources/banner.png'
+
 import os
 import wx
 from wx import xrc
@@ -21,44 +29,24 @@ class MyApp(wx.App):
         #Load resources
         self.frame = self.res.LoadFrame(None, 'MyFrame')
 
-        #Panels
+        #Set icon:
+        favicon = wx.Icon('resources/taxidi.png', wx.BITMAP_TYPE_PNG, 100, 100)
+        self.frame.SetIcon(favicon)
+
+        #Create panels
+        self.MainMenu = xrc.XRCCTRL(self.frame, 'MainMenu')
         self.RightHandSearch = xrc.XRCCTRL(self.frame, 'RightHandSearch')
         self.LeftHandSearch = xrc.XRCCTRL(self.frame, 'LeftHandSearch')
-        self.MainMenu = xrc.XRCCTRL(self.frame, 'MainMenu')
+        self.RecordPanelRight = xrc.XRCCTRL(self.frame, 'RecordPanelRight')
+        self.RecordPanelLeft = xrc.XRCCTRL(self.frame, 'RecordPanelLeft')
+        self.VisitorRight = xrc.XRCCTRL(self.frame, 'VisitorRight')
 
-        self.begin = xrc.XRCCTRL(self.MainMenu, 'begin')
-        self.configure = xrc.XRCCTRL(self.MainMenu, 'configure')
-        self.about = xrc.XRCCTRL(self.MainMenu, 'about')
-        self.quit = xrc.XRCCTRL(self.MainMenu, 'quit')
+        #Setup panels
+        self.setupMainMenu()
+        self.setupSearch()
 
-        #set text colours:
-        st1 = xrc.XRCCTRL(self.RightHandSearch, 'st1')
-        st2 = xrc.XRCCTRL(self.RightHandSearch, 'st2')
-        st3 = xrc.XRCCTRL(self.RightHandSearch, 'st3')
-        st1.SetForegroundColour("white")
-        st2.SetForegroundColour("white")
-        st3.SetForegroundColour("white")
-        self.UserButton = xrc.XRCCTRL(self.RightHandSearch, 'UserButton')
-        self.SearchAny = xrc.XRCCTRL(self.RightHandSearch, 'SearchAny')
-        self.SearchName = xrc.XRCCTRL(self.RightHandSearch, 'SearchName')
-        self.SearchBarcode = xrc.XRCCTRL(self.RightHandSearch, 'SearchBarcode')
-        self.SearchPhone = xrc.XRCCTRL(self.RightHandSearch, 'SearchPhone')
-        self.SearchSecure = xrc.XRCCTRL(self.RightHandSearch, 'SearchSecure')
-        self.UserButton.SetForegroundColour("white")
-        self.UserButton.SetBackgroundColour("#00588999") #FIXME: This has no effect
-        self.SearchAny.SetForegroundColour("white")
-        self.SearchName.SetForegroundColour("white")
-        self.SearchBarcode.SetForegroundColour("white")
-        self.SearchPhone.SetForegroundColour("white")
-        self.SearchSecure.SetForegroundColour("white")
+        self.VisitorRight.Hide()
 
-        #Setup input:
-        self.Search = xrc.XRCCTRL(self.RightHandSearch, 'Search')
-        self.SearchButton = xrc.XRCCTRL(self.RightHandSearch, 'SearchButton')
-        self.ExitButton = xrc.XRCCTRL(self.RightHandSearch, 'ExitButton')
-        #self.frame.Bind(wx.EVT_TEXT_ENTER, self.OnSearch, self.Search)
-        self.frame.Bind(wx.EVT_TEXT_ENTER, self.OnSearch, self.Search)
-        self.frame.Bind(wx.EVT_BUTTON, self.ExitSearch, self.ExitButton)
 
         #self.keypadSizer = self.b1.GetContainingSizer()
         #print self.keypadSizer.thisown
@@ -67,26 +55,17 @@ class MyApp(wx.App):
         #Hide all other panels
         self.RightHandSearch.Hide()
         self.LeftHandSearch.Hide()
+        self.RecordPanelLeft.Hide()
+        self.RecordPanelRight.Hide()
 
         #Bind events
         self.frame.Bind(wx.EVT_SIZE, self.on_size)
-        self.frame.Bind(wx.EVT_BUTTON, self.StartCheckin, self.begin)
-        self.frame.Bind(wx.EVT_BUTTON, self.OnAboutBox, self.about)
-        self.frame.Bind(wx.EVT_BUTTON, self.Quit, self.quit)
 
-        self.MainMenu.ClearBackground()
-        self.MainMenu.SetBackgroundColour("#005889")
-        self.RightHandSearch.SetBackgroundColour("#005889")
-        self.frame.SetBackgroundColour("#005889")
-        self.frame.SetBackgroundColour("#005889")
+        self.frame.SetBackgroundColour(themeBackgroundColour)
 
-        wximg = wx.Image('resources/banner.png')
+        wximg = wx.Image(themeBanner)
         wxbanner=wximg.ConvertToBitmap()
         self.bitmap = wx.StaticBitmap(self.frame,-1,wxbanner,(0,0))
-
-        self.MainMenu.SetPosition((0, 180))
-        self.MainMenu.CentreOnParent(dir=wx.HORIZONTAL)
-        self.MainMenu.FitInside()
 
         self.RightHandSearch.SetPosition((0, 180))
         self.RightHandSearch.SetSize((686, 407))
@@ -95,33 +74,126 @@ class MyApp(wx.App):
         self.RightHandSearch.Fit()
         self.RightHandSearch.SetClientSize((self.frame.GetSize()[0]-50, -1))
 
+        self.LeftHandSearch.SetPosition((0, 180))
+        self.LeftHandSearch.SetSize((686, 407))
+        self.LeftHandSearch.CentreOnParent(dir=wx.HORIZONTAL)
+        self.LeftHandSearch.Layout()
+        self.LeftHandSearch.Fit()
+        self.LeftHandSearch.SetClientSize((self.frame.GetSize()[0]-50, -1))
+
+
+        #Put everything in a list for convenience when resizing, etc:
+        self.panels =      [ self.MainMenu,
+                            self.LeftHandSearch,   self.RightHandSearch,
+                            self.RecordPanelLeft,  self.RecordPanelRight ]
+        self.panelsLeft =  [ self.LeftHandSearch,  self.RecordPanelLeft  ]
+        self.panelsRight = [ self.RightHandSearch, self.RecordPanelRight ]
+
+        for i in self.panels:
+            i.SetBackgroundColour(themeBackgroundColour)
+            i.SetForegroundColour(themeTextColour)
+
         self.frame.Centre()
         #self.frame.ShowFullScreen(True)
-        self.begin.SetFocus()
+        self.MainMenu.begin.SetFocus()
         self.frame.Show()
 
     def on_size(self, event):
+        """
+        Event handler for resizing the window.
+        """
         event.Skip()
         size = self.frame.GetSize()
-        position = self.MainMenu.GetPosition()
-        self.MainMenu.SetPosition((size[0], 180))
-        self.MainMenu.CentreOnParent(dir=wx.HORIZONTAL)
-        self.RightHandSearch.CentreOnParent(dir=wx.HORIZONTAL)
-        #self.RightHandSearch.SetClientSize((size[0]-50, -1))
-
+        for i in self.panels:
+            i.SetPosition((size[0], 170))
+            i.CentreOnParent(dir=wx.HORIZONTAL)
         self.frame.Layout()
-        self.bitmap.SetPosition( ( ((size[0]-1020)/2) , 0) )
+        self.bitmap.SetPosition( ( ((size[0]-1020)/2) , 0) ) #Centre the banner
+
+    def setupMainMenu(self):
+        #Make it pretty
+        self.MainMenu.ClearBackground()
+        self.MainMenu.SetBackgroundColour(themeBackgroundColour)
+        self.MainMenu.CentreOnParent(dir=wx.HORIZONTAL)
+        self.MainMenu.FitInside()
+
+        #Setup button items:
+        self.MainMenu.begin = xrc.XRCCTRL(self.MainMenu, 'begin')
+        self.MainMenu.configure = xrc.XRCCTRL(self.MainMenu, 'configure')
+        self.MainMenu.about = xrc.XRCCTRL(self.MainMenu, 'about')
+        self.MainMenu.services = xrc.XRCCTRL(self.MainMenu, 'services')
+        self.MainMenu.activities = xrc.XRCCTRL(self.MainMenu, 'activities')
+        self.MainMenu.quit = xrc.XRCCTRL(self.MainMenu, 'quit')
+
+        #Bind buttons:
+        self.MainMenu.Bind(wx.EVT_BUTTON, self.StartCheckin, self.MainMenu.begin)
+        self.MainMenu.Bind(wx.EVT_BUTTON, self.OnAboutBox, self.MainMenu.about)
+        self.MainMenu.Bind(wx.EVT_BUTTON, self.Quit, self.MainMenu.quit)
+
+    def setupSearch(self):
+        panels = [self.RightHandSearch, self.LeftHandSearch]
+
+        #set text colours:
+        for pane in panels:
+            pane.st1 = xrc.XRCCTRL(pane, 'st1')
+            pane.st2 = xrc.XRCCTRL(pane, 'st2')
+            pane.st3 = xrc.XRCCTRL(pane, 'st3')
+            pane.st1.SetForegroundColour(themeTextColour)
+            pane.st2.SetForegroundColour(themeTextColour)
+            pane.st3.SetForegroundColour(themeTextColour)
+
+        #apply colours to buttons:
+        for pane in panels:
+            pane.UserButton = xrc.XRCCTRL(pane, 'UserButton')
+            pane.SearchAny = xrc.XRCCTRL(pane, 'SearchAny')
+            pane.SearchName = xrc.XRCCTRL(pane, 'SearchName')
+            pane.SearchBarcode = xrc.XRCCTRL(pane, 'SearchBarcode')
+            pane.SearchPhone = xrc.XRCCTRL(pane, 'SearchPhone')
+            pane.SearchSecure = xrc.XRCCTRL(pane, 'SearchSecure')
+            pane.UserButton.SetForegroundColour(themeTextColour)
+            pane.SearchAny.SetForegroundColour(themeTextColour)
+            pane.SearchName.SetForegroundColour(themeTextColour)
+            pane.SearchBarcode.SetForegroundColour(themeTextColour)
+            pane.SearchPhone.SetForegroundColour(themeTextColour)
+            pane.SearchSecure.SetForegroundColour(themeTextColour)
+
+        #Setup inputs:
+        for pane in panels:
+            pane.Search = xrc.XRCCTRL(pane, 'Search')
+            pane.SearchButton = xrc.XRCCTRL(pane, 'SearchButton')
+            pane.ExitButton = xrc.XRCCTRL(pane, 'ExitButton')
+
+            pane.Search.Bind(wx.EVT_TEXT_ENTER, self.OnSearch)
+            self.frame.Bind(wx.EVT_BUTTON, self.OnSearch, pane.SearchButton)
+            self.frame.Bind(wx.EVT_BUTTON, self.ExitSearch, pane.ExitButton)
+
+        #Apply global handles by user configuration.
+        if userHand == 'left':
+            self.Search = self.LeftHandSearch.Search
+        else:
+            self.Search = self.RightHandSearch.Search
+
 
     def OnSearch(self, event):
         print "OK"
 
+    def HideAll(self):
+        """
+        Hides all panels defined in self.panels
+        """
+        for i in self.panels:
+            i.Hide()
+
     def ExitSearch(self, event):
-        self.RightHandSearch.Hide()
+        self.HideAll()
         self.MainMenu.Show()
 
     def StartCheckin(self, event):
         self.MainMenu.Hide()
-        self.RightHandSearch.Show()
+        if userHand == 'left':
+            self.LeftHandSearch.Show()
+        else:
+            self.RightHandSearch.Show()
         self.Search.SetFocus()
 
 
@@ -147,7 +219,7 @@ free software by Zac Sturgeon.
 
         info.SetIcon(wx.Icon(os.path.join('resources', 'taxidi.png'), wx.BITMAP_TYPE_PNG))
         info.SetName('Taxídí')
-        info.SetVersion('0.02-preview')
+        info.SetVersion(__version__)
         info.SetDescription(description)
         info.SetCopyright('© 2012 JKL Tech, Inc')
         info.SetWebSite(('http://jkltech.net/taxidi', 'Project Website'))

@@ -1,0 +1,21 @@
+Background images on panels: http://www.blog.pythonlibrary.org/2010/03/18/wxpython-putting-a-background-image-on-a-panel/
+Use the wx.EVT_ERASE_BACKGROUND signal:
+
+self.MainMenu.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
+self.MainMenu.ClearBackground()
+...
+def OnEraseBackground(self, evt):
+    """
+    Add a picture to the background
+    """
+    # yanked from ColourDB.py
+    dc = evt.GetDC()
+    if not dc:
+        dc = wx.ClientDC(self)
+        rect = self.GetUpdateRegion().GetBox()
+        dc.SetClippingRect(rect)
+    dc.Clear()
+    bmp = wx.Bitmap("resources/air.png")
+    dc.DrawBitmap(bmp, 0, 0)
+
+

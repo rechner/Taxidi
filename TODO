@@ -9,5 +9,25 @@
 - Use spellcheck/gtkspell if available(?) (for generic inputs such as medical tag, memo, etc.)
 - Form for parent link: encode email? Email validation? Session key? OAuth?
 - External parent link to third party databases (ChurchInfo, FellowshipOne)
-
 - Driver to maniuplate (extended) ChurchInfo database instead?
+
+========= The competition =========
+(I promised I wouldn't do this, but curiosity got the better of me.)
+http://www.elexio.com/solutions_by_product/church_child_check_in_software
+http://www.powerchurch.com/products/checkin/?id=320
+http://www.excellerate.com/?F_Checkin
+
+========= Fingerprint support ========
+A GPL library for fingerprint support is here:  It's written in C and so
+we'll need to write bindings in Cython to get it working with Taxidi:
+http://www.freedesktop.org/wiki/Software/fprint/libfprint
+The most suitable hardware might actually be this:
+http://www.freedesktop.org/wiki/Software/fprint/libfprint/uru4000
+It's already inexpensively available at major retail stores and ironically
+has better hardware support for Linux than in Windows.
+
+A Commercial SDK with a reasonable price can be found here: 
+http://store.grfinger.com/Computer-Software/GrFinger-Fingerprint-SDK-4.2
+http://store.grfinger.com/Computer-Software
+but it requires a license for each distribution.  The SDK is available
+for Java or C++, so again bindings will be needed.
