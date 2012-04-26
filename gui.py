@@ -10,8 +10,13 @@ __version__ = '0.70.00-dev'
 
 userHand = 'right'
 
+#TODO: Read these from a theme file
 themeBackgroundColour = '#005889'
 themeTextColour = 'white'
+themeTextDisabled = '#cecece'
+themeToggleColour = '#f07746'
+themeCheckOnColour = '#61bd36'
+themeCheckOffColour = '#d42b1d'
 themeBanner = 'resources/banner.png'
 
 import os
@@ -41,26 +46,26 @@ class MyApp(wx.App):
         self.LeftHandSearch = xrc.XRCCTRL(self.frame, 'LeftHandSearch')
         self.RecordPanelRight = xrc.XRCCTRL(self.frame, 'RecordPanelRight')
         self.RecordPanelLeft = xrc.XRCCTRL(self.frame, 'RecordPanelLeft')
-        self.VisitorRight = xrc.XRCCTRL(self.frame, 'VisitorRight')
-
-        self.setupResultsList()
+        self.VisitorPanelRight = xrc.XRCCTRL(self.frame, 'VisitorRight')
+        self.VisitorPanelLeft = xrc.XRCCTRL(self.frame, 'VisitorLeft')
 
         #Setup panels
         self.setupMainMenu()
         self.setupSearch()
-
-        self.VisitorRight.Hide()
-
+        self.setupRecordPanel()
+        self.setupResultsList()
+        self.setupVisitorPanel()
 
         #self.keypadSizer = self.b1.GetContainingSizer()
         #print self.keypadSizer.thisown
         #self.keypadSizer.Hide(True)
 
         #Hide all other panels
-        self.RightHandSearch.Hide()
-        self.LeftHandSearch.Hide()
-        self.RecordPanelLeft.Hide()
-        self.RecordPanelRight.Hide()
+        #~ self.RightHandSearch.Hide()
+        #~ self.LeftHandSearch.Hide()
+        #~ self.RecordPanelLeft.Hide()
+        #~ self.RecordPanelRight.Hide()
+
 
         #Bind events
         self.frame.Bind(wx.EVT_SIZE, self.on_size)
@@ -71,32 +76,25 @@ class MyApp(wx.App):
         wxbanner=wximg.ConvertToBitmap()
         self.bitmap = wx.StaticBitmap(self.frame,-1,wxbanner,(0,0))
 
-        self.RightHandSearch.SetPosition((0, 180))
-        self.RightHandSearch.SetSize((686, 407))
-        self.RightHandSearch.CentreOnParent(dir=wx.HORIZONTAL)
-        self.RightHandSearch.Layout()
-        self.RightHandSearch.Fit()
-        self.RightHandSearch.SetClientSize((self.frame.GetSize()[0]-50, -1))
-
-        self.LeftHandSearch.SetPosition((0, 180))
-        self.LeftHandSearch.SetSize((686, 407))
-        self.LeftHandSearch.CentreOnParent(dir=wx.HORIZONTAL)
-        self.LeftHandSearch.Layout()
-        self.LeftHandSearch.Fit()
-        self.LeftHandSearch.SetClientSize((self.frame.GetSize()[0]-50, -1))
-
 
         #Put everything in a list for convenience when resizing, etc:
         self.panels =      [ self.MainMenu,
-                            self.LeftHandSearch,   self.RightHandSearch,
-                            self.RecordPanelLeft,  self.RecordPanelRight,
-                            self.ResultsPanel  ]
-        self.panelsLeft =  [ self.LeftHandSearch,  self.RecordPanelLeft  ]
-        self.panelsRight = [ self.RightHandSearch, self.RecordPanelRight ]
+                             self.LeftHandSearch,   self.RightHandSearch,
+                             self.RecordPanelLeft,  self.RecordPanelRight,
+                             self.ResultsPanel,
+                             self.VisitorPanelLeft, self.VisitorPanelRight ]
+        self.panelsLeft =  [ self.LeftHandSearch,  self.RecordPanelLeft,
+                             self.VisitorPanelLeft ]
+        self.panelsRight = [ self.RightHandSearch, self.RecordPanelRight,
+                             self.VisitorPanelRight ]
 
         for i in self.panels:
             i.SetBackgroundColour(themeBackgroundColour)
             i.SetForegroundColour(themeTextColour)
+
+        #Hide all other panels:
+        self.HideAll()
+        self.MainMenu.Show()
 
         self.frame.Centre()
         #self.frame.ShowFullScreen(True)
@@ -162,21 +160,135 @@ class MyApp(wx.App):
             pane.SearchPhone.SetForegroundColour(themeTextColour)
             pane.SearchSecure.SetForegroundColour(themeTextColour)
 
+        #Set initial geometry:
+        for pane in panels:
+            pane.SetPosition((0, 180))
+            pane.SetSize((686, 407))
+            pane.CentreOnParent(dir=wx.HORIZONTAL)
+            pane.Layout()
+            pane.Fit()
+            pane.SetClientSize((self.frame.GetSize()[0]-50, -1))
+
         #Setup inputs:
         for pane in panels:
             pane.Search = xrc.XRCCTRL(pane, 'Search')
             pane.SearchButton = xrc.XRCCTRL(pane, 'SearchButton')
+            pane.VisitorButton = xrc.XRCCTRL(pane, 'VisitorButton')
             pane.ExitButton = xrc.XRCCTRL(pane, 'ExitButton')
 
             pane.Search.Bind(wx.EVT_TEXT_ENTER, self.OnSearch)
             self.frame.Bind(wx.EVT_BUTTON, self.OnSearch, pane.SearchButton)
+            self.frame.Bind(wx.EVT_BUTTON, self.OnVisitor, pane.VisitorButton)
             self.frame.Bind(wx.EVT_BUTTON, self.ExitSearch, pane.ExitButton)
 
         #Apply global handles by user configuration.
         if userHand == 'left':
+            self.SearchPanel = self.LeftHandSearch
             self.Search = self.LeftHandSearch.Search
         else:
+            self.SearchPanel = self.RightHandSearch
             self.Search = self.RightHandSearch.Search
+
+    def setupRecordPanel(self):
+        panels = [self.RecordPanelLeft, self.RecordPanelRight]
+
+        #Add static text controls and set font colour:
+        for pane in panels:
+            #Mutable texts:
+            pane.NameText = xrc.XRCCTRL(pane, 'NameText')
+            pane.SurnameText = xrc.XRCCTRL(pane, 'SurnameText')
+            pane.StatusText = xrc.XRCCTRL(pane, 'StatusText')
+            pane.AgeText = xrc.XRCCTRL(pane, 'AgeText')
+            pane.CreatedText = xrc.XRCCTRL(pane, 'CreatedText')
+            pane.LastSeenText = xrc.XRCCTRL(pane, 'LastSeenText')
+            pane.ModifiedText = xrc.XRCCTRL(pane, 'ModifiedText')
+            pane.CountText = xrc.XRCCTRL(pane, 'CountText')
+
+            pane.NameText.SetForegroundColour(themeTextColour)
+            pane.SurnameText.SetForegroundColour(themeTextColour)
+            pane.StatusText.SetForegroundColour(themeTextDisabled)
+            pane.AgeText.SetForegroundColour(themeTextColour)
+            pane.CreatedText.SetForegroundColour(themeTextColour)
+            pane.LastSeenText.SetForegroundColour(themeTextColour)
+            pane.ModifiedText.SetForegroundColour(themeTextColour)
+            pane.CountText.SetForegroundColour(themeTextColour)
+
+            #Immutable:
+            firstSt = xrc.XRCCTRL(pane, 'firstSt')
+            lastSt = xrc.XRCCTRL(pane, 'lastSt')
+            gradeSt = xrc.XRCCTRL(pane, 'gradeSt')
+            phoneSt = xrc.XRCCTRL(pane, 'phoneSt')
+            carrierSt = xrc.XRCCTRL(pane, 'carrierSt')
+            pagingSt = xrc.XRCCTRL(pane, 'pagingSt')
+            dobSt = xrc.XRCCTRL(pane, 'dobSt')
+            ageSt = xrc.XRCCTRL(pane, 'ageSt')
+            activitySt = xrc.XRCCTRL(pane, 'activitySt')
+            roomSt = xrc.XRCCTRL(pane, 'roomSt')
+            parent1St = xrc.XRCCTRL(pane, 'parent1St')
+            parent2St = xrc.XRCCTRL(pane, 'parent2St')
+            emailSt = xrc.XRCCTRL(pane, 'emailSt')
+            medicalSt = xrc.XRCCTRL(pane, 'medicalSt')
+            notesSt = xrc.XRCCTRL(pane, 'notesSt')
+            createdSt = xrc.XRCCTRL(pane, 'createdSt')
+            lastSeenSt = xrc.XRCCTRL(pane, 'lastSeenSt')
+            modifiedSt = xrc.XRCCTRL(pane, 'modifiedSt')
+            countSt = xrc.XRCCTRL(pane, 'countSt')
+
+            firstSt.SetForegroundColour(themeTextColour)
+            lastSt.SetForegroundColour(themeTextColour)
+            gradeSt.SetForegroundColour(themeTextColour)
+            phoneSt.SetForegroundColour(themeTextColour)
+            carrierSt.SetForegroundColour(themeTextColour)
+            pagingSt.SetForegroundColour(themeTextColour)
+            dobSt.SetForegroundColour(themeTextColour)
+            ageSt.SetForegroundColour(themeTextColour)
+            activitySt.SetForegroundColour(themeTextColour)
+            roomSt.SetForegroundColour(themeTextColour)
+            parent1St.SetForegroundColour(themeTextColour)
+            parent2St.SetForegroundColour(themeTextColour)
+            emailSt.SetForegroundColour(themeTextColour)
+            medicalSt.SetForegroundColour(themeTextColour)
+            notesSt.SetForegroundColour(themeTextColour)
+            createdSt.SetForegroundColour(themeTextColour)
+            lastSeenSt.SetForegroundColour(themeTextColour)
+            modifiedSt.SetForegroundColour(themeTextColour)
+            countSt.SetForegroundColour(themeTextColour)
+
+        #Add buttons and their bindings:
+        for pane in panels:
+            pane.ProfilePicture = xrc.XRCCTRL(pane, 'ProfilePicture')
+            pane.CloseButton = xrc.XRCCTRL(pane, 'CloseButton')
+            pane.CheckinButton = xrc.XRCCTRL(pane, 'CheckinButton')
+            pane.MultiServiceButton = xrc.XRCCTRL(pane, 'MultiServiceButton')
+            pane.NametagToggle = xrc.XRCCTRL(pane, 'NametagToggle')
+            pane.ParentToggle = xrc.XRCCTRL(pane, 'ParentToggle')
+            pane.SaveButton = xrc.XRCCTRL(pane, 'SaveButton')
+            pane.BarcodeButton = xrc.XRCCTRL(pane, 'BarcodeButton')
+            pane.PhoneButton = xrc.XRCCTRL(pane, 'PhoneButton')
+            pane.CustomIDButton = xrc.XRCCTRL(pane, 'CustomIDButton')
+            pane.Parent1Find = xrc.XRCCTRL(pane, 'Parent1Find')
+            pane.Parent2Find = xrc.XRCCTRL(pane, 'Parent2Find')
+            pane.AuthorizePickupButton = xrc.XRCCTRL(pane,
+                'AuthorizePickupButton')
+            pane.DenyPickupButton = xrc.XRCCTRL(pane, 'DenyPickupButton')
+            pane.EmergencyContactButton = xrc.XRCCTRL(pane,
+                'EmergencyContactButton')
+
+            self.frame.Bind(wx.EVT_BUTTON, self.CloseRecordPanel, pane.CloseButton)
+
+        #Set initial geometry:
+        for pane in panels:
+            pane.SetPosition((0, 160))
+            pane.SetClientSize((self.frame.GetSize()[0]-20, -1))
+
+
+    def CloseRecordPanel(self, event):
+        self.RecordPanelLeft.Hide()
+        self.RecordPanelRight.Hide()
+        if self.ResultsPanel.opened:
+            self.ShowResultsPanel()
+        else:
+            self.ShowSearchPanel()
 
 
     def setupResultsList(self):
@@ -221,6 +333,7 @@ class MyApp(wx.App):
 
         #Bind some buttons:
         self.ResultsPanel.Bind(wx.EVT_BUTTON, self.CloseResults, self.resultsPanelClose)
+        self.ResultsPanel.Bind(wx.EVT_BUTTON, self.DisplaySelectedRecord, self.resultsPanelDisplay)
 
         #Create statictexts:
         self.SearchResultText = wx.StaticText(self.ResultsControls,
@@ -266,17 +379,176 @@ class MyApp(wx.App):
         #Hide after set-up
         self.ResultsPanel.Hide()
 
+    def DisplaySelectedRecord(self, event):
+        self.ShowRecordPanel()
+        pass
+
+    def ShowRecordPanel(self):
+        self.HideAll()
+        if userHand == 'left':
+            self.RecordPanelLeft.Show()
+        else:
+            self.RecordPanelRight.Show()
+
     def CloseResults(self, event):
         #Clear the list:
         self.ResultsList.DeleteAllItems()
+        self.ResultsPanel.opened = False #We use this to know if it's open.
         self.ResultsPanel.Hide()
         self.ShowSearchPanel()
 
+    def setupVisitorPanel(self):
+        panels = [self.VisitorPanelRight, self.VisitorPanelLeft]
+        #Add static text controls and set font colour:
+        for pane in panels:
+            #Mutable texts:
+            pane.NameText = xrc.XRCCTRL(pane, 'NameText')
+            pane.SurnameText = xrc.XRCCTRL(pane, 'SurnameText')
+            pane.StatusText = xrc.XRCCTRL(pane, 'StatusText')
+            pane.CreatedText = xrc.XRCCTRL(pane, 'CreatedText')
+            pane.LastSeenText = xrc.XRCCTRL(pane, 'LastSeenText')
+            pane.ModifiedText = xrc.XRCCTRL(pane, 'ModifiedText')
+            pane.CountText = xrc.XRCCTRL(pane, 'CountText')
+
+            pane.NameText.SetForegroundColour(themeTextColour)
+            pane.SurnameText.SetForegroundColour(themeTextColour)
+            pane.StatusText.SetForegroundColour(themeTextDisabled)
+            pane.CreatedText.SetForegroundColour(themeTextColour)
+            pane.LastSeenText.SetForegroundColour(themeTextColour)
+            pane.ModifiedText.SetForegroundColour(themeTextColour)
+            pane.CountText.SetForegroundColour(themeTextColour)
+
+            #~ #Immutable:
+            firstSt = xrc.XRCCTRL(pane, 'firstSt')
+            lastSt = xrc.XRCCTRL(pane, 'lastSt')
+            phoneSt = xrc.XRCCTRL(pane, 'phoneSt')
+            carrierSt = xrc.XRCCTRL(pane, 'carrierSt')
+            pagingSt = xrc.XRCCTRL(pane, 'pagingSt')
+            activitySt = xrc.XRCCTRL(pane, 'activitySt')
+            roomSt = xrc.XRCCTRL(pane, 'roomSt')
+            parent1St = xrc.XRCCTRL(pane, 'parent1St')
+            emailSt = xrc.XRCCTRL(pane, 'emailSt')
+            medicalSt = xrc.XRCCTRL(pane, 'medicalSt')
+            expirySt = xrc.XRCCTRL(pane, 'expirySt')
+            createdSt = xrc.XRCCTRL(pane, 'createdSt')
+            modifiedSt = xrc.XRCCTRL(pane, 'modifiedSt')
+            countSt = xrc.XRCCTRL(pane, 'countSt')
+            newsletterToggleSt = xrc.XRCCTRL(pane, 'newsletterToggleSt')
+            expiresSt = xrc.XRCCTRL(pane, 'expiresSt')
+            neverExpiresSt = xrc.XRCCTRL(pane, 'neverExpireSt')
+            notifyWhenExpiresSt = xrc.XRCCTRL(pane, 'notifyWhenExpiresSt')
+
+
+            firstSt.SetForegroundColour(themeTextColour)
+            lastSt.SetForegroundColour(themeTextColour)
+            phoneSt.SetForegroundColour(themeTextColour)
+            carrierSt.SetForegroundColour(themeTextColour)
+            pagingSt.SetForegroundColour(themeTextColour)
+            activitySt.SetForegroundColour(themeTextColour)
+            roomSt.SetForegroundColour(themeTextColour)
+            parent1St.SetForegroundColour(themeTextColour)
+            emailSt.SetForegroundColour(themeTextColour)
+            medicalSt.SetForegroundColour(themeTextColour)
+            expirySt.SetForegroundColour(themeTextColour)
+            createdSt.SetForegroundColour(themeTextColour)
+            modifiedSt.SetForegroundColour(themeTextColour)
+            countSt.SetForegroundColour(themeTextColour)
+            newsletterToggleSt.SetForegroundColour(themeTextColour)
+            expiresSt.SetForegroundColour(themeTextColour)
+            neverExpiresSt.SetForegroundColour(themeTextColour)
+            notifyWhenExpiresSt.SetForegroundColour(themeTextColour)
+
+        #~ #Add buttons and their bindings:
+        for pane in panels:
+            pane.ProfilePicture = xrc.XRCCTRL(pane, 'ProfilePicture')
+            pane.CloseButton = xrc.XRCCTRL(pane, 'CloseButton')
+            pane.CheckinButton = xrc.XRCCTRL(pane, 'CheckinButton')
+            pane.NametagToggle = xrc.XRCCTRL(pane, 'NametagToggle')
+            pane.ParentToggle = xrc.XRCCTRL(pane, 'ParentToggle')
+            pane.MultiServiceButton = xrc.XRCCTRL(pane, 'MultiServiceButton')
+            pane.PhoneButton = xrc.XRCCTRL(pane, 'PhoneButton')
+            pane.CustomIDButton = xrc.XRCCTRL(pane, 'CustomIDButton')
+            pane.Parent1Find = xrc.XRCCTRL(pane, 'Parent1Find')
+            pane.AddSibling = xrc.XRCCTRL(pane, 'AddSibling')
+            pane.NewsletterToggle = xrc.XRCCTRL(pane, 'NewsletterToggle')
+            pane.NeverExpireToggle = xrc.XRCCTRL(pane, 'NeverExpireToggle')
+            pane.NotifyWhenExpiresToggle = xrc.XRCCTRL(pane, 'NotifyWhenExpiresToggle')
+
+            self.frame.Bind(wx.EVT_BUTTON, self.CloseVisitorPanel, pane.CloseButton)
+
+            pane.NametagToggle.SetBackgroundColour(themeToggleColour) #On by default
+            pane.NametagToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
+            pane.ParentToggle.SetBackgroundColour(themeToggleColour)  #On by default
+            pane.ParentToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
+
+            pane.NewsletterToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleCheckBox)
+            pane.NeverExpireToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleCheckBox)
+            pane.NotifyWhenExpiresToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleCheckBox)
+
+        #Add inputs:
+        for pane in panels:
+            pane.Phone = xrc.XRCCTRL(pane, 'Phone')
+            pane.Phone.Bind(wx.EVT_KILL_FOCUS, self.FormatPhone)
+
+        #Set initial geometry:
+        for pane in panels:
+            pane.SetPosition((0, 160))
+            pane.SetClientSize((self.frame.GetSize()[0]-20, -1))
+        pass
+
+    def FormatPhone(self, event):
+        phone = event.GetEventObject()
+        value = phone.GetValue()
+        if value.isdigit(): #format the number:
+            pass
+
+
+    def ToggleState(self, event):
+        """
+        Changes the background colour of a toggle button to `themeToggleColour` given
+        the toggle's state.  Resets to system's default colour when off. Example usage:
+
+            self.panel.MyToggle(wx.EVT_TOGGLEBUTTON, self.ToggleState)
+
+        Useful to make toggle buttons more visible and easier to use.
+        """
+        btn = event.GetEventObject()
+        if btn.GetValue():
+            btn.SetBackgroundColour(themeToggleColour) #Toggled on
+        else:
+            btn.SetBackgroundColour(wx.NullColor) #Toggled off.
+
+    def ToggleCheckBox(self, event):
+        """
+        Method for making toggle buttons behave more like large checkboxes.
+        Sets the appropriate characters and text colour.
+        """
+        btn = event.GetEventObject()
+        if btn.GetValue(): #Toggled on
+            btn.SetForegroundColour(themeCheckOnColour)
+            btn.SetLabel(u'✔')
+        else: #Toggled off
+            btn.SetForegroundColour(themeCheckOffColour)
+            btn.SetLabel(u'✘')
+
+    def OnVisitor(self, event):
+        self.ShowVisitorPanel()
+
+    def ShowVisitorPanel(self):
+        self.HideAll()
+        if userHand == 'left':
+            self.VisitorPanelLeft.Show()
+        else:
+            self.VisitorPanelRight.Show()
+
+    def CloseVisitorPanel(self, event):
+        #TODO: Clear all the inputs
+        self.HideAll()
+        self.ShowSearchPanel()
 
     def OnSearch(self, event):
         #Throw up some test data:
-        self.HideAll()
-        self.ResultsPanel.Show()
+        self.ShowResultsPanel()
         results = [ {'name':'Johnathan Churchgoer', 'activity':'Explorers',  'room':'Jungle Room', 'status':taxidi.STATUS_NONE},
                 {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_CHECKED_IN},
                 {'name':'Joseph Flint',         'activity':'Outfitters', 'room':u'—',          'status':taxidi.STATUS_CHECKED_OUT, 'checkout-time':'11:46:34'} ]
@@ -304,6 +576,11 @@ class MyApp(wx.App):
         else:
             self.RightHandSearch.Show()
         self.Search.SetFocus()
+
+    def ShowResultsPanel(self):
+        self.ResultsPanel.opened = True
+        self.HideAll()
+        self.ResultsPanel.Show()
 
 
     def OnAboutBox(self, event):
