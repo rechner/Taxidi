@@ -21,9 +21,11 @@ themeBanner = 'resources/banner.png'
 
 import os
 import wx
+import string
 from wx import xrc
 import taxidi
 import SearchResultsList
+import validate
 
 class MyApp(wx.App):
 
@@ -467,6 +469,7 @@ class MyApp(wx.App):
             pane.ParentToggle = xrc.XRCCTRL(pane, 'ParentToggle')
             pane.MultiServiceButton = xrc.XRCCTRL(pane, 'MultiServiceButton')
             pane.PhoneButton = xrc.XRCCTRL(pane, 'PhoneButton')
+            pane.PhoneButton.Disable()
             pane.CustomIDButton = xrc.XRCCTRL(pane, 'CustomIDButton')
             pane.Parent1Find = xrc.XRCCTRL(pane, 'Parent1Find')
             pane.AddSibling = xrc.XRCCTRL(pane, 'AddSibling')
@@ -488,7 +491,20 @@ class MyApp(wx.App):
         #Add inputs:
         for pane in panels:
             pane.Phone = xrc.XRCCTRL(pane, 'Phone')
+            pane.FirstName = xrc.XRCCTRL(pane, 'FirstName')
+            pane.Surname = xrc.XRCCTRL(pane, 'Surname')
+            pane.PhoneCarrier = xrc.XRCCTRL(pane, 'PhoneCarrier')
+            pane.Paging = xrc.XRCCTRL(pane, 'Paging')
+            pane.Activity = xrc.XRCCTRL(pane, 'Activity')
+            pane.Room = xrc.XRCCTRL(pane, 'Room')
+            pane.Medical = xrc.XRCCTRL(pane, 'Medical')
+            pane.Parent1 = xrc.XRCCTRL(pane, 'Parent1')
+            pane.Email = xrc.XRCCTRL(pane, 'Email')
+            pane.Paging.Disable()
+
             pane.Phone.Bind(wx.EVT_KILL_FOCUS, self.FormatPhone)
+            pane.Phone.Bind(wx.EVT_TEXT, self.FormatPhoneLive)
+            pane.Email.Bind(wx.EVT_TEXT, self.FormatEmailLive)
 
         #Set initial geometry:
         for pane in panels:
@@ -496,11 +512,18 @@ class MyApp(wx.App):
             pane.SetClientSize((self.frame.GetSize()[0]-20, -1))
         pass
 
+    def FormatEmailLive(self, event):
+        email = event.GetEventObject()
+        validate.EmailFormat(email)
+
     def FormatPhone(self, event):
         phone = event.GetEventObject()
-        value = phone.GetValue()
-        if value.isdigit(): #format the number:
-            pass
+        validate.PhoneFormat(phone)
+
+    def FormatPhoneLive(self, event):
+        phone = event.GetEventObject()
+        if phone.IsModified():
+            validate.PhoneFormat(phone)
 
 
     def ToggleState(self, event):
