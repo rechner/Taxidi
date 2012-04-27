@@ -549,13 +549,13 @@ class _CUPS:
 
 
 class PrinterError(Exception):
-        def __init__(self, value=''):
-            if value == '':
-                self.error = 'Generic spooling error.'
-            else:
-                self.error = value
-        def __str__(self):
-            return repr(self.error)
+    def __init__(self, value=''):
+        if value == '':
+            self.error = 'Generic spooling error.'
+        else:
+            self.error = value
+    def __str__(self):
+        return repr(self.error)
 
 
 class Main:
