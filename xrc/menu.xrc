@@ -1502,7 +1502,7 @@
                             <option>1</option>
                             <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
-                            <object class="wxTextCtrl" name="Name">
+                            <object class="wxTextCtrl" name="FirstName">
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -1698,7 +1698,7 @@
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxLEFT</flag>
                             <border>5</border>
-                            <object class="wxTextCtrl" name="ID">
+                            <object class="wxTextCtrl" name="Paging">
                                 <style>wxTE_CENTRE|wxTE_NOHIDESEL</style>
                                 <size>140,-1</size>
                                 <font>
@@ -1716,7 +1716,7 @@
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT</flag>
                             <border>5</border>
-                            <object class="wxBitmapButton" name="CustomIDButton">
+                            <object class="wxBitmapButton" name="PagingButton">
                                 <style>wxBU_AUTODRAW|wxNO_BORDER</style>
                                 <bitmap>../resources/icons/automatic-22.png</bitmap>
                                 <default>0</default>
@@ -2522,7 +2522,7 @@
                             <option>1</option>
                             <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
-                            <object class="wxTextCtrl" name="Name">
+                            <object class="wxTextCtrl" name="FirstName">
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -2718,7 +2718,7 @@
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxLEFT</flag>
                             <border>5</border>
-                            <object class="wxTextCtrl" name="ID">
+                            <object class="wxTextCtrl" name="Paging">
                                 <style>wxTE_CENTRE|wxTE_NOHIDESEL</style>
                                 <size>140,-1</size>
                                 <font>
@@ -2736,7 +2736,7 @@
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT</flag>
                             <border>5</border>
-                            <object class="wxBitmapButton" name="CustomIDButton">
+                            <object class="wxBitmapButton" name="PagingButton">
                                 <style>wxBU_AUTODRAW|wxNO_BORDER</style>
                                 <bitmap>../resources/icons/automatic-22.png</bitmap>
                                 <default>0</default>
@@ -3518,7 +3518,7 @@
                             <option>1</option>
                             <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
-                            <object class="wxTextCtrl" name="Name">
+                            <object class="wxTextCtrl" name="FirstName">
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -3676,7 +3676,7 @@
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxLEFT</flag>
                             <border>5</border>
-                            <object class="wxTextCtrl" name="ID">
+                            <object class="wxTextCtrl" name="Paging">
                                 <style>wxTE_CENTRE|wxTE_NOHIDESEL</style>
                                 <size>140,-1</size>
                                 <font>
@@ -3694,7 +3694,7 @@
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT</flag>
                             <border>5</border>
-                            <object class="wxBitmapButton" name="CustomIDButton">
+                            <object class="wxBitmapButton" name="PagingButton">
                                 <style>wxBU_AUTODRAW|wxNO_BORDER</style>
                                 <tooltip>Enter custom paging number</tooltip>
                                 <bitmap>../resources/icons/automatic-22.png</bitmap>
@@ -4431,7 +4431,7 @@
                             <option>1</option>
                             <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
-                            <object class="wxTextCtrl" name="Name">
+                            <object class="wxTextCtrl" name="FirstName">
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -4589,7 +4589,7 @@
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxLEFT</flag>
                             <border>5</border>
-                            <object class="wxTextCtrl" name="ID">
+                            <object class="wxTextCtrl" name="Paging">
                                 <style>wxTE_CENTRE|wxTE_NOHIDESEL</style>
                                 <size>140,-1</size>
                                 <font>
@@ -4607,7 +4607,7 @@
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT</flag>
                             <border>5</border>
-                            <object class="wxBitmapButton" name="CustomIDButton">
+                            <object class="wxBitmapButton" name="PagingButton">
                                 <style>wxBU_AUTODRAW|wxNO_BORDER</style>
                                 <tooltip>Enter custom paging number</tooltip>
                                 <bitmap>../resources/icons/automatic-22.png</bitmap>

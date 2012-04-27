@@ -362,7 +362,6 @@ class MyApp(wx.App):
         controlsSizer.Add(self.resultsPanelPhoto, -1,
             wx.LEFT | wx.BOTTOM | wx.RIGHT, border=10)
         controlsSizer.Add(textBox, wx.ALL, border=10)
-        #~ controlsSizer.AddSpacer(120)
         controlsSizer.AddStretchSpacer()
         controlsSizer.AddGrowableCol(2)
         controlsSizer.SetFlexibleDirection(wx.HORIZONTAL)
@@ -561,8 +560,10 @@ class MyApp(wx.App):
         self.HideAll()
         if userHand == 'left':
             self.VisitorPanelLeft.Show()
+            self.VisitorPanelLeft.FirstName.SetFocus()
         else:
             self.VisitorPanelRight.Show()
+            self.VisitorPanelRight.FirstName.SetFocus()
 
     def CloseVisitorPanel(self, event):
         #TODO: Clear all the inputs
