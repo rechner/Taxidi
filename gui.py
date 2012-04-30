@@ -26,6 +26,7 @@ from wx import xrc
 import taxidi
 import SearchResultsList
 import validate
+import webcam
 
 class MyApp(wx.App):
 
@@ -50,6 +51,7 @@ class MyApp(wx.App):
         self.RecordPanelLeft = xrc.XRCCTRL(self.frame, 'RecordPanelLeft')
         self.VisitorPanelRight = xrc.XRCCTRL(self.frame, 'VisitorRight')
         self.VisitorPanelLeft = xrc.XRCCTRL(self.frame, 'VisitorLeft')
+        self.WebcamPanel = webcam.Panel(self.frame)
 
         #Setup panels
         self.setupMainMenu()
@@ -57,6 +59,7 @@ class MyApp(wx.App):
         self.setupRecordPanel()
         self.setupResultsList()
         self.setupVisitorPanel()
+        self.setupWebcamPanel()
 
         #self.keypadSizer = self.b1.GetContainingSizer()
         #print self.keypadSizer.thisown
@@ -398,6 +401,13 @@ class MyApp(wx.App):
         self.ResultsPanel.Hide()
         self.ShowSearchPanel()
 
+    def setupWebcamPanel(self):
+        self.WebcamPanel.live.suspend()
+        self.WebcamPanel.SetSize((640, 560))
+        self.WebcamPanel.SetPosition((0, 130))
+        self.WebcamPanel.CentreOnParent(dir=wx.HORIZONTAL)
+        self.WebcamPanel.Hide()
+
     def setupVisitorPanel(self):
         panels = [self.VisitorPanelRight, self.VisitorPanelLeft]
         #Add static text controls and set font colour:
@@ -478,6 +488,8 @@ class MyApp(wx.App):
 
             self.frame.Bind(wx.EVT_BUTTON, self.CloseVisitorPanel, pane.CloseButton)
 
+            pane.ProfilePicture.Bind(wx.EVT_BUTTON, self.VisitorPhoto)
+
             pane.NametagToggle.SetBackgroundColour(themeToggleColour) #On by default
             pane.NametagToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
             pane.ParentToggle.SetBackgroundColour(themeToggleColour)  #On by default
@@ -509,6 +521,23 @@ class MyApp(wx.App):
         for pane in panels:
             pane.SetPosition((0, 160))
             pane.SetClientSize((self.frame.GetSize()[0]-20, -1))
+
+    def VisitorPhoto(self, evt):
+        self.HideAll()
+        self.WebcamPanel.Show()
+        self.WebcamPanel.Bind(webcam.CONTROLS_CANCEL, self.VisitorPhotoCancel)
+        self.WebcamPanel.live.resume()
+
+    def VisitorPhotoCancel(self, evt):
+        self.ShowVisitorPanel()
+        self.CloseWebcamPanel()
+
+    def CloseWebcamPanel(self):
+        self.WebcamPanel.Unbind(webcam.CONTROLS_CANCEL)
+        self.WebcamPanel.live.suspend()
+        self.WebcamPanel.Hide()
+
+    def ShowWebcamPanel(self):
         pass
 
     def FormatEmailLive(self, event):

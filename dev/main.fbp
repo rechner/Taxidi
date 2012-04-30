@@ -6030,7 +6030,7 @@
                                                     <property name="flag">wxEXPAND|wxALL</property>
                                                     <property name="proportion">1</property>
                                                     <object class="wxToggleButton" expanded="1">
-                                                        <property name="bg"></property>
+                                                        <property name="bg">wxSYS_COLOUR_ACTIVECAPTION</property>
                                                         <property name="context_help"></property>
                                                         <property name="enabled">1</property>
                                                         <property name="fg"></property>
@@ -6085,7 +6085,7 @@
                                                     <property name="flag">wxEXPAND|wxALL</property>
                                                     <property name="proportion">1</property>
                                                     <object class="wxToggleButton" expanded="1">
-                                                        <property name="bg"></property>
+                                                        <property name="bg">wxSYS_COLOUR_ACTIVECAPTION</property>
                                                         <property name="context_help"></property>
                                                         <property name="enabled">1</property>
                                                         <property name="fg"></property>
@@ -23156,7 +23156,7 @@
                 </object>
             </object>
         </object>
-        <object class="Panel" expanded="1">
+        <object class="Panel" expanded="0">
             <property name="bg"></property>
             <property name="context_help"></property>
             <property name="enabled">1</property>

@@ -1,10 +1,17 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
-#TODO: Implement file system organization, handle uploading image to server.
+#TODO: Read config, optionally disable rectangle.
+#TODO: Create Destroy() method
+#TODO: Implement file system organization, handle converting & uploading image to server.
+#TODO: Use gstreamer for Linux instead of opencv - better performance(?)
 
+import os
 import wx
+import wx.lib.imagebrowser as ib
+from cv import RGB as cvRGB
 from opencv import cv, highgui
+import logging
 import opencv
 
 class LivePanel(wx.Panel):
@@ -16,7 +23,7 @@ class LivePanel(wx.Panel):
     from 0.  Default of -1 will automatically select the first useable device.
     """
     def __init__(self, parent, id, camera=-1):
-        wx.Panel.__init__(self, parent, id)
+        wx.Panel.__init__(self, parent, id, style=wx.NO_BORDER)
         self.camera = camera
         self.cap = highgui.cvCreateCameraCapture(camera)
         wximg = wx.Image('resources/icons/camera-error-128.png')
@@ -42,6 +49,7 @@ class LivePanel(wx.Panel):
         self._error = 0  #worked successfully
         img = opencv.cvGetMat(img)
         cv.cvCvtColor(img, img, cv.CV_BGR2RGB)
+        cv.cvRectangle(img, (80, -1), (560, 480), cvRGB(0, 0, 185), 2)
         self.displayImage(img)
         event.RequestMore()
 
@@ -138,10 +146,12 @@ class LivePanel(wx.Panel):
             pil.save(file+'.jpg')
 
 
-t_CONTROLS_PLAY = wx.NewEventType()
-CONTROLS_PLAY = wx.PyEventBinder(t_CONTROLS_PLAY, 1)
-t_CONTROLS_STOP = wx.NewEventType()
-CONTROLS_STOP = wx.PyEventBinder(t_CONTROLS_STOP, 1)
+t_CONTROLS_SAVE = wx.NewEventType()
+CONTROLS_SAVE = wx.PyEventBinder(t_CONTROLS_SAVE, 1)
+t_CONTROLS_CANCEL = wx.NewEventType()
+CONTROLS_CANCEL = wx.PyEventBinder(t_CONTROLS_CANCEL, 1)
+t_CONTROLS_SELECT_FILE = wx.NewEventType()
+CONTROLS_SELECT_FILE = wx.PyEventBinder(t_CONTROLS_SELECT_FILE, 1)
 
 class Controls(wx.Panel):
     def __init__(self, parent):
@@ -149,13 +159,13 @@ class Controls(wx.Panel):
 
         # Controls
         self.button_play = wx.Button(self, label="Take Picture", size=(140, 50))
-        self.button_stop = wx.Button(self, label="Cancel", size=(140, 50))
+        self.button_cancel = wx.Button(self, label="Cancel", size=(140, 50))
         self.button_file = wx.Button(self, label="Pick File...", size=(290, 30))
 
         # Sizers
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.button_play, 0, wx.ALL, border=5)
-        sizer.Add(self.button_stop, 0, wx.ALL, border=5)
+        sizer.Add(self.button_cancel, 0, wx.ALL, border=5)
 
         bsizer = wx.BoxSizer(wx.VERTICAL)
         bsizer.Add(sizer)
@@ -169,24 +179,37 @@ class Controls(wx.Panel):
 
         # Events
         self.button_play.Bind(wx.EVT_BUTTON, self.Snapshot)
-        self.button_stop.Bind(wx.EVT_BUTTON, self.OnStop)
+        self.button_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
+        self.button_file.Bind(wx.EVT_BUTTON, self.OnFile)
 
     def Snapshot(self, evt):
-        evt2 = wx.PyCommandEvent(t_CONTROLS_PLAY, self.GetId())
+        evt2 = wx.PyCommandEvent(t_CONTROLS_SAVE, self.GetId())
         self.GetEventHandler().ProcessEvent(evt2)
         evt.Skip()
 
-    def OnStop(self, evt):
-        #close
-        evt2 = wx.PyCommandEvent(t_CONTROLS_STOP, self.GetId())
+    def OnCancel(self, evt):
+        evt2 = wx.PyCommandEvent(t_CONTROLS_CANCEL, self.GetId())
         self.GetEventHandler().ProcessEvent(evt2)
         evt.Skip()
+
+    def OnFile(self, evt):
+        evt2 = wx.PyCommandEvent(t_CONTROLS_SELECT_FILE, self.GetId())
+        self.GetEventHandler().ProcessEvent(evt2)
+        evt.Skip()
+
 
 class Panel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+        """
+        This is the master webcam capture panel.
+        """
+        self.log = logging.getLogger(__name__)
+
+        wx.Panel.__init__(self, parent, style=wx.NO_BORDER)
+        self.log.debug('Created webcam capture panel.')
 
         # Controls
+        self.log.debug('Using OpenCV device -1')
         self.live = LivePanel(self, -1) #TODO: Read input number from config
         self.controls  = Controls(self)
 
@@ -197,26 +220,52 @@ class Panel(wx.Panel):
         self.SetSizer(sizer)
 
         # Events
-        self.controls.Bind(CONTROLS_PLAY, self.OnPlay)
-        self.controls.Bind(CONTROLS_STOP, self.OnStop)
+        self.controls.Bind(CONTROLS_SAVE, self.OnSave)
+        self.controls.Bind(CONTROLS_CANCEL, self.OnStop)
+        self.controls.Bind(CONTROLS_SELECT_FILE, self.OnFile)
 
-        self.controls.SetBackgroundColour('#005889')
+        self.controls.SetBackgroundColour('#005889') #TODO: source colours from theme.
         self.live.SetBackgroundColour('#005889')
+        self.SetBackgroundColour('#005889')
 
-        self.toggle = 0
-
-    def OnPlay(self, evt):
+    def OnSave(self, evt):
         self.live.save()
 
     def OnStop(self, evt):
-        if self.toggle:
-            self.live.resume()
-            self.controls.button_stop.SetLabel('Suspend')
+        """
+        Hides the panel and suspends video input.
+        """
+        self.log.debug('Hide webcam panel.')
+        self.Hide()
+        self.live.suspend()
+        evt.Skip()
+
+    def OnFile(self, evt):
+        """
+        Internal event for the CONTROLS_SELECT_FILE event.
+        Read the selection with GetFile().
+        """
+        self.live.suspend()
+        initial_dir = os.getcwd()
+        dlg = ib.ImageDialog(self, initial_dir)
+        dlg.Centre()
+
+        #TODO: Process file selection
+        if dlg.ShowModal() == wx.ID_OK:
+            # show the selected file
+            self.fileSelection = dlg.GetFile()
         else:
-            self.live.suspend()
-            self.controls.button_stop.SetLabel('Resume')
-        self.toggle = not self.toggle
-        #self.input_viewer.stop()
+            self.fileSelection = None
+
+        dlg.Destroy()
+        self.live.resume()
+
+    def GetFile(self):
+        """
+        Retrieve the file selected by the user after the
+        CONTROLS_SELECT_FILE event.
+        """
+        return self.fileSelection
 
 class CameraError(Exception):
     def __init__(self, value=''):
@@ -228,8 +277,9 @@ class CameraError(Exception):
         return repr(self.error)
 
 
-app = wx.PySimpleApp()
-pFrame = wx.Frame(None, -1, "Webcam Viewer", size = (640, 560))
-Panel(pFrame)
-pFrame.Show()
-app.MainLoop()
+if __name__ == '__main__':
+    app = wx.PySimpleApp()
+    pFrame = wx.Frame(None, -1, "Webcam Viewer", size = (640, 560))
+    Panel(pFrame)
+    pFrame.Show()
+    app.MainLoop()
