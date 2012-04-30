@@ -1,0 +1,79 @@
+#;global section
+[config]
+remote = False      #Get settings from a server?
+uri = 'http://localhost/taxidi/config.ini'
+sshhost =
+sshpath =
+user =
+pass =
+key =   #(self-signed) certificate or key file
+name = 'Kiosk1'     #;This instance's name.
+
+[database]
+driver = sqlite     #sqlite, postgres, or mysql
+file = 'users.db'   #for sqlite only
+host =              #[TODO] For Postgres and MySQL
+user =
+pass =
+cipher =
+encrypt =
+sshScript =         #Script to run before connecting; i.e. for SSH tunnelling TCP
+
+[webcam]
+enable = True
+device =            #Device index; 0 for video0, etc. -1 or blank for auto.
+#resolution is hard coded as 640x480.
+cropBars = False    #True to show camera crop region (480x480)
+#Directories to save captured photos to.  Use NFS or Samba for network option.
+#Leave blank if upload = True.
+target = database/photos/  #relative pwd is ~/.taxidi/ or %APPDATA%\\taxidi\\
+thumbs = database/photos/thumbs
+upload = False      #Upload to a server with http?
+url = 'http://localhost/taxidi/api/v1/photo/upload.cgi'         #TODO: upload
+fetch = 'http://localhost/taxidi/api/v1/photo/data/{id}.jpg'    #TODO: remote server
+#if user/pass for photo upload is missing, read from [config] section instead.
+#if undefined there, then raise an error.
+
+[visitor]
+expires = '15 days'  #how long till auto-expire. Leave blank for never.
+paging =             #%id% is replaced with last four digits of phone.
+#^ if left blank, defaults to '%id%'
+
+[interface]
+fullscreen = False
+libnotify = True
+windowX = 1020
+windowY = 700
+theme = 'air'       #Name of the default theme to use.
+
+[logging]
+remote = False      #[TODO] implement remote logging(?)
+host =
+port =
+
+[report]
+enabled = True                          #;enable local file archiving/reporting
+format = csv                            #;csv, txt, or ods (or xls [ughhhh!])
+directory = 'archive/'                  #;where to save local archived reports to
+file = '{hostname}-%Y-%m-%d.csv'        #;formatting follows strftime() directives.
+[[email]]
+to = 'journeytaxidi@gmail.com'
+from = 'journeytaxidi@gmail.com'
+subject = '{hostname} - Taxídí daily check-in report'
+preamble = 'Report attached.'
+host = 'smtp.gmail.com:587'             #;host:port
+TLS = True                              #;Use ssl/tls?
+user = 'journeytaxidi'                  #;SMTP auth username (if required)
+pass = 'paiSh4xelohvae5A'
+[[remote]]
+enabled = False                         #;[TODO] remote logging to an accumulator server? [HTTP(S)]?
+method =
+host =
+user =
+pass =
+
+[authentication]
+method = none          #;none, single, local (using sqlite), database, (unix?, kerberos?, ldap?)
+enforce = True          #;enforce password protection?
+table =                 #;table in SQL database which contains: (user text; hash text;)
+hash = '0d890f617f6b897a3998b9f92138b70fda10a332'  #;SHA password hash for single user mode.
