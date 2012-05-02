@@ -6,7 +6,7 @@
 #TODO: Set radiobutton background colours if possible.
 #TODO: Clean up XML.
 
-__version__ = '0.70.00-dev'
+__version__ = '0.70.01-dev'
 
 userHand = 'right'
 
@@ -21,13 +21,14 @@ themeBanner = 'resources/banner.png'
 
 
 #Start the splash screen thread:
-from splash import *
-splash = SplashScreenThread()
-print "Continue"
+#~ from splash import *
+#~ splash = SplashScreenThread()
+#~ print "Continue"
 
 import os
 import wx
 import string
+import signal
 from wx import xrc
 import taxidi
 import SearchResultsList
@@ -37,11 +38,10 @@ import webcam
 class MyApp(wx.App):
 
     def OnInit(self):
-        print "Debug: Init"
         self.res = xrc.XmlResource(os.path.join('xrc', 'menu.xrc'))
-        print "Debug: Loaded resources"
         self.init_frame()
-        return True
+        os.kill(child_pid, signal.SIGKILL)  #Close the splash
+        return True        
 
     def init_frame(self):
         #Load resources
@@ -113,7 +113,6 @@ class MyApp(wx.App):
         #self.frame.ShowFullScreen(True)
         self.MainMenu.begin.SetFocus()
         self.frame.Show()
-        splash.abort()
 
     def on_size(self, event):
         """
@@ -686,9 +685,50 @@ free software by Zac Sturgeon.
     def Quit(self, event):
         self.frame.Close()
         app.ExitMainLoop()
+        
+#Modified splash screen example from wxPython wiki by Tian Xie.
+class SplashScreen(wx.SplashScreen):
+    """
+    Create a splash screen widget.
+    """
+    def __init__(self, parent=None):
+        # This is a recipe to a the screen.
+        # Modify the following variables as necessary.
+        aBitmap = wx.Image(name = "resources/splash.png").ConvertToBitmap()
+        splashStyle = wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT
+        splashDuration = 10000 # milliseconds
+        # Call the constructor with the above arguments in exactly the
+        # following order.
+        wx.SplashScreen.__init__(self, aBitmap, splashStyle,
+                                 splashDuration, parent)
+        self.Bind(wx.EVT_CLOSE, self.OnExit)
+        wx.Yield()
+#----------------------------------------------------------------------#
 
+    def OnExit(self, evt):
+        self.Hide()
+        self.Close()
+        evt.Skip()  # Make sure the default handler runs too...
 
-print "Run app:"
-app = MyApp(0)
-print "Continue 2"
-app.MainLoop()
+def showSplash():
+    app = wx.PySimpleApp()
+    splash = SplashScreen()
+    splash.Show()
+    app.MainLoop()
+    
+
+if __name__ == '__main__':
+    #Fork the process to open the splash screen.
+    #TODO:  Make this work in WIN32... maybe.  Pref. make it use threading instead.
+    child_pid = os.fork()
+    if child_pid == 0:
+        #If this is the child process, show splash.
+        showSplash()
+    else:
+        #Parent process: Load the program.
+        app = MyApp(0)
+        app.MainLoop()
+
+            
+#~ app = MyApp(0)
+#~ app.MainLoop()
