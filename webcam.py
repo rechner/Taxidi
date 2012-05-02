@@ -9,7 +9,6 @@
 import os
 import wx
 import wx.lib.imagebrowser as ib
-from cv import RGB as cvRGB
 from opencv import cv, highgui
 import logging
 import opencv
@@ -49,7 +48,7 @@ class LivePanel(wx.Panel):
         self._error = 0  #worked successfully
         img = opencv.cvGetMat(img)
         cv.cvCvtColor(img, img, cv.CV_BGR2RGB)
-        cv.cvRectangle(img, (80, -1), (560, 480), cvRGB(0, 0, 185), 2)
+        cv.cvRectangle(img, (80, -1), (560, 480), (205.0, 0.0, 0.0, 0.0), 2)
         self.displayImage(img)
         event.RequestMore()
 

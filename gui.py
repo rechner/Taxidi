@@ -19,6 +19,12 @@ themeCheckOnColour = '#61bd36'
 themeCheckOffColour = '#d42b1d'
 themeBanner = 'resources/banner.png'
 
+
+#Start the splash screen thread:
+from splash import *
+splash = SplashScreenThread()
+print "Continue"
+
 import os
 import wx
 import string
@@ -31,7 +37,9 @@ import webcam
 class MyApp(wx.App):
 
     def OnInit(self):
+        print "Debug: Init"
         self.res = xrc.XmlResource(os.path.join('xrc', 'menu.xrc'))
+        print "Debug: Loaded resources"
         self.init_frame()
         return True
 
@@ -105,6 +113,7 @@ class MyApp(wx.App):
         #self.frame.ShowFullScreen(True)
         self.MainMenu.begin.SetFocus()
         self.frame.Show()
+        splash.abort()
 
     def on_size(self, event):
         """
@@ -112,11 +121,14 @@ class MyApp(wx.App):
         """
         event.Skip()
         size = self.frame.GetSize()
-        for i in self.panels:
+        for i in self.panels: #Apply position to all panels.
             i.SetPosition((size[0], 160))
             i.CentreOnParent(dir=wx.HORIZONTAL)
         self.frame.Layout()
         self.bitmap.SetPosition( ( ((size[0]-1020)/2) , 0) ) #Centre the banner
+        #Custom positions:
+        self.WebcamPanel.CentreOnParent(dir=wx.HORIZONTAL)
+
 
     def setupMainMenu(self):
         #Make it pretty
@@ -676,6 +688,7 @@ free software by Zac Sturgeon.
         app.ExitMainLoop()
 
 
-
+print "Run app:"
 app = MyApp(0)
+print "Continue 2"
 app.MainLoop()
