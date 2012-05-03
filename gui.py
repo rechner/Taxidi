@@ -28,14 +28,17 @@ themeToggleColour = '#f07746'
 themeCheckOnColour = '#61bd36'
 themeCheckOffColour = '#d42b1d'
 themeBanner = 'resources/banner.png'
+themeIconPath = os.path.abspath('resources/icons/')
 
 class MyApp(wx.App):
 
     def OnInit(self):
+        self.log = logging.getLogger(__name__)  #Setup logging
         self.res = xrc.XmlResource(os.path.join('xrc', 'menu.xrc'))
         self.init_frame()
+        self.PhotoStorage = webcam.Storage()
         os.kill(child_pid, signal.SIGKILL)  #Close the splash
-        return True        
+        return True
 
     def init_frame(self):
         #Load resources
@@ -64,16 +67,8 @@ class MyApp(wx.App):
         self.setupResultsList()
         self.setupVisitorPanel()
 
-        #self.keypadSizer = self.b1.GetContainingSizer()
-        #print self.keypadSizer.thisown
-        #self.keypadSizer.Hide(True)
-
-        #Hide all other panels
-        #~ self.RightHandSearch.Hide()
-        #~ self.LeftHandSearch.Hide()
-        #~ self.RecordPanelLeft.Hide()
-        #~ self.RecordPanelRight.Hide()
-
+        #Load generic icons
+        self.NoPhoto128 = wx.Image(os.path.join(themeIconPath, 'no-photo-128.png')).ConvertToBitmap()
 
         #Bind events
         self.frame.Bind(wx.EVT_SIZE, self.on_size)
@@ -530,27 +525,44 @@ class MyApp(wx.App):
             pane.SetPosition((0, 160))
             pane.SetClientSize((self.frame.GetSize()[0]-20, -1))
 
+        #Set local global:
+        if userHand == 'left':
+            self.VisitorPanel = self.VisitorPanelLeft
+        else:
+            self.VisitorPanel = self.VisitorPanelRight
+
     def VisitorPhoto(self, evt):
         if conf.as_bool(conf.config['webcam']['enable']): #Webcam enabled?
             #Hide the visitor panel
             self.HideAll()
             #Show the webcam input panel.
-            self.ShowWebcamPanel(self.VisitorPhotoCancel)
+            self.ShowWebcamPanel(self.VisitorPhotoCancel, self.VisitorPhotoSave)
         else:
             #Just open a file selection dialog.
             path = os.path.abspath(os.path.expanduser(
                 conf.config['webcam']['target']))
-            self.log.debug("Opened ImageDialog.")
             dlg = ib.ImageDialog(self.frame, path)
             dlg.Centre()
             if dlg.ShowModal() == wx.ID_OK:
                 # TODO: Crop picture, save to disc/database
                 print "You Selected File: " + dlg.GetFile()
             else:
-                self.log.debug("> Dialogue cancelled.")
+                #~ self.log.debug("> Dialogue cancelled.")
+                pass
 
             dlg.Destroy()
-            
+
+    def VisitorPhotoSave(self, evt):
+        photo = self.WebcamPanel.GetFile()
+        print "Got photo ID: {0}".format(photo)
+        photoPath = self.PhotoStorage.getThumbnailPath(photo)
+        print "Resolves to file: {0}".format(photoPath)
+        self.ShowVisitorPanel()
+        #Load and display new photo
+        wximg = wx.Image(photoPath)
+        wxbmp = wximg.ConvertToBitmap()
+        self.VisitorPanel.ProfilePicture.SetBitmapLabel(wxbmp)
+        self.CloseWebcamPanel()
 
     def VisitorPhotoCancel(self, evt):
         self.ShowVisitorPanel()
@@ -558,12 +570,14 @@ class MyApp(wx.App):
 
     def CloseWebcamPanel(self):
         self.WebcamPanel.Unbind(webcam.CONTROLS_CANCEL)
+        self.WebcamPanel.Unbind(webcam.CONTROLS_SAVE)
         self.WebcamPanel.live.suspend()
         self.WebcamPanel.Hide()
 
-    def ShowWebcamPanel(self, cancelFunction):
+    def ShowWebcamPanel(self, cancelFunction, saveFunction):
         self.WebcamPanel.Show()
         self.WebcamPanel.Bind(webcam.CONTROLS_CANCEL, cancelFunction)
+        self.WebcamPanel.Bind(webcam.CONTROLS_SAVE, saveFunction)
         self.WebcamPanel.live.resume()
         pass
 
@@ -592,9 +606,15 @@ class MyApp(wx.App):
         """
         btn = event.GetEventObject()
         if btn.GetValue():
-            btn.SetBackgroundColour(themeToggleColour) #Toggled on
+            self.ToggleStateOn(btn) #Toggled on
         else:
-            btn.SetBackgroundColour(wx.NullColor) #Toggled off.
+            self.ToggleStateOff(btn) #Toggled off.
+
+    def ToggleStateOn(self, btn):
+        btn.SetBackgroundColour(themeToggleColour)
+
+    def ToggleStateOff(self, btn):
+        btn.SetBackgroundColour(wx.NullColor)
 
     def ToggleCheckBox(self, event):
         """
@@ -603,11 +623,18 @@ class MyApp(wx.App):
         """
         btn = event.GetEventObject()
         if btn.GetValue(): #Toggled on
-            btn.SetForegroundColour(themeCheckOnColour)
-            btn.SetLabel(u'✔')
+            self.ToggleCheckBoxOn(btn)
         else: #Toggled off
-            btn.SetForegroundColour(themeCheckOffColour)
-            btn.SetLabel(u'✘')
+            self.ToggleCheckBoxOff(btn)
+
+    def ToggleCheckBoxOn(self, btn):
+        btn.SetForegroundColour(themeCheckOnColour)
+        btn.SetLabel(u'✔')
+
+    def ToggleCheckBoxOff(self, btn):
+        btn.SetForegroundColour(themeCheckOffColour)
+        btn.SetLabel(u'✘')
+
 
     def OnVisitor(self, event):
         self.ShowVisitorPanel()
@@ -622,7 +649,36 @@ class MyApp(wx.App):
             self.VisitorPanelRight.FirstName.SetFocus()
 
     def CloseVisitorPanel(self, event):
-        #TODO: Clear all the inputs
+        #Reset displays and inputs
+        self.VisitorPanel.ProfilePicture.SetBitmapLabel(self.NoPhoto128)
+        self.VisitorPanel.FirstName.SetValue('')
+        self.VisitorPanel.Surname.SetValue('')
+        self.VisitorPanel.Phone.SetValue('')
+        self.VisitorPanel.Phone.SetBackgroundColour(wx.NullColour)
+        #~ self.VisitorPanel.PhoneCarrier.SetValue(0)
+        self.VisitorPanel.Paging.SetValue('')
+        #~ self.VisitorPanel.Activity.SetValue(0)
+        self.VisitorPanel.Medical.SetValue('')
+        self.VisitorPanel.Parent1.SetValue('')
+        self.VisitorPanel.Email.SetValue('')
+        self.VisitorPanel.Email.SetBackgroundColour(wx.NullColour)
+
+        #Reset checkboxes:
+        self.VisitorPanel.NametagToggle.SetValue(True)
+        self.ToggleStateOn(self.VisitorPanel.NametagToggle)
+
+        self.VisitorPanel.ParentToggle.SetValue(True)
+        self.ToggleStateOn(self.VisitorPanel.ParentToggle)
+
+        self.VisitorPanel.NewsletterToggle.SetValue(True)
+        self.ToggleCheckBoxOn(self.VisitorPanel.NewsletterToggle)
+
+        self.VisitorPanel.NeverExpireToggle.SetValue(False)
+        self.ToggleCheckBoxOff(self.VisitorPanel.NeverExpireToggle)
+
+        self.VisitorPanel.NotifyWhenExpiresToggle.SetValue(True)
+        self.ToggleCheckBoxOn(self.VisitorPanel.NotifyWhenExpiresToggle)
+
         self.HideAll()
         self.ShowSearchPanel()
 
@@ -701,7 +757,7 @@ free software by Zac Sturgeon.
     def Quit(self, event):
         self.frame.Close()
         app.ExitMainLoop()
-        
+
 #Modified splash screen example from wxPython wiki by Tian Xie.
 class SplashScreen(wx.SplashScreen):
     """
@@ -723,7 +779,7 @@ class SplashScreen(wx.SplashScreen):
 
     def OnExit(self, evt):
         self.Hide()
-        self.Close()
+        #~ self.Close()
         evt.Skip()  # Make sure the default handler runs too...
 
 def showSplash():
@@ -731,7 +787,7 @@ def showSplash():
     splash = SplashScreen()
     splash.Show()
     app.MainLoop()
-    
+
 
 
 
@@ -746,20 +802,22 @@ if __name__ == '__main__':
         #Parent process: Load the program.
         import os
         import string
+        import logging
         from wx import xrc
         import taxidi
         import conf
         import SearchResultsList
         import validate
-        
+
         if conf.as_bool(conf.config['webcam']['enable']) == True:
             import webcam
         else:
             #Import file selection dialogue instead
             import wx.lib.imagebrowser as ib
+            import webcam.Storage #for maniuplating database photos
         app = MyApp(0)
         app.MainLoop()
 
-            
+
 #~ app = MyApp(0)
 #~ app.MainLoop()
