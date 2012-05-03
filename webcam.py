@@ -244,6 +244,15 @@ class Storage:
 
         return record
 
+    def delete(self, record):
+        try:
+            os.unlink(self.getImagePath(record))
+            os.unlink(self.getThumbnailPath(record))
+        except OSError as e:
+            self.log.error(e)
+            self.log.error("Unable to unlink files for photo record {0}".format(record))
+
+
     def _getNextSlotAdvanced(self):  #FIXME
         files = []
         ret = []
@@ -366,13 +375,23 @@ class Panel(wx.Panel):
         self.live.SetBackgroundColour('#005889')
         self.SetBackgroundColour('#005889')
 
+        #Variables:
+        self.overwrite = None
+
     def OnSave(self, evt):
         """
         Internal event for saving an image from the webcam.
         Read the reference ID with GetFile().
         """
-        self.fileSelection = self.live.save()
+        if self.overwrite != None:
+            self.fileSelection = self.live.save(self.overwrite)
+        else:
+            self.fileSelection = self.live.save()
+        self.overwrite = None
         evt.Skip()
+
+    def SetOverwrite(self, record):
+        self.overwrite = record
 
     def OnStop(self, evt):
         """

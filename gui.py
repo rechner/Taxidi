@@ -580,10 +580,16 @@ class MyApp(wx.App):
         else:
             self.VisitorPanel = self.VisitorPanelRight
 
+        #Initialize stored variables:
+        self.VisitorPanel.photo = None
+
     def VisitorPhoto(self, evt):
         if conf.as_bool(conf.config['webcam']['enable']): #Webcam enabled?
             #Hide the visitor panel
             self.HideAll()
+            if self.VisitorPanel.photo != None:
+                #re-take; overwrite the old photo.
+                self.WebcamPanel.SetOverwrite(self.VisitorPanel.photo)
             #Show the webcam input panel.
             self.ShowWebcamPanel(self.VisitorPhotoCancel, self.VisitorPhotoSave)
         else:
@@ -604,6 +610,7 @@ class MyApp(wx.App):
     def VisitorPhotoSave(self, evt):
         photo = self.WebcamPanel.GetFile()
         print "Got photo ID: {0}".format(photo)
+        self.VisitorPanel.photo = photo
         photoPath = self.PhotoStorage.getThumbnailPath(photo)
         print "Resolves to file: {0}".format(photoPath)
         self.ShowVisitorPanel()
@@ -715,18 +722,21 @@ class MyApp(wx.App):
         #Reset checkboxes:
         self.VisitorPanel.NametagToggle.SetValue(True)
         self.ToggleStateOn(self.VisitorPanel.NametagToggle)
-
         self.VisitorPanel.ParentToggle.SetValue(True)
         self.ToggleStateOn(self.VisitorPanel.ParentToggle)
-
         self.VisitorPanel.NewsletterToggle.SetValue(True)
         self.ToggleCheckBoxOn(self.VisitorPanel.NewsletterToggle)
-
         self.VisitorPanel.NeverExpireToggle.SetValue(False)
         self.ToggleCheckBoxOff(self.VisitorPanel.NeverExpireToggle)
-
         self.VisitorPanel.NotifyWhenExpiresToggle.SetValue(True)
         self.ToggleCheckBoxOn(self.VisitorPanel.NotifyWhenExpiresToggle)
+
+        if self.VisitorPanel.photo != None:
+            #remove the orphaned photo:
+            self.PhotoStorage.delete(self.VisitorPanel.photo)
+
+        #Reset variables and events:
+        self.VisitorPanel.photo = None
 
         self.HideAll()
         self.ShowSearchPanel()
