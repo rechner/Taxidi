@@ -2,7 +2,6 @@
 #-*- coding:utf-8 -*-
 
 #TODO: (URGENT DEADLINE 03.05) Create/add multi-service selection panel.
-#TODO: (URGENT DEADLINE 03.05) Handle user clicking the splash screen (causes recursion of fork())
 #TODO: (HIGH   DEADLINE 03.05) Integrate configuration, theme files.
 #TODO: (URGENT DEADLINE 03.05) Add username/password dialogue.
 
@@ -167,6 +166,14 @@ class MyApp(wx.App):
             pane.SearchPhone.SetForegroundColour(themeTextColour)
             pane.SearchSecure.SetForegroundColour(themeTextColour)
 
+        #Radiobutton bindings:
+        for pane in panels:
+            pane.SearchAny.Bind(wx.EVT_RADIOBUTTON, self.searchRadioButtonClick)
+            pane.SearchName.Bind(wx.EVT_RADIOBUTTON, self.searchRadioButtonClick)
+            pane.SearchBarcode.Bind(wx.EVT_RADIOBUTTON, self.searchRadioButtonClick)
+            pane.SearchPhone.Bind(wx.EVT_RADIOBUTTON, self.searchRadioButtonClick)
+            pane.SearchSecure.Bind(wx.EVT_RADIOBUTTON, self.searchRadioButtonClick)
+
         #Set initial geometry:
         for pane in panels:
             pane.SetPosition((0, 180))
@@ -179,14 +186,44 @@ class MyApp(wx.App):
         #Setup inputs:
         for pane in panels:
             pane.Search = xrc.XRCCTRL(pane, 'Search')
+            pane.ClearButton = xrc.XRCCTRL(pane, 'ClearButton')
             pane.SearchButton = xrc.XRCCTRL(pane, 'SearchButton')
             pane.VisitorButton = xrc.XRCCTRL(pane, 'VisitorButton')
             pane.ExitButton = xrc.XRCCTRL(pane, 'ExitButton')
 
             pane.Search.Bind(wx.EVT_TEXT_ENTER, self.OnSearch)
+            pane.ClearButton.Bind(wx.EVT_BUTTON, self.clearSearchEvent)
             self.frame.Bind(wx.EVT_BUTTON, self.OnSearch, pane.SearchButton)
             self.frame.Bind(wx.EVT_BUTTON, self.OnVisitor, pane.VisitorButton)
             self.frame.Bind(wx.EVT_BUTTON, self.ExitSearch, pane.ExitButton)
+
+        #Setup keypad:
+        for pane in panels:
+            pane.b0 = xrc.XRCCTRL(pane, 'b0')
+            pane.b1 = xrc.XRCCTRL(pane, 'b1')
+            pane.b2 = xrc.XRCCTRL(pane, 'b2')
+            pane.b3 = xrc.XRCCTRL(pane, 'b3')
+            pane.b4 = xrc.XRCCTRL(pane, 'b4')
+            pane.b5 = xrc.XRCCTRL(pane, 'b5')
+            pane.b6 = xrc.XRCCTRL(pane, 'b6')
+            pane.b7 = xrc.XRCCTRL(pane, 'b7')
+            pane.b8 = xrc.XRCCTRL(pane, 'b8')
+            pane.b9 = xrc.XRCCTRL(pane, 'b9')
+            pane.clear = xrc.XRCCTRL(pane, 'clear')
+            pane.accept = xrc.XRCCTRL(pane, 'accept')
+
+            pane.b0.Bind(wx.EVT_BUTTON, self.searchKeypadEvent)
+            pane.b1.Bind(wx.EVT_BUTTON, self.searchKeypadEvent)
+            pane.b2.Bind(wx.EVT_BUTTON, self.searchKeypadEvent)
+            pane.b3.Bind(wx.EVT_BUTTON, self.searchKeypadEvent)
+            pane.b4.Bind(wx.EVT_BUTTON, self.searchKeypadEvent)
+            pane.b5.Bind(wx.EVT_BUTTON, self.searchKeypadEvent)
+            pane.b6.Bind(wx.EVT_BUTTON, self.searchKeypadEvent)
+            pane.b7.Bind(wx.EVT_BUTTON, self.searchKeypadEvent)
+            pane.b8.Bind(wx.EVT_BUTTON, self.searchKeypadEvent)
+            pane.b9.Bind(wx.EVT_BUTTON, self.searchKeypadEvent)
+            pane.clear.Bind(wx.EVT_BUTTON, self.clearSearchEvent)
+            pane.accept.Bind(wx.EVT_BUTTON, self.OnSearch)
 
         #Apply global handles by user configuration.
         if userHand == 'left':
@@ -196,7 +233,20 @@ class MyApp(wx.App):
             self.SearchPanel = self.RightHandSearch
             self.Search = self.RightHandSearch.Search
 
-    #TODO: (URGENT DEADLINE 03.05) Add basic record panel UI functionality.
+    def searchKeypadEvent(self, event):
+        button = event.GetEventObject()
+        self.Search.AppendText(button.GetLabel())
+        self.Search.SetFocus()
+        self.Search.SetInsertionPointEnd()
+
+    def clearSearchEvent(self, event):
+        self.Search.Clear()
+        self.Search.SetFocus()
+
+    def searchRadioButtonClick(self, event):
+        self.Search.SetFocus()
+
+    #TODO: (URGENT DEADLINE 04.05) Add basic record panel UI functionality.
     def setupRecordPanel(self):
         panels = [self.RecordPanelLeft, self.RecordPanelRight]
 
@@ -282,13 +332,12 @@ class MyApp(wx.App):
             pane.EmergencyContactButton = xrc.XRCCTRL(pane,
                 'EmergencyContactButton')
 
-            self.frame.Bind(wx.EVT_BUTTON, self.CloseRecordPanel, pane.CloseButton)
+            pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseRecordPanel)
 
         #Set initial geometry:
         for pane in panels:
             pane.SetPosition((0, 160))
             pane.SetClientSize((self.frame.GetSize()[0]-20, -1))
-
 
     def CloseRecordPanel(self, event):
         self.RecordPanelLeft.Hide()
@@ -489,7 +538,7 @@ class MyApp(wx.App):
             pane.NeverExpireToggle = xrc.XRCCTRL(pane, 'NeverExpireToggle')
             pane.NotifyWhenExpiresToggle = xrc.XRCCTRL(pane, 'NotifyWhenExpiresToggle')
 
-            self.frame.Bind(wx.EVT_BUTTON, self.CloseVisitorPanel, pane.CloseButton)
+            pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseVisitorPanel)
 
             pane.ProfilePicture.Bind(wx.EVT_BUTTON, self.VisitorPhoto)
 
@@ -711,6 +760,7 @@ class MyApp(wx.App):
             self.LeftHandSearch.Show()
         else:
             self.RightHandSearch.Show()
+        self.Search.Clear()
         self.Search.SetFocus()
 
     def ShowResultsPanel(self):
