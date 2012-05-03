@@ -13,6 +13,8 @@ from opencv import cv, highgui
 import logging
 import opencv
 import conf
+from itertools import *
+from operator import itemgetter
 
 class LivePanel(wx.Panel):
     """
@@ -29,6 +31,7 @@ class LivePanel(wx.Panel):
         wximg = wx.Image('resources/icons/camera-error-128.png')
         self.errorBitmap = wximg.ConvertToBitmap()
         self._error = 0
+        self.store = Storage()
         self.Bind(wx.EVT_IDLE, self.onIdle)
 
     def onIdle(self, event):
@@ -133,30 +136,152 @@ class LivePanel(wx.Panel):
         self.Unbind(wx.EVT_LEFT_UP)
         self.open(self.camera)
 
-    def save(self, file='out'):
+    def save(self, record=-1):
         """
-        Captures, crops, and saves a frame.  Pass the file name to save as.
-        Filetype is determined from extension (JPG if none specified).
+        Captures, crops, and saves a webcam frame.  Pass an explicit record number
+        otherwise writes to next in sequence.  Returns zero-padded photo reference ID.
         """
         img = highgui.cvQueryFrame(self.cap)
         img = opencv.cvGetMat(img)
         #No BGR => RGB conversion needed for PIL output.
         pil = opencv.adaptors.Ipl2PIL(img)  #convert to a PIL
-        pil = pil.crop((80, 0, 560, 480))
-        pil.show()
-        try:
-            pil.save(file)
-        except KeyError:
-            pil.save(file+'.jpg')
+        #~ pil = pil.crop((80, 0, 560, 480))
+        #~ pil.show()
+
+        return self.store.savePIL(pil, record)
+        #~ try:
+            #~ pil.save(file)
+        #~ except KeyError:
+            #~ pil.save(file+'.jpg')
 
 class Storage:
+    """
+    Crops, resizes, stores, and retrieves images for the database.
+    """
     def __init__(self):
+        self.log = logging.getLogger(__name__)
+        #~ self.log.setLevel(logging.DEBUG)
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('[%(asctime)s] %(module)-6s  [%(levelname)-8s]  %(message)s')
+        ch.setFormatter(formatter)
+        self.log.addHandler(ch)
+
+        self.log.debug("Created webcam storage instance.")
+
         store = conf.config['webcam']['store'].lower()
         if store == 'local':
+            self.log.debug("Configured for local storage.")
             self.store = 'local'
-            self.target = os.chdir(os.path.join(conf.homepath, '.taxidi'))
+            olddir = os.getcwd()
+            os.chdir(os.path.join(conf.homepath, '.taxidi'))
+            self.target = os.path.abspath(conf.config['webcam']['target'])
+            self.thumbs = os.path.abspath(conf.config['webcam']['thumbs'])
+            os.chdir(olddir)  #Switch back to old cwd
+
+            #See if target directories exist, and create if needed.
+            for target in [self.target, self.thumbs]:
+                if not os.path.exists(target):
+                    #Doesn't exist, try to create:
+                    self.log.warn("Directory {0} doesn't exist. Attempting to create...".format(target))
+                    try:
+                        os.makedirs(target)
+                    except error as e:
+                        self.log.error(e)
+                        self.log.error("Directory already exists or permission denied when creating directory.")
+                        raise
+
+            self.log.debug("Target: {0}".format(self.target))
+            self.log.debug("Thumbs: {0}".format(self.thumbs))
+
         elif store == 'remote':
-            self.store = 'remote'
+            self.store = 'remote' #TODO remote storage (low priority)
+
+    def savePIL(self, image, record=-1):
+        """
+        Saves an image in PIL format, cropping & resizing if needed, and creating
+        a thumbnail.
+        `image`: A valid PIL instance.
+        `record`: Explicit id (integer) to save the image to (as a reference).
+
+        All other values are determined from [webcam] section in config.
+        If record is -1, the id will be automatically determined by the first
+        available slot.  Returns zero-padded ID as string.
+        """
+        print image.size
+        if ((image.size[0] != 640) and (image.size[1] != 480)) or \
+           ((image.size[0] != 480) and (image.size[1] != 480)):
+            #Scale up/down:
+            print "Scale"
+            image.thumbnail((480, 480))
+
+        if image.size != (480, 480):
+            #Crop it down.
+            print "Crop"
+            image = image.crop((80, 0, 560, 480))
+
+        if record >= 0: #Explicit file
+            record = str(record).zfill(6)
+        else:  #Determine automatically
+            record = str(self._getNextSlot()).zfill(6)
+
+        filename = os.path.join(self.target, record + '.jpg')
+        self.log.debug("Saving image as {0}...".format(filename))
+        try:
+            image.save(filename)
+        except:
+            self.log.error("Unable to save image!")
+            raise
+
+        #Create & save thumbnails:
+        image.thumbnail((128, 128))
+        filename = os.path.join(self.thumbs, record + '.jpg')
+        try:
+            image.save(filename)
+        except:
+            self.log.error("Unable to save image!")
+            raise
+
+        return record
+
+    def _getNextSlotAdvanced(self):  #FIXME
+        files = []
+        ret = []
+        for dirname, dirnames, filenames in os.walk(self.target):
+            for name in filenames:
+                files.append(int(name.strip('.jpg')))
+        files.sort()
+        for k, g in groupby(enumerate(files), lambda (i, x): i - x):
+            ret.append(map(itemgetter(1), g))
+        return int(ret[1][-1]) + 1
+
+    def _getNextSlot(self):
+        files = []
+        for filename in os.listdir(self.target):
+            if filename.endswith('.jpg'):
+                files.append(int(filename.strip('.jpg')))
+        files.sort()
+        if len(files) == 0:
+            return 0
+        return int(files[-1]) + 1
+
+
+
+
+    def getImagePath(self, record):
+        """
+        Returns the full file path for a photo record (local).
+        """
+        return os.path.join(self.target, str(int(record)).zfill(6) + '.jpg')
+
+    def getThumbnailPath(self, record):
+        """
+        Returns full file path for a photo record thumbnail (local).
+        """
+        return os.path.join(self.thumbs, str(int(record)).zfill(6) + '.jpg')
+
+
+
 
 t_CONTROLS_SAVE = wx.NewEventType()
 CONTROLS_SAVE = wx.PyEventBinder(t_CONTROLS_SAVE, 1)
@@ -242,13 +367,18 @@ class Panel(wx.Panel):
         self.SetBackgroundColour('#005889')
 
     def OnSave(self, evt):
-        self.live.save()
+        """
+        Internal event for saving an image from the webcam.
+        Read the reference ID with GetFile().
+        """
+        self.fileSelection = self.live.save()
+        evt.Skip()
 
     def OnStop(self, evt):
         """
         Hides the panel and suspends video input.
         """
-        self.log.debug('Hide webcam panel.')
+        self.log.debug('Hide & suspend webcam panel.')
         self.Hide()
         self.live.suspend()
         evt.Skip()
@@ -280,14 +410,6 @@ class Panel(wx.Panel):
         """
         return self.fileSelection
 
-
-class Process:
-    """
-    Class for processing, storing, and retrieving photos for
-    use with Taxidi.
-    """
-    def __init__():
-        pass
 
 
 class CameraError(Exception):
