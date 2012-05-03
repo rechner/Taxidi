@@ -20,12 +20,13 @@ encrypt =
 sshScript =         #Script to run before connecting; i.e. for SSH tunnelling TCP
 
 [webcam]
-enable = True
-device =            #Device index; 0 for video0, etc. -1 or blank for auto.
+enable = False
+device = -1           #Device index; 0 for video0, etc. -1 or blank for auto.
 #resolution is hard coded as 640x480.
-cropBars = False    #True to show camera crop region (480x480)
+cropBars = True      #True to show camera crop region (480x480)
 #Directories to save captured photos to.  Use NFS or Samba for network option.
 #Leave blank if upload = True.
+store = local    #Either local (file, NFS) or remote (http).
 target = database/photos/  #relative pwd is ~/.taxidi/ or %APPDATA%\\taxidi\\
 thumbs = database/photos/thumbs
 upload = False      #Upload to a server with http?

@@ -33,6 +33,8 @@ unix = ['Linux', 'linux2', 'Darwin']
 wkhtmltopdf = '/usr/bin/wkhtmltopdf' #path to wkhtmltopdf binary
 #TODO: Option to select native or builtin wkhtmltopdf
 
+#TODO: Determine whether to use ~/.taxidi/resources/ (config.ini in ~/.taxidi/) 
+#      or $PWD/resources/ (config.ini in pwd).
 nametags = os.path.join('resources', 'nametag') #path where html can be found.
 #For distribution this may be moved to /usr/share/taxidi/ in UNIX, but should be
 #copied to user's ~/.taxidi/ as write access is needed.

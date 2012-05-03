@@ -1,10 +1,20 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
+#TODO: (URGENT DEADLINE 03.05) Create/add multi-service selection panel.
+#TODO: (URGENT DEADLINE 03.05) Handle user clicking the splash screen (causes recursion of fork())
+#TODO: (HIGH   DEADLINE 03.05) Integrate configuration, theme files.
+#TODO: (URGENT DEADLINE 03.05) Add username/password dialogue.
+
 #TODO: Fix layout issues.  (Held together with duct tape right now.)
-#TODO: Theme files.  Colours hard coded for now.
+#TODO: Theme files.  Colours hard coded for now. (Probably something for conf.py)
 #TODO: Set radiobutton background colours if possible.
 #TODO: Clean up XML.
+
+#Imports for splash screen
+import wx
+import os
+import signal
 
 __version__ = '0.70.01-dev'
 
@@ -18,22 +28,6 @@ themeToggleColour = '#f07746'
 themeCheckOnColour = '#61bd36'
 themeCheckOffColour = '#d42b1d'
 themeBanner = 'resources/banner.png'
-
-
-#Start the splash screen thread:
-#~ from splash import *
-#~ splash = SplashScreenThread()
-#~ print "Continue"
-
-import os
-import wx
-import string
-import signal
-from wx import xrc
-import taxidi
-import SearchResultsList
-import validate
-import webcam
 
 class MyApp(wx.App):
 
@@ -59,7 +53,9 @@ class MyApp(wx.App):
         self.RecordPanelLeft = xrc.XRCCTRL(self.frame, 'RecordPanelLeft')
         self.VisitorPanelRight = xrc.XRCCTRL(self.frame, 'VisitorRight')
         self.VisitorPanelLeft = xrc.XRCCTRL(self.frame, 'VisitorLeft')
-        self.WebcamPanel = webcam.Panel(self.frame)
+        if conf.as_bool(conf.config['webcam']['enable']):
+            self.WebcamPanel = webcam.Panel(self.frame)
+            self.setupWebcamPanel()
 
         #Setup panels
         self.setupMainMenu()
@@ -67,7 +63,6 @@ class MyApp(wx.App):
         self.setupRecordPanel()
         self.setupResultsList()
         self.setupVisitorPanel()
-        self.setupWebcamPanel()
 
         #self.keypadSizer = self.b1.GetContainingSizer()
         #print self.keypadSizer.thisown
@@ -126,7 +121,8 @@ class MyApp(wx.App):
         self.frame.Layout()
         self.bitmap.SetPosition( ( ((size[0]-1020)/2) , 0) ) #Centre the banner
         #Custom positions:
-        self.WebcamPanel.CentreOnParent(dir=wx.HORIZONTAL)
+        if conf.as_bool(conf.config['webcam']['enable']):
+            self.WebcamPanel.CentreOnParent(dir=wx.HORIZONTAL)
 
 
     def setupMainMenu(self):
@@ -205,6 +201,7 @@ class MyApp(wx.App):
             self.SearchPanel = self.RightHandSearch
             self.Search = self.RightHandSearch.Search
 
+    #TODO: (URGENT DEADLINE 03.05) Add basic record panel UI functionality.
     def setupRecordPanel(self):
         panels = [self.RecordPanelLeft, self.RecordPanelRight]
 
@@ -534,10 +531,26 @@ class MyApp(wx.App):
             pane.SetClientSize((self.frame.GetSize()[0]-20, -1))
 
     def VisitorPhoto(self, evt):
-        self.HideAll()
-        self.WebcamPanel.Show()
-        self.WebcamPanel.Bind(webcam.CONTROLS_CANCEL, self.VisitorPhotoCancel)
-        self.WebcamPanel.live.resume()
+        if conf.as_bool(conf.config['webcam']['enable']): #Webcam enabled?
+            #Hide the visitor panel
+            self.HideAll()
+            #Show the webcam input panel.
+            self.ShowWebcamPanel(self.VisitorPhotoCancel)
+        else:
+            #Just open a file selection dialog.
+            path = os.path.abspath(os.path.expanduser(
+                conf.config['webcam']['target']))
+            self.log.debug("Opened ImageDialog.")
+            dlg = ib.ImageDialog(self.frame, path)
+            dlg.Centre()
+            if dlg.ShowModal() == wx.ID_OK:
+                # TODO: Crop picture, save to disc/database
+                print "You Selected File: " + dlg.GetFile()
+            else:
+                self.log.debug("> Dialogue cancelled.")
+
+            dlg.Destroy()
+            
 
     def VisitorPhotoCancel(self, evt):
         self.ShowVisitorPanel()
@@ -548,7 +561,10 @@ class MyApp(wx.App):
         self.WebcamPanel.live.suspend()
         self.WebcamPanel.Hide()
 
-    def ShowWebcamPanel(self):
+    def ShowWebcamPanel(self, cancelFunction):
+        self.WebcamPanel.Show()
+        self.WebcamPanel.Bind(webcam.CONTROLS_CANCEL, cancelFunction)
+        self.WebcamPanel.live.resume()
         pass
 
     def FormatEmailLive(self, event):
@@ -717,6 +733,8 @@ def showSplash():
     app.MainLoop()
     
 
+
+
 if __name__ == '__main__':
     #Fork the process to open the splash screen.
     #TODO:  Make this work in WIN32... maybe.  Pref. make it use threading instead.
@@ -726,6 +744,19 @@ if __name__ == '__main__':
         showSplash()
     else:
         #Parent process: Load the program.
+        import os
+        import string
+        from wx import xrc
+        import taxidi
+        import conf
+        import SearchResultsList
+        import validate
+        
+        if conf.as_bool(conf.config['webcam']['enable']) == True:
+            import webcam
+        else:
+            #Import file selection dialogue instead
+            import wx.lib.imagebrowser as ib
         app = MyApp(0)
         app.MainLoop()
 

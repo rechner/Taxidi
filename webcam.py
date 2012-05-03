@@ -12,6 +12,7 @@ import wx.lib.imagebrowser as ib
 from opencv import cv, highgui
 import logging
 import opencv
+import conf
 
 class LivePanel(wx.Panel):
     """
@@ -48,7 +49,9 @@ class LivePanel(wx.Panel):
         self._error = 0  #worked successfully
         img = opencv.cvGetMat(img)
         cv.cvCvtColor(img, img, cv.CV_BGR2RGB)
-        cv.cvRectangle(img, (80, -1), (560, 480), (205.0, 0.0, 0.0, 0.0), 2)
+        if conf.as_bool(conf.config['webcam']['cropBars']):
+            #Draw cropping region
+            cv.cvRectangle(img, (80, -1), (560, 480), (205.0, 0.0, 0.0, 0.0), 2)
         self.displayImage(img)
         event.RequestMore()
 
@@ -132,18 +135,28 @@ class LivePanel(wx.Panel):
 
     def save(self, file='out'):
         """
-        Captures and saves a frame.  Pass the file name to save as.
+        Captures, crops, and saves a frame.  Pass the file name to save as.
         Filetype is determined from extension (JPG if none specified).
         """
         img = highgui.cvQueryFrame(self.cap)
         img = opencv.cvGetMat(img)
         #No BGR => RGB conversion needed for PIL output.
         pil = opencv.adaptors.Ipl2PIL(img)  #convert to a PIL
+        pil = pil.crop((80, 0, 560, 480))
+        pil.show()
         try:
             pil.save(file)
         except KeyError:
             pil.save(file+'.jpg')
 
+class Storage:
+    def __init__(self):
+        store = conf.config['webcam']['store'].lower()
+        if store == 'local':
+            self.store = 'local'
+            self.target = os.chdir(os.path.join(conf.homepath, '.taxidi'))
+        elif store == 'remote':
+            self.store = 'remote'
 
 t_CONTROLS_SAVE = wx.NewEventType()
 CONTROLS_SAVE = wx.PyEventBinder(t_CONTROLS_SAVE, 1)
@@ -208,8 +221,9 @@ class Panel(wx.Panel):
         self.log.debug('Created webcam capture panel.')
 
         # Controls
-        self.log.debug('Using OpenCV device -1')
-        self.live = LivePanel(self, -1) #TODO: Read input number from config
+        device = int(conf.config['webcam']['device'])
+        self.log.debug('Using OpenCV device {0}'.format(device))
+        self.live = LivePanel(self, device)
         self.controls  = Controls(self)
 
         # Sizer
@@ -265,6 +279,16 @@ class Panel(wx.Panel):
         CONTROLS_SELECT_FILE event.
         """
         return self.fileSelection
+
+
+class Process:
+    """
+    Class for processing, storing, and retrieving photos for
+    use with Taxidi.
+    """
+    def __init__():
+        pass
+
 
 class CameraError(Exception):
     def __init__(self, value=''):

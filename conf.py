@@ -7,6 +7,8 @@
 # If ~/.taxidi/resources/ doesn't exist,  it is created with what's in pwd.
 # Everything just happens on import.
 
+#TODO: (HIGH DEADLINE 03.05) Implement basic theme files.
+
 #TODO: Implement fetch config from http(s) or sftp.
 #TODO: Implement validation.
 
@@ -14,9 +16,10 @@
 Example:
 
 import conf
-if conf.status == conf.CREATED_NEW:
+configHandler = conf.Config()
+if configHandler.status == conf.CREATED_NEW:
     #show warning and/or first run dialogue.
-elif conf.status == conf.ERROR_NOT_WRITEABLE:
+elif configHandler.status == conf.ERROR_NOT_WRITEABLE:
     #show error dialogue & quit.
     print "ERROR: Could not write new config at %s." % conf.inifile
 
@@ -38,78 +41,83 @@ import logging
 CREATED_NEW = 1  #Signal that A new config file was created. (First run dialogue, etc.)
 ERROR_NOT_WRITEABLE = 2  #The destination couldn't be written to.
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+global homepath
+homepath = os.getenv('USERPROFILE') or os.getenv('HOME')
 
-global homePath
-homePath = os.getenv('USERPROFILE') or os.getenv('HOME')
-pwd = os.path.abspath(os.path.dirname(os.path.join(sys.argv[0])))
-share = pwd  #for now.  Future: /usr/share/taxidi/ (UNIX) AppData folder (WIN32)
+class Config:
+    def __init__(self):
+        
+        self.log = logging.getLogger(__name__)
+        #~ self.log.setLevel(logging.DEBUG)
+        self.homepath = homepath
+        pwd = os.path.abspath(os.path.dirname(os.path.join(sys.argv[0])))
+        share = pwd  #for now.  Future: /usr/share/taxidi/ (UNIX) AppData folder (WIN32)
 
-#Try to read from present directory first:
-inifile = os.path.join(pwd, 'config.ini')
-logger.debug('Trying local config path {0}...'.format(inifile))
-try:
-    _f = open(inifile)
-    _f.close()
-except IOError:
-    logger.debug('No config.ini in present working directory.')
-
-    #Try to read from home folder instead:
-    appPath = os.path.join(homePath, '.taxidi')
-    inifile = os.path.join(appPath, 'config.ini')
-    logger.debug('Trying config path {0}...'.format(appPath))
-    try: #See if file exists
-        _f = open(inifile)
-        _f.close()
-    except IOError as _e:
-        logger.warning("Configuration doesn't exist.")
-        logger.error(_e)
-
-        if not os.path.exists(appPath): #Check if ~/.taxidi/ exists.
-            logger.warning("Local path didn't exist.  Creating with default values...")
-            try:
-                os.makedirs(appPath)  #Create application settings folder
-            except error as _e:
-                logger.error(_e)
-
-        #create the config by copying template from localdir.
-        #(may change to /usr/share/taxidi/ for distribution(?))
-        logger.debug('Creating default configuration....')
+        #Try to read from present directory first:
+        inifile = os.path.join(pwd, 'config.ini')
+        self.log.debug('Trying local config path {0}...'.format(inifile))
         try:
-            shutil.copyfile(os.path.join(pwd, 'config.ini.template'), inifile)
-            logger.debug('Created config at {0}'.format(inifile))
-            status = CREATED_NEW
-        except IOError as _e:
-            logger.error(_e)
-            logger.error('is destination writeable?')
-            status = ERROR_NOT_WRITEABLE
-
-resourcesPath = os.path.join(homePath, '.taxidi', 'resources')
-_resources = ['nametag', 'themes']  #folders to check for/copy
-for _folder in _resources:
-    if not os.path.exists(_folder):
-        #Home doesn't exist: copy them:
-        try:
-            logger.debug('Copying {0} resources from {1} to {2}...'
-                .format(_folder, share, resourcesPath))
-            shutil.copytree(os.path.join(share, 'resources', _folder),
-                os.path.join(resourcesPath, _folder))
-        except shutil.Error as _e:
-            logger.error(_e)
-            logger.error('Error while copying resource.')
-        except os.error as _e:
-            if _e.errno == 17:
-                logger.warning('Lower tree directory exists.')
-            else:
-                logger.error(_e)
-
-logger.info("Reading configuration from '{0}'".format(inifile))
-config = configobj.ConfigObj(inifile, encoding='utf-8')
+            f = open(inifile)
+            f.close()
+        except IOError:
+            self.log.debug('No config.ini in present working directory.')
+        
+            #Try to read from home folder instead:
+            appPath = os.path.join(self.homepath, '.taxidi')
+            inifile = os.path.join(appPath, 'config.ini')
+            self.log.debug('Trying config path {0}...'.format(appPath))
+            try: #See if file exists
+                _f = open(inifile)
+                _f.close()
+            except IOError as _e:
+                self.log.warning("Configuration doesn't exist.")
+                self.log.error(_e)
+        
+                if not os.path.exists(appPath): #Check if ~/.taxidi/ exists.
+                    self.log.warning("Local path didn't exist.  Creating with default values...")
+                    try:
+                        os.makedirs(appPath)  #Create application settings folder
+                    except error as _e:
+                        self.log.error(_e)
+        
+                #create the config by copying template from localdir.
+                #(may change to /usr/share/taxidi/ for distribution(?))
+                self.log.debug('Creating default configuration....')
+                try:
+                    shutil.copyfile(os.path.join(pwd, 'config.ini.template'), inifile)
+                    self.log.debug('Created config at {0}'.format(inifile))
+                    self.status = CREATED_NEW
+                except IOError as _e:
+                    self.log.error(_e)
+                    self.log.error('is destination writeable?')
+                    self.status = ERROR_NOT_WRITEABLE
+    
+            resourcesPath = os.path.join(self.homepath, 
+                '.taxidi', 'resources')
+            _resources = ['nametag', 'themes']  #folders to check for/copy
+            for _folder in _resources:
+                if not os.path.exists(_folder):
+                    #Home doesn't exist: copy them:
+                    try:
+                        self.log.debug('Copying {0} resources from {1} to {2}...'
+                            .format(_folder, share, resourcesPath))
+                        shutil.copytree(os.path.join(share, 'resources', _folder),
+                            os.path.join(resourcesPath, _folder))
+                    except shutil.Error as _e:
+                        self.log.error(_e)
+                        self.log.error('Error while copying resource.')
+                    except os.error as _e:
+                        if _e.errno == 17:
+                            self.log.warning('Lower tree directory exists.')
+                        else:
+                            self.log.error(_e)
+    
+        self.log.info("Reading configuration from '{0}'".format(inifile))
+        self.config = configobj.ConfigObj(inifile, encoding='utf-8')
 
 #Read the default theme:
 class Theme:
-    def __init__(self, path=homePath):
+    def __init__(self, path=homepath):
         """
         Handles reading of theme files.
         """
@@ -121,7 +129,7 @@ class Theme:
         try:
             resource = os.listdir(self.directory)
         except OSError as e:
-            logger.error('({0})'.format(e))
+            self.log.error('({0})'.format(e))
             return []
         
         themes = []
@@ -140,6 +148,12 @@ class Theme:
         del resource, themes
         self.log.debug("Found templates {0}".format(valid))
         return valid
+        
+    def write():
+        """
+        Commits the configuration to file.
+        """
+        config.write()
 
 def as_bool(string):
     """
@@ -163,15 +177,13 @@ def as_bool(string):
     else:
         raise ValueError('Mangled boolean representation "{0}"'.format(string))
 
-def write():
-    """
-    Commits the configuration to file.
-    """
-    config.write()
 
 def _main():
     # read out configuration for debugging... and stuff.
+    config = Config().config
     print config['report']['email']
 
 if __name__ == "__main__":
     _main()
+else:
+    config = Config().config
