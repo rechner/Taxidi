@@ -48,9 +48,7 @@ windowY = 700
 theme = 'air'       #Name of the default theme to use.
 
 [logging]
-remote = False      #[TODO] implement remote logging(?)
-host =
-port =
+file = error.log
 
 [report]
 enabled = True                          #;enable local file archiving/reporting
