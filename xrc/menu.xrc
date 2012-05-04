@@ -3975,7 +3975,7 @@
                             <option>0</option>
                             <flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
                             <border>5</border>
-                            <object class="wxDatePickerCtrl" name="m_datePicker1">
+                            <object class="wxDatePickerCtrl" name="DatePicker">
                                 <style>wxDP_DEFAULT</style>
                             </object>
                         </object>
@@ -4110,9 +4110,9 @@
                                 </object>
                                 <object class="sizeritem">
                                     <option>0</option>
-                                    <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                                    <border>5</border>
-                                    <object class="wxStaticText" name="LastSeenText">
+                                    <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT</flag>
+                                    <border>20</border>
+                                    <object class="wxStaticText" name="ExpiryText">
                                         <label>7 May 2012</label>
                                     </object>
                                 </object>
@@ -4888,7 +4888,7 @@
                             <option>0</option>
                             <flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
                             <border>5</border>
-                            <object class="wxDatePickerCtrl" name="m_datePicker1">
+                            <object class="wxDatePickerCtrl" name="DatePicker">
                                 <style>wxDP_DEFAULT</style>
                             </object>
                         </object>
@@ -5023,16 +5023,16 @@
                                 </object>
                                 <object class="sizeritem">
                                     <option>0</option>
-                                    <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                                    <border>5</border>
-                                    <object class="wxStaticText" name="LastSeenText">
+                                    <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT</flag>
+                                    <border>10</border>
+                                    <object class="wxStaticText" name="ExpiryText">
                                         <label>7 May 2012</label>
                                     </object>
                                 </object>
                                 <object class="sizeritem">
                                     <option>0</option>
                                     <flag>wxRIGHT|wxLEFT|wxALIGN_CENTER_VERTICAL</flag>
-                                    <border>5</border>
+                                    <border>10</border>
                                     <object class="wxStaticText" name="modifiedSt">
                                         <font>
                                             <size>11</size>

@@ -192,6 +192,7 @@ class MyApp(wx.App):
             pane.ExitButton = xrc.XRCCTRL(pane, 'ExitButton')
 
             pane.Search.Bind(wx.EVT_TEXT_ENTER, self.OnSearch)
+            pane.Search.Bind(wx.EVT_TEXT, self.ResetSearchColour)
             pane.ClearButton.Bind(wx.EVT_BUTTON, self.clearSearchEvent)
             self.frame.Bind(wx.EVT_BUTTON, self.OnSearch, pane.SearchButton)
             self.frame.Bind(wx.EVT_BUTTON, self.OnVisitor, pane.VisitorButton)
@@ -339,6 +340,7 @@ class MyApp(wx.App):
             pane.SetPosition((0, 160))
             pane.SetClientSize((self.frame.GetSize()[0]-20, -1))
 
+
     def CloseRecordPanel(self, event):
         self.RecordPanelLeft.Hide()
         self.RecordPanelRight.Hide()
@@ -435,6 +437,9 @@ class MyApp(wx.App):
         #Hide after set-up
         self.ResultsPanel.Hide()
 
+        #A few variables:
+        self.ResultsPanel.opened = None
+
     def DisplaySelectedRecord(self, event):
         self.ShowRecordPanel()
         pass
@@ -469,7 +474,7 @@ class MyApp(wx.App):
             pane.SurnameText = xrc.XRCCTRL(pane, 'SurnameText')
             pane.StatusText = xrc.XRCCTRL(pane, 'StatusText')
             pane.CreatedText = xrc.XRCCTRL(pane, 'CreatedText')
-            pane.LastSeenText = xrc.XRCCTRL(pane, 'LastSeenText')
+            pane.ExpiryText = xrc.XRCCTRL(pane, 'ExpiryText')
             pane.ModifiedText = xrc.XRCCTRL(pane, 'ModifiedText')
             pane.CountText = xrc.XRCCTRL(pane, 'CountText')
 
@@ -477,7 +482,7 @@ class MyApp(wx.App):
             pane.SurnameText.SetForegroundColour(themeTextColour)
             pane.StatusText.SetForegroundColour(themeTextDisabled)
             pane.CreatedText.SetForegroundColour(themeTextColour)
-            pane.LastSeenText.SetForegroundColour(themeTextColour)
+            pane.ExpiryText.SetForegroundColour(themeTextColour)
             pane.ModifiedText.SetForegroundColour(themeTextColour)
             pane.CountText.SetForegroundColour(themeTextColour)
 
@@ -563,8 +568,10 @@ class MyApp(wx.App):
             pane.Medical = xrc.XRCCTRL(pane, 'Medical')
             pane.Parent1 = xrc.XRCCTRL(pane, 'Parent1')
             pane.Email = xrc.XRCCTRL(pane, 'Email')
+            pane.DatePicker = xrc.XRCCTRL(pane, 'DatePicker')
             pane.Paging.Disable()
 
+            pane.DatePicker.Bind(wx.EVT_DATE_CHANGED, self.VisitorDateChanged)
             pane.Phone.Bind(wx.EVT_KILL_FOCUS, self.FormatPhone)
             pane.Phone.Bind(wx.EVT_TEXT, self.FormatPhoneLive)
             pane.Email.Bind(wx.EVT_TEXT, self.FormatEmailLive)
@@ -624,6 +631,11 @@ class MyApp(wx.App):
         self.ShowVisitorPanel()
         self.CloseWebcamPanel()
 
+    def VisitorDateChanged(self, evt):
+        expirePeriod = int(conf.config['visitor']['expires'])
+        self.VisitorPanel.Expires = _wxdate2pydate(self.VisitorPanel.DatePicker.GetValue())
+        self.VisitorPanel.ExpiryText.SetLabel(self.VisitorPanel.Expires.strftime("%d %b %Y"))
+
     def CloseWebcamPanel(self):
         self.WebcamPanel.Unbind(webcam.CONTROLS_CANCEL)
         self.WebcamPanel.Unbind(webcam.CONTROLS_SAVE)
@@ -682,6 +694,15 @@ class MyApp(wx.App):
             self.ToggleCheckBoxOn(btn)
         else: #Toggled off
             self.ToggleCheckBoxOff(btn)
+        #Actions for each toggle:
+        if btn == self.VisitorPanel.NeverExpireToggle:
+            if btn.GetValue():
+                self.VisitorPanel.DatePicker.Disable()
+                self.VisitorPanel.ExpiryText.SetLabel('Never')
+                self.VisitorPanel.Expires = None
+            else:
+                self.VisitorPanel.DatePicker.Enable()
+                self.VisitorPanelSetExpiry()
 
     def ToggleCheckBoxOn(self, btn):
         btn.SetForegroundColour(themeCheckOnColour)
@@ -691,18 +712,35 @@ class MyApp(wx.App):
         btn.SetForegroundColour(themeCheckOffColour)
         btn.SetLabel(u'✘')
 
+    def VisitorPanelSetExpiry(self):
+        today = date.today()
+        self.VisitorPanel.CreatedText.SetLabel(today.strftime("%d %b %Y"))
+        expirePeriod = int(conf.config['visitor']['expires'])
+        if expirePeriod < 1:
+            self.VisitorPanel.ExpiryText.SetLabel('Never')
+            self.ToggleCheckBoxOn(self.VisitorPanel.NeverExpireToggle)
+        else:
+            self.VisitorPanel.Expires = today + relativedelta(days = expirePeriod)
+            self.VisitorPanel.DatePicker.SetValue(_pydate2wxdate(self.VisitorPanel.Expires))
+            self.VisitorPanel.ExpiryText.SetLabel(self.VisitorPanel.Expires.strftime("%d %b %Y"))
 
     def OnVisitor(self, event):
         self.ShowVisitorPanel()
 
     def ShowVisitorPanel(self):
         self.HideAll()
-        if userHand == 'left':
-            self.VisitorPanelLeft.Show()
-            self.VisitorPanelLeft.FirstName.SetFocus()
+        self.VisitorPanel.Show()
+        self.VisitorPanel.FirstName.SetFocus()
+        today = date.today()
+        self.VisitorPanel.CreatedText.SetLabel(today.strftime("%d %b %Y"))
+        expirePeriod = int(conf.config['visitor']['expires'])
+        if expirePeriod < 1:
+            self.VisitorPanel.ExpiryText.SetLabel('Never')
+            self.ToggleCheckBoxOn(self.VisitorPanel.NeverExpireToggle)
         else:
-            self.VisitorPanelRight.Show()
-            self.VisitorPanelRight.FirstName.SetFocus()
+            self.VisitorPanel.Expires = today + relativedelta(days = expirePeriod)
+            self.VisitorPanel.DatePicker.SetValue(_pydate2wxdate(self.VisitorPanel.Expires))
+            self.VisitorPanel.ExpiryText.SetLabel(self.VisitorPanel.Expires.strftime("%d %b %Y"))
 
     def CloseVisitorPanel(self, event):
         #Reset displays and inputs
@@ -742,13 +780,26 @@ class MyApp(wx.App):
         self.ShowSearchPanel()
 
     def OnSearch(self, event):
-        #Throw up some test data:
-        self.ShowResultsPanel()
-        results = [ {'name':'Johnathan Churchgoer', 'activity':'Explorers',  'room':'Jungle Room', 'status':taxidi.STATUS_NONE},
-                {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_CHECKED_IN},
-                {'name':'Joseph Flint',         'activity':'Outfitters', 'room':u'—',          'status':taxidi.STATUS_CHECKED_OUT, 'checkout-time':'11:46:34'} ]
-        self.ResultsList.ShowResults(results)
-        print "OK"
+        #Get what was typed in:
+        query = self.Search.GetValue()
+        if query == '2244':
+            #Throw up some test data:
+            self.ShowResultsPanel()
+            results = [ {'name':'Johnathan Churchgoer', 'activity':'Explorers',  'room':'Jungle Room', 'status':taxidi.STATUS_NONE},
+                    {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_CHECKED_IN},
+                    {'name':'Joseph Flint',         'activity':'Outfitters', 'room':u'—',          'status':taxidi.STATUS_CHECKED_OUT, 'checkout-time':'11:46:34'} ]
+            self.ResultsList.ShowResults(results)
+        elif query == '9989':
+            #Show single result:
+            self.ShowRecordPanel()
+        else:  #Bad query
+            self.Search.SetBackgroundColour('red')
+            self.Search.SetFocus()
+
+
+    def ResetSearchColour(self, event):
+        self.Search.SetBackgroundColour(wx.NullColour)
+
 
     def HideAll(self):
         """
@@ -848,8 +899,21 @@ def showSplash():
     splash.Show()
     app.MainLoop()
 
+def _pydate2wxdate(date):
+     import datetime
+     assert isinstance(date, (datetime.datetime, datetime.date))
+     tt = date.timetuple()
+     dmy = (tt[2], tt[1]-1, tt[0])
+     return wx.DateTimeFromDMY(*dmy)
 
-
+def _wxdate2pydate(date):
+     import datetime
+     assert isinstance(date, wx.DateTime)
+     if date.IsValid():
+         ymd = map(int, date.FormatISODate().split('-'))
+         return datetime.date(*ymd)
+     else:
+         return None
 
 if __name__ == '__main__':
     #Fork the process to open the splash screen.
@@ -868,13 +932,15 @@ if __name__ == '__main__':
         import conf
         import SearchResultsList
         import validate
+        from datetime import date
+        from dateutil.relativedelta import relativedelta
 
         if conf.as_bool(conf.config['webcam']['enable']) == True:
             import webcam
         else:
             #Import file selection dialogue instead
             import wx.lib.imagebrowser as ib
-            import webcam.Storage #for maniuplating database photos
+            import webcam #for maniuplating database photos
         app = MyApp(0)
         app.MainLoop()
 

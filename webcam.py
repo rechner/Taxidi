@@ -9,12 +9,14 @@
 import os
 import wx
 import wx.lib.imagebrowser as ib
-from opencv import cv, highgui
 import logging
-import opencv
 import conf
 from itertools import *
 from operator import itemgetter
+
+if conf.as_bool(conf.config['webcam']['enable']):
+    import opencv
+    from opencv import cv, highgui
 
 class LivePanel(wx.Panel):
     """
