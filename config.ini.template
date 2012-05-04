@@ -36,8 +36,8 @@ fetch = 'http://localhost/taxidi/api/v1/photo/data/{id}.jpg'    #TODO: remote se
 #if undefined there, then raise an error.
 
 [visitor]
-expires = '15 days'  #how long till auto-expire. Leave blank for never.
-paging =             #%id% is replaced with last four digits of phone.
+expires = 15  #days till auto-expire. 0 for never.
+paging =      #%id% is replaced with last four digits of phone.
 #^ if left blank, defaults to '%id%'
 
 [interface]
