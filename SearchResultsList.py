@@ -4,9 +4,8 @@
 # 2012-04-23: Initial work.
 # 2012-04-25: Fixed bug in ultimatelistctrl with background colour.
 
-#TODO: Display 'status' column.
-
 import wx
+import datetime
 try:
     from ulc import ultimatelistctrl as ULC
 except ImportError:
@@ -108,7 +107,23 @@ class SearchResultsPanel(wx.Panel):
             self.checkboxes[i].SetLabel(u'✔')
             self.checkboxes[i].SetForegroundColour('#61BD36')
         else: #Toggled off
-            self.checkboxes[i].SetLabel('')
+            self.checkboxes[i].SetLabel(u'✘')
+            self.checkboxes[i].SetForegroundColour('#d42b1d') #replace with themeCheckOffColour
+            if self.results[i]['status'] == taxidi.STATUS_CHECKED_IN:
+                #TODO: Read database and see if checkout action required for activity.
+                #TODO: Display authorized/unauthorized guardians if needed.
+                #Change check-in status:
+                self.results[i]['status'] = taxidi.STATUS_CHECKED_OUT
+                self.results[i]['checkout-time'] = datetime.datetime.now().strftime("%H:%M:%S")
+                self.UpdateStatus(i)
+
+    def SetToggle(self, id, value):
+        self.checkboxes[id].SetValue(value)
+        if self.checkboxes[id].GetValue() == True:
+            self.checkboxes[id].SetLabel(u'✔')
+            self.checkboxes[id].SetForegroundColour('#61BD36')
+        else: #Toggled off
+            self.checkboxes[id].SetLabel('')
 
     def DeleteAllItems(self):
         """Deletes all entries currently in the list"""
@@ -133,6 +148,15 @@ class SearchResultsPanel(wx.Panel):
     def InsertItem(self, item):
         pass
 
+    def UpdateStatus(self, i):
+        if self.results[i]['status'] == taxidi.STATUS_CHECKED_IN:
+            self.ultimateList.SetStringItem(i, 4, 'Checked-in')
+            self.SetCellTextColour(i, 4, '#2F6617')
+        elif self.results[i]['status'] == taxidi.STATUS_CHECKED_OUT:
+            self.ultimateList.SetStringItem(i, 4,
+                'Checked-out\n%s' % self.results[i]['checkout-time'])
+            self.SetCellTextColour(i, 4, wx.RED)
+
     def ShowResults(self, results):
         """
         Clears and populates the list with data from a dictionary..
@@ -146,18 +170,12 @@ class SearchResultsPanel(wx.Panel):
         """
 
         self.DeleteAllItems()
+        self.results = results
         for i in range(len(results)):
             pos = self.ultimateList.InsertStringItem(i, '')
             self.ultimateList.SetStringItem(pos, 1, results[i]['name'])
             self.ultimateList.SetStringItem(pos, 2, results[i]['activity'])
             self.ultimateList.SetStringItem(pos, 3, results[i]['room'])
-            if results[i]['status'] == taxidi.STATUS_CHECKED_IN:
-                self.ultimateList.SetStringItem(pos, 4, 'Checked-in')
-                self.SetCellTextColour(pos, 4, '#2F6617')
-            elif results[i]['status'] == taxidi.STATUS_CHECKED_OUT:
-                self.ultimateList.SetStringItem(pos, 4,
-                    'Checked-out\n%s' % results[i]['checkout-time'])
-                self.SetCellTextColour(pos, 4, wx.RED)
 
             #Set the name column to bold:
             self.SetCellFont(i, 1, self.boldfont)
@@ -171,6 +189,15 @@ class SearchResultsPanel(wx.Panel):
 
             self.ultimateList.SetItemWindow(pos, col=0, wnd=self.checkboxes[i],
                 expand=False)
+
+            if results[i]['status'] == taxidi.STATUS_CHECKED_IN:
+                self.ultimateList.SetStringItem(pos, 4, 'Checked-in')
+                self.SetCellTextColour(pos, 4, '#2F6617')
+                self.SetToggle(i, True)
+            elif results[i]['status'] == taxidi.STATUS_CHECKED_OUT:
+                self.ultimateList.SetStringItem(pos, 4,
+                    'Checked-out\n%s' % results[i]['checkout-time'])
+                self.SetCellTextColour(pos, 4, wx.RED)
 
             if i % 2 == 1: #Make every other row a light grey for legibility.
                 colour = self.hex_to_rgb('#DCDCDC')
@@ -234,6 +261,9 @@ class TestFrame(wx.Frame):
 if __name__ == "__main__":
     results = [ {'name':'Johnathan Churchgoer', 'activity':'Explorers',  'room':'Jungle Room', 'status':taxidi.STATUS_CHECKED_IN},
                 {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_CHECKED_IN},
+                {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_NONE},
+                {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_NONE},
+                {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_NONE},
                 {'name':'Joseph Flint',         'activity':'Outfitters', 'room':u'—',          'status':taxidi.STATUS_CHECKED_OUT, 'checkout-time':'11:46:34'} ]
     app = wx.App(False)
     frame = TestFrame()
