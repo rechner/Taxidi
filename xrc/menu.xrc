@@ -1901,6 +1901,7 @@
                             <flag>wxALIGN_CENTER_VERTICAL|wxEXPAND|wxTOP|wxBOTTOM|wxLEFT</flag>
                             <border>5</border>
                             <object class="wxTextCtrl" name="Parent1">
+                                <style>wxTE_PROCESS_ENTER</style>
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -1942,6 +1943,7 @@
                             <flag>wxTOP|wxBOTTOM|wxLEFT|wxEXPAND</flag>
                             <border>5</border>
                             <object class="wxTextCtrl" name="Parent2">
+                                <style>wxTE_PROCESS_ENTER</style>
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -2108,7 +2110,7 @@
                     <border>5</border>
                     <object class="wxFlexGridSizer">
                         <rows>1</rows>
-                        <cols>11</cols>
+                        <cols>13</cols>
                         <vgap>0</vgap>
                         <hgap>0</hgap>
                         <growablecols>7</growablecols>
@@ -2176,7 +2178,7 @@
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
-                            <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+                            <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
                             <border>5</border>
                             <object class="wxStaticText" name="ModifiedText">
                                 <label>1 Jan 2011</label>
@@ -2184,7 +2186,7 @@
                         </object>
                         <object class="sizeritem">
                             <option>1</option>
-                            <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+                            <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
                             <border>10</border>
                             <object class="wxStaticText" name="countSt">
                                 <font>
@@ -2235,6 +2237,28 @@
                                     <underlined>0</underlined>
                                 </font>
                                 <label>Delete</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                            <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+                            <border>5</border>
+                            <object class="wxBitmapButton" name="PrintButton">
+                                <style>wxBU_AUTODRAW</style>
+                                <bitmap>../resources/icons/document-print-22.png</bitmap>
+                                <tooltip>Print a form of this record for filing, making changes, or adding additional information.</tooltip>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+                            <border>5</border>
+                            <object class="wxBitmapButton" name="ReprintNametag">
+                                <style>wxBU_AUTODRAW</style>
+                                <bitmap>../resources/icons/nametag.png</bitmap>
+                                <tooltip>Print a nametag without checking in, or reprint a child's nametag and/or parent security tag.</tooltip>
                                 <default>0</default>
                             </object>
                         </object>
@@ -2921,6 +2945,7 @@
                             <flag>wxALIGN_CENTER_VERTICAL|wxEXPAND|wxTOP|wxBOTTOM|wxLEFT</flag>
                             <border>5</border>
                             <object class="wxTextCtrl" name="Parent1">
+                                <style>wxTE_PROCESS_ENTER</style>
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -2962,6 +2987,7 @@
                             <flag>wxTOP|wxBOTTOM|wxLEFT|wxEXPAND</flag>
                             <border>5</border>
                             <object class="wxTextCtrl" name="Parent2">
+                                <style>wxTE_PROCESS_ENTER</style>
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -3128,7 +3154,7 @@
                     <border>5</border>
                     <object class="wxFlexGridSizer">
                         <rows>1</rows>
-                        <cols>11</cols>
+                        <cols>12</cols>
                         <vgap>0</vgap>
                         <hgap>0</hgap>
                         <growablecols>7</growablecols>
@@ -3196,7 +3222,7 @@
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
-                            <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+                            <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
                             <border>5</border>
                             <object class="wxStaticText" name="ModifiedText">
                                 <label>1 Jan 2011</label>
@@ -3204,7 +3230,7 @@
                         </object>
                         <object class="sizeritem">
                             <option>1</option>
-                            <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+                            <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
                             <border>10</border>
                             <object class="wxStaticText" name="countSt">
                                 <font>
@@ -3255,6 +3281,28 @@
                                     <underlined>0</underlined>
                                 </font>
                                 <label>Delete</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+                            <border>5</border>
+                            <object class="wxBitmapButton" name="PrintButton">
+                                <style>wxBU_AUTODRAW</style>
+                                <bitmap>../resources/icons/document-print-22.png</bitmap>
+                                <tooltip>Print a form of this record for filing, making changes, or adding additional information.</tooltip>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+                            <border>5</border>
+                            <object class="wxBitmapButton" name="ReprintNametag">
+                                <style>wxBU_AUTODRAW</style>
+                                <bitmap>../resources/icons/nametag.png</bitmap>
+                                <tooltip>Print a nametag without checking in, or reprint a child's nametag and/or parent security tag.</tooltip>
                                 <default>0</default>
                             </object>
                         </object>
@@ -3850,6 +3898,7 @@
                             <flag>wxALIGN_CENTER_VERTICAL|wxEXPAND|wxTOP|wxBOTTOM|wxLEFT</flag>
                             <border>5</border>
                             <object class="wxTextCtrl" name="Parent1">
+                                <style>wxTE_PROCESS_ENTER</style>
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -4095,7 +4144,7 @@
                                 </object>
                                 <object class="sizeritem">
                                     <option>0</option>
-                                    <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
+                                    <flag>wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT</flag>
                                     <border>10</border>
                                     <object class="wxStaticText" name="expirySt">
                                         <font>
@@ -4133,7 +4182,7 @@
                                 </object>
                                 <object class="sizeritem">
                                     <option>0</option>
-                                    <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+                                    <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
                                     <border>5</border>
                                     <object class="wxStaticText" name="ModifiedText">
                                         <label>Never</label>
@@ -4141,7 +4190,7 @@
                                 </object>
                                 <object class="sizeritem">
                                     <option>1</option>
-                                    <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+                                    <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
                                     <border>10</border>
                                     <object class="wxStaticText" name="countSt">
                                         <font>
@@ -4763,6 +4812,7 @@
                             <flag>wxALIGN_CENTER_VERTICAL|wxEXPAND|wxTOP|wxBOTTOM|wxLEFT</flag>
                             <border>5</border>
                             <object class="wxTextCtrl" name="Parent1">
+                                <style>wxTE_PROCESS_ENTER</style>
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -5046,7 +5096,7 @@
                                 </object>
                                 <object class="sizeritem">
                                     <option>0</option>
-                                    <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+                                    <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
                                     <border>5</border>
                                     <object class="wxStaticText" name="ModifiedText">
                                         <label>Never</label>

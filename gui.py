@@ -544,7 +544,7 @@ class MyApp(wx.App):
             pane.NotifyWhenExpiresToggle = xrc.XRCCTRL(pane, 'NotifyWhenExpiresToggle')
 
             pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseVisitorPanel)
-
+            pane.Parent1Find.Bind(wx.EVT_BUTTON, self.VisitorParentFind)
             pane.ProfilePicture.Bind(wx.EVT_BUTTON, self.VisitorPhoto)
 
             pane.NametagToggle.SetBackgroundColour(themeToggleColour) #On by default
@@ -575,6 +575,9 @@ class MyApp(wx.App):
             pane.Phone.Bind(wx.EVT_KILL_FOCUS, self.FormatPhone)
             pane.Phone.Bind(wx.EVT_TEXT, self.FormatPhoneLive)
             pane.Email.Bind(wx.EVT_TEXT, self.FormatEmailLive)
+            pane.Parent1.Bind(wx.EVT_TEXT_ENTER, self.VisitorParentFind)
+            pane.Parent1Find.Bind(wx.EVT_NAVIGATION_KEY, self.VisitorParentTab)
+            pane.Email.Bind(wx.EVT_NAVIGATION_KEY, self.VisitorParentTab)
 
         #Set initial geometry:
         for pane in panels:
@@ -590,6 +593,16 @@ class MyApp(wx.App):
         #Initialize stored variables:
         self.VisitorPanel.photo = None
 
+    def VisitorParentTab(self, event):
+        if event.IsFromTab() and event.GetDirection(): #Direction is forward and caused by tab key
+            self.VisitorPanel.Email.SetFocus()
+        elif not event.GetDirection():
+            self.VisitorPanel.Parent1.SetFocus()
+
+    def VisitorParentFind(self, event):
+        print "Find parent"
+        pass
+
     def VisitorPhoto(self, evt):
         if conf.as_bool(conf.config['webcam']['enable']): #Webcam enabled?
             #Hide the visitor panel
@@ -598,7 +611,8 @@ class MyApp(wx.App):
                 #re-take; overwrite the old photo.
                 self.WebcamPanel.SetOverwrite(self.VisitorPanel.photo)
             #Show the webcam input panel.
-            self.ShowWebcamPanel(self.VisitorPhotoCancel, self.VisitorPhotoSave)
+            self.ShowWebcamPanel(self.VisitorPhotoCancel, \
+                self.VisitorPhotoSave, self.VisitorPhotoFile)
         else:
             #Just open a file selection dialog.
             path = os.path.abspath(os.path.expanduser(
@@ -606,13 +620,42 @@ class MyApp(wx.App):
             dlg = ib.ImageDialog(self.frame, path)
             dlg.Centre()
             if dlg.ShowModal() == wx.ID_OK:
-                # TODO: Crop picture, save to disc/database
-                print "You Selected File: " + dlg.GetFile()
+                if self.VisitorPanel.photo != None:
+                    self.VisitorPanel.photo = \
+                        self.PhotoStorage.saveImage(dlg.GetFile(),
+                        int(self.VisitorPanel.photo))
+                else:
+                    self.VisitorPanel.photo = self.PhotoStorage.saveImage(dlg.GetFile())
+
+                photoPath = self.PhotoStorage.getThumbnailPath(self.VisitorPanel.photo)
+                #~ print "Resolves to file: {0}".format(photoPath)
+                #Load and display new photo
+                wximg = wx.Image(photoPath)
+                wxbmp = wximg.ConvertToBitmap()
+                self.VisitorPanel.ProfilePicture.SetBitmapLabel(wxbmp)
+
             else:
                 #~ self.log.debug("> Dialogue cancelled.")
                 pass
 
             dlg.Destroy()
+
+    def VisitorPhotoFile(self, event):
+        self.ShowVisitorPanel()
+        self.CloseWebcamPanel()
+        photo = self.WebcamPanel.GetFile()
+        if self.VisitorPanel.photo != None:
+            self.VisitorPanel.photo = self.PhotoStorage.saveImage(photo, \
+                int(self.VisitorPanel.photo))
+        else:
+            self.VisitorPanel.photo = self.PhotoStorage.saveImage(photo)
+
+        photoPath = self.PhotoStorage.getThumbnailPath(self.VisitorPanel.photo)
+        print "Resolves to file: {0}".format(photoPath)
+        #Load and display new photo
+        wximg = wx.Image(photoPath)
+        wxbmp = wximg.ConvertToBitmap()
+        self.VisitorPanel.ProfilePicture.SetBitmapLabel(wxbmp)
 
     def VisitorPhotoSave(self, evt):
         photo = self.WebcamPanel.GetFile()
@@ -639,13 +682,15 @@ class MyApp(wx.App):
     def CloseWebcamPanel(self):
         self.WebcamPanel.Unbind(webcam.CONTROLS_CANCEL)
         self.WebcamPanel.Unbind(webcam.CONTROLS_SAVE)
+        self.WebcamPanel.Unbind(webcam.CONTROLS_SELECT_FILE)
         self.WebcamPanel.live.suspend()
         self.WebcamPanel.Hide()
 
-    def ShowWebcamPanel(self, cancelFunction, saveFunction):
+    def ShowWebcamPanel(self, cancelFunction, saveFunction, fileFunction):
         self.WebcamPanel.Show()
         self.WebcamPanel.Bind(webcam.CONTROLS_CANCEL, cancelFunction)
         self.WebcamPanel.Bind(webcam.CONTROLS_SAVE, saveFunction)
+        self.WebcamPanel.Bind(webcam.CONTROLS_SELECT_FILE, fileFunction)
         self.WebcamPanel.live.resume()
         pass
 
