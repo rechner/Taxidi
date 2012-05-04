@@ -13,6 +13,7 @@ import logging
 import conf
 from itertools import *
 from operator import itemgetter
+from PIL import Image
 
 if conf.as_bool(conf.config['webcam']['enable']):
     import opencv
@@ -210,7 +211,7 @@ class Storage:
         If record is -1, the id will be automatically determined by the first
         available slot.  Returns zero-padded ID as string.
         """
-        print image.size
+
         if ((image.size[0] != 640) and (image.size[1] != 480)) or \
            ((image.size[0] != 480) and (image.size[1] != 480)):
             #Scale up/down:
@@ -245,6 +246,51 @@ class Storage:
             raise
 
         return record
+
+    def saveImage(self, filename, record=-1):
+        """
+        Like savePIL(), but accepts local filename as argument instead.
+        Used for inserting a custom image into the photo database.
+        """
+        try:
+            image = Image.open(filename)
+        except IOError as e:
+            self.log.error(e)
+            self.log.error('Unable to copy image.')
+            raise
+
+        #From a webcam most likely:
+        if image.size == (640, 480):
+            image = image.crop((80, 0, 560, 480))
+
+        #Scale to fit
+        image.thumbnail((480, 480), Image.ANTIALIAS)
+
+
+        if record >= 0: #Explicit file
+            record = str(record).zfill(6)
+        else:  #Determine automatically
+            record = str(self._getNextSlot()).zfill(6)
+
+        filename = os.path.join(self.target, record + '.jpg')
+        self.log.debug("Saving image as {0}...".format(filename))
+        try:
+            image.save(filename)
+        except:
+            self.log.error("Unable to save image!")
+            raise
+
+        #Create & save thumbnails:
+        image.thumbnail((128, 128), Image.ANTIALIAS) #User higher quality for custom images
+        filename = os.path.join(self.thumbs, record + '.jpg')
+        try:
+            image.save(filename)
+        except:
+            self.log.error("Unable to save image!")
+            raise
+
+        return record
+
 
     def delete(self, record):
         try:
@@ -380,6 +426,10 @@ class Panel(wx.Panel):
         #Variables:
         self.overwrite = None
 
+        #Storage instance:
+        self.PhotoStorage = Storage()
+
+
     def OnSave(self, evt):
         """
         Internal event for saving an image from the webcam.
@@ -418,6 +468,7 @@ class Panel(wx.Panel):
         if dlg.ShowModal() == wx.ID_OK:
             # show the selected file
             self.fileSelection = dlg.GetFile()
+            evt.Skip()
         else:
             self.fileSelection = None
 
@@ -444,6 +495,8 @@ class CameraError(Exception):
 
 
 if __name__ == '__main__':
+    import opencv
+    from opencv import cv, highgui
     app = wx.PySimpleApp()
     pFrame = wx.Frame(None, -1, "Webcam Viewer", size = (640, 560))
     Panel(pFrame)
