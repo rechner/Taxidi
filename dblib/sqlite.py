@@ -47,10 +47,16 @@ import logging
 import time
 import datetime
 import sqlite3 as sqlite
+import hashlib
 
+#Signaling constants
 SUCCESS = 1
 FAIL = 2
 EMPTY_RESULT = 4
+USER_EXISTS = 8
+CONSTRAINT_FAILED = 16
+AUTHORIZED = 32
+UNAUTHORIZED = 64
 
 class Database:
     """SQLite3 driver class for taxídí database."""
@@ -110,6 +116,9 @@ class Database:
         self.log.info("Created sqlite3 database instance using file '{}'".
             format(file))
 
+    def close(self):
+        self.conn.close()
+
     def createTables(self):
         """
         Initializes the database, creating required tables.
@@ -155,17 +164,18 @@ class Database:
             name text, admin integer);""")
         #users
         self.execute("""CREATE TABLE users(id integer primary key,
-            user text, hash text, salt text, admin integer,
-            notifoUser text, notifoSecret text,
+            user text UNIQUE NOT NULL, hash text, salt text, admin integer,
+            notifoUser text, notifoSecret text, scATR text,
             leftHanded integer, ref integer);""")
         #activities
         self.execute("""CREATE TABLE activities(id integer primary key,
-            prefix text, securityTag text, securityMode text, theme text,
-            nametagEnable integer, nametag text,
-            parentTagEnable integer, parentTag text);""")
+            name text, prefix text, securityTag text, securityMode text,
+            theme text, nametagEnable integer, nametag text,
+            parentTagEnable integer, parentTag text,
+            admin integer, autoExpire integer, notifyExpire integer);""")
         #services
         self.execute("""CREATE TABLE services(id integer primary key,
-            name text, day integer, time text);""")
+            name text, day integer, time text, endTime text);""")
         #rooms
         self.execute("""CREATE TABLE rooms(id integer primary key,
             name text, volunteerMinimum integer,
@@ -283,25 +293,39 @@ class Database:
         self.execute("""UPDATE data SET visitor=?, noParentTag=?, barcode=?,
             picture=?, notes=? WHERE id=?;""", (int(visitor), int(noParentTag),
             barcode, picture, notes, index))
+    # === end data functions ===
 
     #return all entries (for browsing)
     def GetAll(self):
         """Returns all rows. (useful for browsing)"""
         return self.execute("SELECT * FROM data;").fetchall()
 
-
+    # === begin search functions ===
     def Search(self, query):
-        """Generic search function.
+        """
+        Generic search function.
 
         Searches first through `data`, then passes to SearchVolunteer()
-        Accepts query as first argument.  Searches the following in order:
+        Accepts query as first argument.  Searches the following in data table:
         - Last four digits of phone number (if len == 4)
         - primaryKey
         - lastname
         - firstname
+        Then searches through volunteers table.
         """
-        if len(query) == 4:
-            pass
+        a = []
+
+        if query.isdigit() and (len(query) == 4 or len(query) == 7) \
+          or query[0] == '+':
+            #search by phone.
+            a = self.SearchPhone(query)
+        if not query.isdigit():  #Search in names.
+            a = self.SearchName(query)
+        if len(a) == 0: #Catch barcodes
+            a = self.SearchBarcode(query)
+
+        #TODO: Search volunteers:
+
 
     def SearchName(self, query):
         """
@@ -335,7 +359,7 @@ class Database:
         Searches for an entry (only in the data table) by barcode.
         """
         a = self.execute("""SELECT DISTINCT {0} FROM data
-                            INNER JOIN barcode ON data.barcode = barcode.ref
+                            INNER JOIN barcode ON data.id = barcode.ref
                             WHERE barcode.value = ?
                             """.format(self.columns), (query,))
         ret = []
@@ -414,9 +438,138 @@ class Database:
         """
         #TODO: Search by secure code
         pass
+    # === end search functions ===
 
+    # === barcode functions ===
+    def GetBarcodes(self, record):
+        """
+        Returns all barcodes listed for a given record ID.
+        """
+        a = self.execute("""SELECT DISTINCT id, value FROM barcode
+                            WHERE ref = ? ORDER BY id""", (record,))
+        return self.to_dict(a)
 
-    # == end data functions ==
+    def AddBarcode(self, record, value):
+        self.execute("""INSERT INTO barcode(value, ref)
+                        VALUES (?, ?)""", (value, record))
+
+    def RemoveBarcode(self, ref):
+        self.execute("DELETE FROM barcode WHERE id = ?;", (ref,))
+
+    def UpdateBarcode(self, ref, value):
+        self.execute("UPDATE barcode SET value = ? WHERE id = ?", (value, ref))
+    # === end barcode functions ===
+
+    # === services functions ===
+    def GetServices(self):
+        return self.to_dict(self.execute("SELECT * FROM services;"))
+
+    def AddService(self, name, day=0, time='', endTime=''):
+        self.execute("""INSERT INTO services(name, day, time, endTime)
+                        VALUES (?, ?, ?, ?);""", (name, day, time, endTime))
+
+    def RemoveService(self, ref):
+        self.execute("DELETE FROM services WHERE id = ?;", (ref,))
+
+    def UpdateService(self, ref, name, day, time, endTime):
+        self.execute("""UPDATE services SET name = ?,
+                        day = ?, time = ?, endTime = ? WHERE id = ?;""",
+                        (name, day, time, endTime, ref))
+    # === end services functions ===
+
+    # === activities functions ===
+    def GetActivities(self):
+        return self.to_dict(self.execute("SELECT * FROM activities;"))
+
+    def AddActivity(self, name, prefix='', securityTag=False, securityMode='simple',
+                    theme='default', nametag='default', nametagEnable=True,
+                    parentTag='default', parentTagEnable=True, admin=None,
+                    autoExpire = False, notifyExpire = False):
+        if prefix == '' or prefix == None:
+            prefix = name[0].upper()
+        self.execute("""INSERT INTO activities(name, prefix, securityTag,
+                        securityMode, theme, nametagEnable, nametag,
+                        parentTagEnable, parentTag, admin, autoExpire,
+                        notifyExpire)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""",
+                        (name, prefix, securityTag, securityMode, theme,
+                        nametagEnable, nametag, parentTagEnable, parentTag,
+                        admin, autoExpire, notifyExpire))
+
+    def RemoveActivity(self, ref):
+        self.execute("DELETE FROM activities WHERE id = ?;", (ref,))
+        pass
+
+    def UpdateActivity(self, ref, name, prefix, securityTag, securityMode,
+                       theme, nametag, nametagEnable, parentTag,
+                       parentTagEnable, admin, autoExpire, notifyExpire):
+        if prefix == '' or prefix == None:
+            prefix = name[0].upper()
+        self.execute("""UPDATE activities SET name = ?, prefix = ?,
+                        securityTag = ?, securityMode = ?, theme = ?,
+                        nametag = ?, nametagEnable = ?, parentTag = ?,
+                        parentTagEnable = ?, admin = ?, autoExpire = ?,
+                        notifyExpire = ? WHERE id = ?;""", (name, prefix,
+                        securityTag, securityMode, theme, nametag,
+                        nametagEnable, parentTag, parentTagEnable, admin,
+                        autoExpire, notifyExpire, ref))
+    # === end activities functions ==
+
+    # === users functions ===
+    def GetUsers(self):
+        a = self.execute("""SELECT user, admin, notifoUser, notifoSecret,
+                            scATR, leftHanded, ref FROM users;""")
+        return self.to_dict(a)
+
+    def GetUser(self, user):
+        #Should only return one row
+        return self.to_dict(self.execute("SELECT * FROM users WHERE user = ?;", (user,)))[0]
+
+    def UserExists(self, user):
+        a = self.execute("SELECT id FROM users WHERE user = ?;", (user,)).fetchall()
+        if len(a) == 0:
+            return False
+        else:
+            return True
+
+    def AddUser(self, user, password, admin=False, notifoUser=None,
+                notifoSecret=None, scATR=None, leftHanded=False, ref=None):
+        #Check that the user doesn't exist:
+        if len(self.execute("SELECT * FROM users WHERE user = ?;", \
+          (user,)).fetchall()) != 0:
+            return USER_EXISTS
+
+        salt = os.urandom(29).encode('base_64').strip('\n') #Get a salt
+        if password == '': #Set a random password
+            password = os.urandom(8).encode('base_64').strip('\n')
+        ph = hashlib.sha256(password + salt)
+        ph.hexdigest()
+
+        try:
+            self.execute("""INSERT INTO users(user, hash, salt, admin, notifoUser,
+                            notifoSecret, scATR, leftHanded, ref) VALUES
+                            (?, ?, ?, ?, ?, ?, ?, ?, ?);""",
+                            (user, ph.hexdigest(), salt, admin, notifoUser,
+                            notifoSecret, scATR, leftHanded, ref))
+        except sqlite.IntegrityError:
+            return USER_EXISTS
+        return SUCCESS
+
+    def RemoveUser(self, user):
+        """
+        Remove an user from the system by username.
+        """
+        self.execute("DELETE FROM users WHERE user = ?;", (user,))
+
+    def AuthenticateUser(self, user, password):
+        if self.UserExists(user):
+            info = self.GetUser(user)
+            passhash = hashlib.sha256(password + info['salt'])
+            if info['hash'] == passhash.hexdigest():
+                return AUTHORIZED
+        return UNAUTHORIZED
+    # == end users functions ==
+
 
     # Add a volunteer
     def RegisterVolunteer(self, name, lastname, dob, phoneHome, email='',
@@ -467,7 +620,7 @@ class Database:
     # == category functions ==
     def GetCategories(self):
         """Returns all categories"""
-        return self.execute("SELECT * FROM categories;")
+        return to_dict(self.execute("SELECT * FROM categories;"))
 
     def AddCategory(self, name, admin=0):
         """Add a category (ministry): Parking, café, etc."""
@@ -484,8 +637,8 @@ class Database:
 
     def UpdateCategory(self, index, name, admin='0'):
         """Update name or admin status in categories table"""
-        self.execute("UPDATE categories SET name = ? WHERE id = ?;",
-            (name, admin))
+        self.execute("UPDATE categories SET name = ?, admin = ? WHERE id = ?;",
+            (name, admin, index))
 
     # == end categories ==
 
@@ -518,6 +671,15 @@ class Database:
             d[col[0]] = row[idx]
         return d
 
+    def to_dict(self, inp):
+        """
+        Converts results from an sql.execute() to a nested dictionary.
+        """
+        ret = []
+        for i in inp.fetchall():
+            ret.append(self.dict_factory(i)) #return as a nested dictionary
+        return ret
+
     # == end generic functions ==
 
 class DatabaseError(Exception):
@@ -526,6 +688,10 @@ class DatabaseError(Exception):
             self.error = 'Generic database error.'
             if code == EMPTY_RESULT:
                 self.error = 'Query returned empty result'
+            elif code == CONSTRAINT_FAILED:
+                self.error = 'Unique key constraint failed.'
+            elif code == USER_EXISTS:
+                self.error = 'The user specified already exists.'
         else:
             self.error = value
         self.code = code
@@ -556,6 +722,42 @@ if __name__ == '__main__':
     except TypeError:
         print 'Unable to open database (file write-protected?)'
         #display an error dialogue and exit
+
+    #Searching
     #~ print db.SearchName('Gal*')
-    print db.SearchBarcode('1234')
+    #~ print db.SearchBarcode('1234')
     #~ print db.SearchPhone('7916')
+
+    #Barcodes
+    #~ print db.GetBarcodes(300)
+    #~ db.AddBarcode(300, 'taxidi')
+    #~ db.commit()
+    #~ print db.SearchBarcode('taxidi')
+    #~ print
+    #~ barcodes = db.GetBarcodes(300)
+    #~ db.UpdateBarcode(barcodes[0]['id'], 'Tax=id=i')
+    #~ print db.SearchBarcode('Tax=id=i')
+    #~ if len(barcodes) > 0:
+        #~ db.RemoveBarcode(barcodes[0]['id'])
+    #~ db.commit()
+
+    #Services
+    #~ db.AddActivity('Outfitters')
+    #~ activities = db.GetActivities()
+    #~ db.UpdateActivity(activities[0]['id'], 'Route 56', None, False, 'none', 'default', 'default', True, 'default', False, None, True, None)
+    #~ db.commit()
+    #~ db.RemoveActivity(1)
+    #~ print db.GetActivities()
+
+    #Users
+    #~ if db.AddUser('admin', 'password') == USER_EXISTS: print "User admin already exists"
+    #~ #db.commit()
+    #~ print db.GetUsers()
+    #~ print
+    #~ print (db.AuthenticateUser('admin', 'badpassword') == AUTHORIZED) #False
+    #~ print (db.AuthenticateUser('baduser', 'pass') == AUTHORIZED)      #False
+    #~ print (db.AuthenticateUser('admin', 'password') == AUTHORIZED)    #True
+    #~ db.RemoveUser('admin') ; db.commit()
+    #~ print (db.AuthenticateUser('admin', 'password') == AUTHORIZED)    #False
+
+    db.close()
