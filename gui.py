@@ -17,7 +17,7 @@ import signal
 
 __version__ = '0.70.01-dev'
 
-userHand = 'right'
+userHand = 'left'
 
 #TODO: Read these from a theme file
 themeBackgroundColour = '#005889'

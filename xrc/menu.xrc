@@ -1667,7 +1667,7 @@
                             <border>5</border>
                             <object class="wxChoice" name="PhoneCarrier">
                                 <font>
-                                    <size>16</size>
+                                    <size>12</size>
                                     <family>default</family>
                                     <style>normal</style>
                                     <weight>normal</weight>
@@ -1676,6 +1676,7 @@
                                 <selection>0</selection>
                                 <content>
                                     <item>Land Line</item>
+                                    <item>Verizon Wireless</item>
                                 </content>
                             </object>
                         </object>
@@ -2711,7 +2712,7 @@
                             <border>5</border>
                             <object class="wxChoice" name="PhoneCarrier">
                                 <font>
-                                    <size>16</size>
+                                    <size>12</size>
                                     <family>default</family>
                                     <style>normal</style>
                                     <weight>normal</weight>
@@ -2720,6 +2721,7 @@
                                 <selection>0</selection>
                                 <content>
                                     <item>Land Line</item>
+                                    <item>Verizon Wireless</item>
                                 </content>
                             </object>
                         </object>
@@ -3154,7 +3156,7 @@
                     <border>5</border>
                     <object class="wxFlexGridSizer">
                         <rows>1</rows>
-                        <cols>12</cols>
+                        <cols>13</cols>
                         <vgap>0</vgap>
                         <hgap>0</hgap>
                         <growablecols>7</growablecols>
@@ -3693,7 +3695,7 @@
                             <border>5</border>
                             <object class="wxChoice" name="PhoneCarrier">
                                 <font>
-                                    <size>16</size>
+                                    <size>12</size>
                                     <family>default</family>
                                     <style>normal</style>
                                     <weight>normal</weight>
@@ -3702,6 +3704,7 @@
                                 <selection>0</selection>
                                 <content>
                                     <item>Land Line</item>
+                                    <item>Verizon Wireless</item>
                                 </content>
                             </object>
                         </object>
@@ -4607,7 +4610,7 @@
                             <border>5</border>
                             <object class="wxChoice" name="PhoneCarrier">
                                 <font>
-                                    <size>16</size>
+                                    <size>12</size>
                                     <family>default</family>
                                     <style>normal</style>
                                     <weight>normal</weight>
@@ -4616,6 +4619,7 @@
                                 <selection>0</selection>
                                 <content>
                                     <item>Land Line</item>
+                                    <item>Verizon Wireless</item>
                                 </content>
                             </object>
                         </object>
