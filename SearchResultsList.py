@@ -4,6 +4,8 @@
 # 2012-04-23: Initial work.
 # 2012-04-25: Fixed bug in ultimatelistctrl with background colour.
 
+#TODO: Create left-handed search results panel (SearchResultsList.py)
+
 import wx
 import datetime
 try:
@@ -107,15 +109,23 @@ class SearchResultsPanel(wx.Panel):
             self.checkboxes[i].SetLabel(u'✔')
             self.checkboxes[i].SetForegroundColour('#61BD36')
         else: #Toggled off
-            self.checkboxes[i].SetLabel(u'✘')
-            self.checkboxes[i].SetForegroundColour('#d42b1d') #replace with themeCheckOffColour
             if self.results[i]['status'] == taxidi.STATUS_CHECKED_IN:
+                self.checkboxes[i].SetLabel(u'✘')
+                self.checkboxes[i].SetForegroundColour('#d42b1d') #replace with themeCheckOffColour
                 #TODO: Read database and see if checkout action required for activity.
+                #TODO: Read config and see if check-out action is allowed at this station (disallow for kiosk)
                 #TODO: Display authorized/unauthorized guardians if needed.
                 #Change check-in status:
                 self.results[i]['status'] = taxidi.STATUS_CHECKED_OUT
                 self.results[i]['checkout-time'] = datetime.datetime.now().strftime("%H:%M:%S")
                 self.UpdateStatus(i)
+            elif self.results[i]['status'] == taxidi.STATUS_CHECKED_OUT:
+                #Set checkbox back to x (checked-out) and don't perform an action.
+                self.checkboxes[i].SetLabel(u'✘')
+                self.checkboxes[i].SetForegroundColour('#d42b1d') #replace with themeCheckOffColour
+            else:
+                #Just unset the label:
+                self.checkboxes[i].SetLabel('')
 
     def SetToggle(self, id, value):
         self.checkboxes[id].SetValue(value)
@@ -198,6 +208,8 @@ class SearchResultsPanel(wx.Panel):
                 self.ultimateList.SetStringItem(pos, 4,
                     'Checked-out\n%s' % results[i]['checkout-time'])
                 self.SetCellTextColour(pos, 4, wx.RED)
+                self.checkboxes[i].SetLabel(u'✘')
+                self.checkboxes[i].SetForegroundColour('#d42b1d') #replace with themeCheckOffColour
 
             if i % 2 == 1: #Make every other row a light grey for legibility.
                 colour = self.hex_to_rgb('#DCDCDC')

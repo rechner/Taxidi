@@ -42,8 +42,8 @@ logging.basicConfig(filename=logFile, filemode='a',
     level=getattr(logging, loglevel.upper()))
 
 # create logger
-logger = logging.getLogger('taxidi')
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 logger.debug('\n')
 logger.debug('Logger started at {}'.format(time.ctime()))
 logger.debug('Logging started with format [time] (module) [level] message...')
@@ -71,37 +71,29 @@ logger.addHandler(ch)       # add ch to logger
 
 import conf     #import settings for application and database
                 #~ #do this first?  (for logfile settings?)
-#~
-#~ logger.debug("Loading database module for SQLite3 ('sqlite')")
-#~ import dblib.sqlite as sqlite
-#~ try:
-    #~ logger.debug('Attempting to open datbase object.')
-    #~ db = sqlite.Database('users.db', logger)
-#~ except TypeError as e:
-    #~ logger.error('({0})'.format(e))
-    #~ logger.warn('Unable to open database (file write-protected?)')
-    #~ #display an error dialogue and exit
-#~
-#~
+
+if conf.config['database']['driver'].lower() == 'sqlite':
+    import dblib.sqlite as sqlite
+    try:
+        logger.debug('Attempting to open datbase object.')
+        db = sqlite.Database(conf.homeAbsolutePath(conf.config['database']['file']))
+    except TypeError as e:
+        logger.error('({0})'.format(e))
+        logger.critical('Unable to open database (file write-protected?)')
+        #display an error dialogue and exit
+        exit()
+else:
+    logger.error('Database driver not implemented: {0}'. \
+        format(conf.config['database']['driver']))
+
+
+
 #~ db.Register("Zac", "Sturgeon", "1993-05-13", "3174555832", "V-5832", "Blah")
 #~ a = db.GetAll()
 #~ for record in a:
     #~ print record[1]+' '+record[2]
 #~
-#~ db.AddCategory(u"Cafe", 0)
-#~ db.AddCategory("Parking", 0)
-#~ db.AddCategory("Tech", 1)
-#~ print db.GetCategories()
-#~ db.DeleteCategory(2)
-#~ print "\n"
-#~ print db.GetCategories()
-#~ db.UpdateCategory(1, u"Café", 1)
-#~ print "\n"
-#~ print db.GetCategories()
-#~ db.DeleteCategory(0) #remove all
-#~ print "\n"
-#~ print db.GetCategories()
-#~ db.commit()
+
 
 import webcam
 store = webcam.Storage()

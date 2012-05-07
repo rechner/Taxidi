@@ -17,7 +17,7 @@ import signal
 
 __version__ = '0.70.01-dev'
 
-userHand = 'left'
+userHand = 'right'
 
 #TODO: Read these from a theme file
 themeBackgroundColour = '#005889'
@@ -36,6 +36,7 @@ class MyApp(wx.App):
         self.res = xrc.XmlResource(os.path.join('xrc', 'menu.xrc'))
         self.init_frame()
         self.PhotoStorage = webcam.Storage()
+        self.setupDatabase()
         os.kill(child_pid, signal.SIGKILL)  #Close the splash
         return True
 
@@ -119,6 +120,27 @@ class MyApp(wx.App):
             self.WebcamPanel.CentreOnParent(dir=wx.HORIZONTAL)
 
 
+    def setupDatabase(self):
+        #Read user config and import the appropriate database.
+        if conf.config['database']['driver'].lower() == 'sqlite':
+            datafile = conf.homeAbsolutePath(conf.config['database']['file'])
+            import dblib.sqlite as database
+            try:
+                self.db = database.Database(datafile)
+            except TypeError:
+                wx.MessageBox('Unable to open {0}. The file may be write protected.'. \
+                    format(datafile), 'Database Error', wx.OK | wx.ICON_ERROR)
+            except database.sqlite.OperationalError:
+                wx.MessageBox('Unable to open database file:\n{0}'. \
+                    format(datafile), 'Database Error', wx.OK | wx.ICON_ERROR)
+                return 1
+            if self.db.status == database.NEW:
+                #The database was newly created
+                wx.MessageBox('A new database was created at\n{0}\n Please '
+                    'confirm your configuration before continuing.'.format(datafile),
+                    'Taxidi', wx.OK | wx.ICON_INFORMATION)
+
+
     def setupMainMenu(self):
         #Make it pretty
         self.MainMenu.ClearBackground()
@@ -189,6 +211,7 @@ class MyApp(wx.App):
             pane.ClearButton = xrc.XRCCTRL(pane, 'ClearButton')
             pane.SearchButton = xrc.XRCCTRL(pane, 'SearchButton')
             pane.VisitorButton = xrc.XRCCTRL(pane, 'VisitorButton')
+            pane.SwitchUserButton = xrc.XRCCTRL(pane, 'SwitchUserButton')
             pane.ExitButton = xrc.XRCCTRL(pane, 'ExitButton')
 
             pane.Search.Bind(wx.EVT_TEXT_ENTER, self.OnSearch)
@@ -196,6 +219,7 @@ class MyApp(wx.App):
             pane.ClearButton.Bind(wx.EVT_BUTTON, self.clearSearchEvent)
             self.frame.Bind(wx.EVT_BUTTON, self.OnSearch, pane.SearchButton)
             self.frame.Bind(wx.EVT_BUTTON, self.OnVisitor, pane.VisitorButton)
+            self.Bind(wx.EVT_BUTTON, self.SwitchUser, pane.SwitchUserButton)
             self.frame.Bind(wx.EVT_BUTTON, self.ExitSearch, pane.ExitButton)
 
         #Setup keypad:
@@ -225,14 +249,6 @@ class MyApp(wx.App):
             pane.b9.Bind(wx.EVT_BUTTON, self.searchKeypadEvent)
             pane.clear.Bind(wx.EVT_BUTTON, self.clearSearchEvent)
             pane.accept.Bind(wx.EVT_BUTTON, self.OnSearch)
-
-        #Apply global handles by user configuration.
-        if userHand == 'left':
-            self.SearchPanel = self.LeftHandSearch
-            self.Search = self.LeftHandSearch.Search
-        else:
-            self.SearchPanel = self.RightHandSearch
-            self.Search = self.RightHandSearch.Search
 
     def searchKeypadEvent(self, event):
         button = event.GetEventObject()
@@ -446,7 +462,7 @@ class MyApp(wx.App):
 
     def ShowRecordPanel(self):
         self.HideAll()
-        if userHand == 'left':
+        if self.user['leftHanded']:
             self.RecordPanelLeft.Show()
         else:
             self.RecordPanelRight.Show()
@@ -584,14 +600,9 @@ class MyApp(wx.App):
             pane.SetPosition((0, 160))
             pane.SetClientSize((self.frame.GetSize()[0]-20, -1))
 
-        #Set local global:
-        if userHand == 'left':
-            self.VisitorPanel = self.VisitorPanelLeft
-        else:
-            self.VisitorPanel = self.VisitorPanelRight
-
         #Initialize stored variables:
-        self.VisitorPanel.photo = None
+        self.VisitorPanelLeft.photo = None
+        self.VisitorPanelRight.photo = None
 
     def VisitorParentTab(self, event):
         if event.IsFromTab() and event.GetDirection(): #Direction is forward and caused by tab key
@@ -774,6 +785,11 @@ class MyApp(wx.App):
 
     def ShowVisitorPanel(self):
         self.HideAll()
+        if self.user['leftHanded']:
+            self.VisitorPanel = self.VisitorPanelLeft
+        else:
+            self.VisitorPanel = self.VisitorPanelRight
+
         self.VisitorPanel.Show()
         self.VisitorPanel.FirstName.SetFocus()
         today = date.today()
@@ -858,16 +874,97 @@ class MyApp(wx.App):
         self.MainMenu.Show()
 
     def StartCheckin(self, event):
-        self.MainMenu.Hide()
-        self.ShowSearchPanel()
+        conf.config.reload()
+        #No password needed
+        if conf.config['authentication']['method'].lower() == 'none' \
+          or conf.as_bool(conf.config['authentication']['startup']) == False:
+            #Access granted
+            self.user = {'user': 'admin', 'admin': True, 'leftHanded': False }
+            self.SwitchUserDisable() #Disable user switching
+            self.MainMenu.Hide()
+            self.ShowSearchPanel()
+        #Single user mode:
+        elif conf.config['authentication']['method'].lower() == 'single' \
+          and conf.as_bool(conf.config['authentication']['startup']):
+            #~ print "Hash: ", conf.config['authentication']['hash']
+            hashobj = hashlib.sha256()
+            response = ''
+            while response != None:
+                response = dialogues.askPass()
+                if response == '': response = None
+                if response != None: hashobj.update(response)
+                #~ print "Computed hash: ", hashobj.hexdigest()
+                if response == None: break
+                elif conf.config['authentication']['hash'] == hashobj.hexdigest():
+                    #Access granted
+                    #Set local user to admin (defaults)
+                    self.user = {'user': 'admin', 'admin': True, 'leftHanded': False }
+                    self.SwitchUserDisable() #No other users to switch to
+                    self.MainMenu.Hide()
+                    self.ShowSearchPanel()
+                    response = None
+                elif conf.config['authentication']['hash'] != hashobj.hexdigest():
+                    #TODO: Nicer message boxes
+                    wx.MessageBox('Incorrect Password.', 'Taxidi', wx.OK | wx.ICON_EXCLAMATION)
+        #Authenticate user:
+        elif conf.config['authentication']['method'].lower() == 'database' \
+          and conf.as_bool(conf.config['authentication']['startup']):
+            response = ''
+            while response != None:
+                response = dialogues.askLogin()
+                #~ if response == ('', ''): response = None
+                if response == None: break
+                if self.db.AuthenticateUser(*response):
+                    #Access granted
+                    self.user = self.db.GetUser(response[0])
+                    self.MainMenu.Hide()
+                    self.ShowSearchPanel()
+                    self.SwitchUserEnable() #just in case
+                    response = None
+                else:
+                    #Access denied
+                    wx.MessageBox('Incorrect username or password.', 'Taxidi',
+                        wx.OK | wx.ICON_EXCLAMATION)
 
     def ShowSearchPanel(self):
-        if userHand == 'left':
+        if self.user['leftHanded']:
             self.LeftHandSearch.Show()
+            self.SearchPanel = self.LeftHandSearch
         else:
             self.RightHandSearch.Show()
+            self.SearchPanel = self.RightHandSearch
+        self.SearchPanel.UserButton.SetLabel('Current User: %s' % self.user['user'])
+        self.Search = self.SearchPanel.Search
         self.Search.Clear()
         self.Search.SetFocus()
+
+    def SwitchUserDisable(self):
+        self.LeftHandSearch.SwitchUserButton.Disable()
+        self.RightHandSearch.SwitchUserButton.Disable()
+
+    def SwitchUserEnable(self):
+        self.LeftHandSearch.SwitchUserButton.Enable()
+        self.RightHandSearch.SwitchUserButton.Enable()
+
+    def SwitchUser(self, event):
+        if conf.config['authentication']['method'].lower() == 'database':
+            response = ''
+            while response != None:
+                response = dialogues.askLogin()
+                if response == None: break
+                if self.db.AuthenticateUser(*response):
+                    #Access granted
+                    self.user = self.db.GetUser(response[0])
+                    self.HideAll()
+                    self.ShowSearchPanel()
+                    self.SwitchUserEnable() #just in case
+                    response = None
+                else:
+                    #Access denied
+                    wx.MessageBox('Incorrect username or password.', 'Taxidi',
+                        wx.OK | wx.ICON_EXCLAMATION)
+            #Cancel action:
+            self.Search.SetFocus()
 
     def ShowResultsPanel(self):
         self.ResultsPanel.opened = True
@@ -976,6 +1073,8 @@ if __name__ == '__main__':
         import taxidi
         import conf
         import SearchResultsList
+        import dialogues
+        import hashlib
         import validate
         from datetime import date
         from dateutil.relativedelta import relativedelta

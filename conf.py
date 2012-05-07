@@ -46,7 +46,7 @@ homepath = os.getenv('USERPROFILE') or os.getenv('HOME')
 
 class Config:
     def __init__(self):
-        
+
         self.log = logging.getLogger(__name__)
         #~ self.log.setLevel(logging.DEBUG)
         self.homepath = homepath
@@ -61,7 +61,7 @@ class Config:
             f.close()
         except IOError:
             self.log.debug('No config.ini in present working directory.')
-        
+
             #Try to read from home folder instead:
             appPath = os.path.join(self.homepath, '.taxidi')
             inifile = os.path.join(appPath, 'config.ini')
@@ -72,14 +72,14 @@ class Config:
             except IOError as _e:
                 self.log.warning("Configuration doesn't exist.")
                 self.log.error(_e)
-        
+
                 if not os.path.exists(appPath): #Check if ~/.taxidi/ exists.
                     self.log.warning("Local path didn't exist.  Creating with default values...")
                     try:
                         os.makedirs(appPath)  #Create application settings folder
                     except error as _e:
                         self.log.error(_e)
-        
+
                 #create the config by copying template from localdir.
                 #(may change to /usr/share/taxidi/ for distribution(?))
                 self.log.debug('Creating default configuration....')
@@ -91,8 +91,8 @@ class Config:
                     self.log.error(_e)
                     self.log.error('is destination writeable?')
                     self.status = ERROR_NOT_WRITEABLE
-    
-            resourcesPath = os.path.join(self.homepath, 
+
+            resourcesPath = os.path.join(self.homepath,
                 '.taxidi', 'resources')
             _resources = ['nametag', 'themes']  #folders to check for/copy
             for _folder in _resources:
@@ -111,7 +111,7 @@ class Config:
                             self.log.warning('Lower tree directory exists.')
                         else:
                             self.log.error(_e)
-    
+
         self.log.info("Reading configuration from '{0}'".format(inifile))
         self.config = configobj.ConfigObj(inifile, encoding='utf-8')
 
@@ -131,13 +131,13 @@ class Theme:
         except OSError as e:
             self.log.error('({0})'.format(e))
             return []
-        
+
         themes = []
         #Remove any files from themes[] that are not directories:
         for i in resource:
             if os.path.isdir(os.path.join(self.directory, i)):
                 themes.append(i)
-        
+
         valid = []
         #Check that each folder has the corresponding .conf file:
         for i in themes:
@@ -148,7 +148,7 @@ class Theme:
         del resource, themes
         self.log.debug("Found templates {0}".format(valid))
         return valid
-        
+
     def write():
         """
         Commits the configuration to file.
@@ -177,6 +177,19 @@ def as_bool(string):
     else:
         raise ValueError('Mangled boolean representation "{0}"'.format(string))
 
+def homeAbsolutePath(filename):
+    """
+    Evaluates a file's relative path given a cwd of ~/.taxidi/ or %APPDATA%\\.taxidi\\
+    :`filename` - Relative or absolute path to a file.
+    """
+    olddir = os.getcwd()
+    os.chdir(os.path.join(homepath, '.taxidi'))
+    path = os.path.abspath(filename)
+    os.chdir(olddir)  #Switch back to old cwd
+    return path
+
+def reload():
+    config.reload()
 
 def _main():
     # read out configuration for debugging... and stuff.

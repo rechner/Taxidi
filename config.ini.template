@@ -42,10 +42,13 @@ paging =      #%id% is replaced with last four digits of phone.
 
 [interface]
 fullscreen = False
+menu = True             #Show the program menu
+menuFullscreen = False  #True will force showing the menu when fullscreen.
 libnotify = True
 windowX = 1020
 windowY = 700
 theme = 'air'       #Name of the default theme to use.
+menu = True         #Enable/disable the program menu
 
 [logging]
 file = error.log

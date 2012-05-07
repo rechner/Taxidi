@@ -127,8 +127,6 @@ def askPass(defaultUser='', defaultPassword='', mayCancel=True):
 
 
 # --- Sample Usage ---
-import sys
-
 if __name__ == '__main__':
     #print askLogin('john_doe', '123', mayCancel=False)
     print askLogin()

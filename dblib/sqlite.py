@@ -51,12 +51,14 @@ import hashlib
 
 #Signaling constants
 SUCCESS = 1
+OK = 1
 FAIL = 2
 EMPTY_RESULT = 4
 USER_EXISTS = 8
 CONSTRAINT_FAILED = 16
-AUTHORIZED = 32
-UNAUTHORIZED = 64
+AUTHORIZED = 1
+UNAUTHORIZED = 0
+NEW = 128
 
 class Database:
     """SQLite3 driver class for taxídí database."""
@@ -93,6 +95,7 @@ class Database:
         try:
             fh = open(file, 'r')
             fh.close()
+            self.status = OK
         except IOError as e:
             self.log.warn('({0})'.format(e))
             #file does not exist: Create table
@@ -102,6 +105,7 @@ class Database:
             self.createTables()
             self.conn.commit()
             self.conn.close()
+            self.status = NEW
 
         #check if database can be written to (modification/creation)
         if not os.access(file, os.W_OK):
@@ -566,8 +570,8 @@ class Database:
             info = self.GetUser(user)
             passhash = hashlib.sha256(password + info['salt'])
             if info['hash'] == passhash.hexdigest():
-                return AUTHORIZED
-        return UNAUTHORIZED
+                return 1
+        return 0
     # == end users functions ==
 
 
@@ -718,7 +722,8 @@ def Translator(frm='', to='', delete='', keep=None):
 if __name__ == '__main__':
     try:
         #~ db = Database('~/.taxidi/database/users.db')
-        db = Database('~/test.db')
+        #~ db = Database('~/test.db')
+        db = Database('~/.taxidi/database/users.db')
     except TypeError:
         print 'Unable to open database (file write-protected?)'
         #display an error dialogue and exit
@@ -750,13 +755,13 @@ if __name__ == '__main__':
     #~ print db.GetActivities()
 
     #Users
-    #~ if db.AddUser('admin', 'password') == USER_EXISTS: print "User admin already exists"
-    #~ #db.commit()
+    #~ if db.AddUser('zac', 'password', admin=True) == USER_EXISTS: print "User admin already exists"
+    #~ db.commit()
     #~ print db.GetUsers()
     #~ print
     #~ print (db.AuthenticateUser('admin', 'badpassword') == AUTHORIZED) #False
     #~ print (db.AuthenticateUser('baduser', 'pass') == AUTHORIZED)      #False
-    #~ print (db.AuthenticateUser('admin', 'password') == AUTHORIZED)    #True
+    #~ print (db.AuthenticateUser(u'admin', u'password') == AUTHORIZED)    #True
     #~ db.RemoveUser('admin') ; db.commit()
     #~ print (db.AuthenticateUser('admin', 'password') == AUTHORIZED)    #False
 

@@ -449,7 +449,7 @@
                                                 <weight>normal</weight>
                                                 <underlined>0</underlined>
                                             </font>
-                                            <label>Current User: admin</label>
+                                            <label>Current User: ????????????</label>
                                             <default>0</default>
                                         </object>
                                     </object>
@@ -1207,7 +1207,7 @@
                                                     <weight>normal</weight>
                                                     <underlined>0</underlined>
                                                 </font>
-                                                <label>Current User: admin</label>
+                                                <label>Current User: ????????????</label>
                                                 <default>0</default>
                                             </object>
                                         </object>
