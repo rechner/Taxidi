@@ -48,7 +48,6 @@ libnotify = True
 windowX = 1020
 windowY = 700
 theme = 'air'       #Name of the default theme to use.
-menu = True         #Enable/disable the program menu
 
 [logging]
 file = error.log
@@ -76,6 +75,7 @@ pass =
 
 [authentication]
 method = none          #;none, single, local (using sqlite), database, (unix?, kerberos?, ldap?)
-enforce = True          #;enforce password protection?
-table =                 #;table in SQL database which contains: (user text; hash text;)
-hash = '0d890f617f6b897a3998b9f92138b70fda10a332'  #;SHA password hash for single user mode.
+config = True          #;enforce password protection?
+startup = True
+#;SHA256 password hash for single user mode.
+hash = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'
