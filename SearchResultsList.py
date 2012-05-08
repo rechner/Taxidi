@@ -7,7 +7,10 @@
 #TODO: Create left-handed search results panel (SearchResultsList.py)
 
 import wx
+import time
 import datetime
+from datetime import date
+
 try:
     from ulc import ultimatelistctrl as ULC
 except ImportError:
@@ -257,6 +260,205 @@ class SearchResultsPanel(wx.Panel):
         return tuple(int(value[i:i+lv/3], 16) for i in range(0, lv, lv/3))
 
 
+class MultiServicePanel(wx.Panel):
+    """
+    UltimateListCtrl based list for selecting multiple services to check-in to.
+    """
+
+    #----------------------------------------------------------------------
+    def __init__(self, parent):
+        """Constructor"""
+        wx.Panel.__init__(self, parent)
+
+        self.font = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        self.font.SetPointSize(16)
+        self.boldfont = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        self.boldfont.SetWeight(wx.BOLD)
+        self.boldfont.SetPointSize(16)
+        self.checkfont = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        self.checkfont.SetWeight(wx.BOLD)
+        self.checkfont.SetPointSize(28)
+
+        self.ultimateList = ULC.UltimateListCtrl(self, agwStyle = ULC.ULC_REPORT
+                                            | ULC.ULC_HAS_VARIABLE_ROW_HEIGHT
+                                            | ULC.ULC_HRULES)
+
+        info = ULC.UltimateListItem()
+        info._format = wx.LIST_FORMAT_CENTRE
+        info._mask = wx.LIST_MASK_TEXT |  wx.LIST_MASK_FORMAT | ULC.ULC_MASK_FONT
+        info._image = []
+        info._text = u'✔'
+        info._font = self.boldfont
+        self.ultimateList.InsertColumnInfo(0, info)
+
+        info = ULC.UltimateListItem()
+        info._mask = wx.LIST_MASK_TEXT | wx.LIST_MASK_FORMAT | ULC.ULC_MASK_FONT
+        info._format = 0
+        info._text = 'Service'
+        info._font = self.boldfont
+        info._image = []
+        self.ultimateList.InsertColumnInfo(1, info)
+
+        self.SetFont(self.boldfont)
+        self.checkboxes = []
+
+        self.ultimateList.SetColumnWidth(0, 60)
+        #~ self.ultimateList.SetColumnWidth(1, 350)
+        self.ultimateList.SetColumnWidth(1, LIST_AUTOSIZE_FILL)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.ultimateList, 1, wx.EXPAND)
+        self.SetSizer(sizer)
+        self.Bind(ULC.EVT_LIST_ITEM_SELECTED, self.Click, self.ultimateList)
+
+    def Click(self, event):
+        pass
+
+    def ButtonPress(self, event):
+        i = event.GetEventObject().id
+        if self.checkboxes[i].GetValue() == True: #Toggled on
+            self.checkboxes[i].SetLabel(u'✔')
+            self.checkboxes[i].SetForegroundColour('#61BD36')
+        else: #Toggled off
+            self.checkboxes[i].SetLabel('')
+
+    def SetToggle(self, id, value):
+        self.checkboxes[id].SetValue(value)
+        if self.checkboxes[id].GetValue() == True:
+            self.checkboxes[id].SetLabel(u'✔')
+            self.checkboxes[id].SetForegroundColour('#61BD36')
+        else: #Toggled off
+            self.checkboxes[id].SetLabel('')
+
+    def DeleteAllItems(self):
+        """Deletes all entries currently in the list"""
+        #FIXME: for some reason, UltimateListCtrl.DeleteAllItems() has troubles.
+        #  So we'll do deletion manually.  UPDATE: I left this code for a few
+        #  hours and suddenly it broke.  Work around is in place in
+        #  ultimatelistctrl.py
+        items = self.ultimateList.GetItemCount()
+        for i in reversed(xrange(items)):
+            self.ultimateList.DeleteItem(i)
+        del self.checkboxes
+        self.checkboxes = []
+
+    def GetSelected(self):
+        """Returns a list of the checked items"""
+        result = []
+        for i in range(len(self.checkboxes)):
+            if self.checkboxes[i].GetValue() == True:
+                result.append(self.items[i])
+        return result
+
+    def SetServices(self, services, filter=False, force=False, hide=False):
+        """
+        Clears and populates the list data from a `services` dictionary.
+        `filter`: When True, the services attributes will be filtered based on
+            attributes, e.g. only days matching Sunday will be shown on Sunday.
+            Services whose endTime has passed will be grey, but still available
+            for selection. Services which are active are marked green and selected
+            by default.
+        `force`: When true, services whose endTime has passed will be disabled from
+            selection.
+        `hide`: When true, services whose endTime has passed will not be shown.
+        """
+
+        self.items = []
+        self.DeleteAllItems()
+        self.services = services
+        today = date.today()
+        now = time.strftime('%H:%M:%S', time.localtime())
+        a = 0
+        for i in range(len(services)):
+            #Filter is True and rough check that times are set for the service.
+            if filter:
+                if services[i]['day'] == date.isoweekday(today) or services[i]['day'] == 0:
+                    #Show if day of week matches today's:
+                    self.FormatItem(services[i], a)
+                    delta = datetime.datetime.strptime(services[i]['endTime'], '%H:%M:%S') - datetime.datetime.strptime(now, '%H:%M:%S')
+                    if delta.days < 0:  #Service has ended
+                        self.SetCellTextColour(a, 1, 'grey')
+                        if force: self.checkboxes[i].Disable()
+
+                    if services[i]['time'] == '': #Assume All day
+                        delta2 = datetime.datetime.strptime('00:00:00', '%H:%M:%S') - datetime.datetime.strptime(now, '%H:%M:%S')
+                    else:
+                        delta2 = datetime.datetime.strptime(services[i]['time'], '%H:%M:%S') - datetime.datetime.strptime(now, '%H:%M:%S')
+                    if delta.days == 0 and delta2.days < 0:
+                        self.SetCellTextColour(a, 1, 'darkgreen')
+                        self.SetToggle(a, True)
+
+                    a += 1 #incrament the list counter
+                    self.items.append(services[i]) #List of services that are displayed
+                else:
+                    pass #Don't add it to the list
+            elif not filter:
+                self.FormatItem(services[i], a)
+                a += 1
+
+    def FormatItem(self, service, i):
+        pos = self.ultimateList.InsertStringItem(i, '')
+        self.ultimateList.SetStringItem(pos, 1, service['name'])
+
+        #Set the name column to bold:
+        self.SetCellFont(i, 1, self.boldfont)
+
+        self.checkboxes.append(wx.ToggleButton(self.ultimateList, id=i,
+            label="", size=(50, 50)))
+        self.Bind(wx.wx.EVT_TOGGLEBUTTON, self.ButtonPress,
+            self.checkboxes[i])
+        self.checkboxes[i].id = i
+        self.checkboxes[i].SetFont(self.checkfont)
+
+        self.ultimateList.SetItemWindow(pos, col=0, wnd=self.checkboxes[i],
+            expand=False)
+
+        if i % 2 == 1: #Make every other row a light grey for legibility.
+            colour = self.hex_to_rgb('#DCDCDC')
+            self.ultimateList.SetItemBackgroundColour(i, wx.Colour(colour[0], colour[1], colour[2]))
+
+    def GetItems(self):
+        return self.items
+
+
+    def SetCellFont(self, row, col, font, colour=None):
+        """
+        Sets an individual cell's font [and optionally colour].
+
+        :param `row`: The item's identifying row.
+        :param `col`: The item's identifying column.
+        :param `font`: A valid wx.Font to apply.
+        :param `colour`: (opt.) A valid wx.Colour to apply.
+        """
+        item = self.ultimateList.GetItem(row, col)
+        if colour:
+            item.SetMask(ULC.ULC_MASK_FONT | ULC.ULC_MASK_FONTCOLOUR)
+            item.SetTextColour(colour)
+        else:
+            item.SetMask(ULC.ULC_MASK_FONT)
+        item.SetFont(font)
+        self.ultimateList.SetItem(item)
+
+    def SetCellTextColour(self, row, col, colour):
+        """
+        Sets an individual cell's text colour.
+        """
+        item = self.ultimateList.GetItem(row, col)
+        item.SetMask(ULC.ULC_MASK_FONTCOLOUR)
+        item.SetTextColour(colour)
+        #item.SetFont(item.GetFont())
+        self.ultimateList.SetItem(item)
+
+    def hex_to_rgb(self, value):
+        """
+        Converts an HTML hex colour to (r,g,b).
+        For some reason some parts of ULC require an wx.Colour object.
+        """
+        value = value.lstrip('#')
+        lv = len(value)
+        return tuple(int(value[i:i+lv/3], 16) for i in range(0, lv, lv/3))
+
+
 ########################################################################
 class TestFrame(wx.Frame):
     """"""
@@ -264,10 +466,18 @@ class TestFrame(wx.Frame):
     #----------------------------------------------------------------------
     def __init__(self):
         """Constructor"""
-        wx.Frame.__init__(self, None, title="UltimateListCtrl test", size=(1024, 558))
-        panel = SearchResultsPanel(self)
-        panel.ShowResults(results)
+        #~ wx.Frame.__init__(self, None, title="UltimateListCtrl test", size=(1024, 558))
+        wx.Frame.__init__(self, None, title="UltimateListCtrl test", size=(500, 400))
+        #~ panel = SearchResultsPanel(self)
+        #~ panel.ShowResults(results)
+        panel = MultiServicePanel(self)
         self.Show()
+        panel.SetServices([ {'id': 1,  'name': 'First Service', 'day': 2, 'time': '00:00:00', 'endTime': '00:09:00'},
+                             {'id': 2, 'name': 'Second Service', 'day': 2, 'time': '00:30:00', 'endTime': '00:45:00'},
+                             {'id': 3, 'name': 'Third Service', 'day': 2, 'time': '00:30:00', 'endTime': '01:59:59'},
+                             {'id': 4, 'name': 'Every day', 'day': 0, 'time': '00:00:00', 'endTime': '17:53:59'} ], True)
+        print panel.GetSelected()
+
 
 #----------------------------------------------------------------------
 if __name__ == "__main__":
