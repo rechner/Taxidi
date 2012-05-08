@@ -8,6 +8,7 @@
 # Everything just happens on import.
 
 #TODO: (HIGH DEADLINE 03.05) Implement basic theme files.
+#TODO: Create database folders in ~/.taxidi/ for first run
 
 #TODO: Implement fetch config from http(s) or sftp.
 #TODO: Implement validation.

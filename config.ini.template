@@ -74,7 +74,7 @@ user =
 pass =
 
 [authentication]
-method = none          #;none, single, local (using sqlite), database, (unix?, kerberos?, ldap?)
+method = database          #;none, single, database, (unix?, kerberos?, ldap?)
 config = True          #;enforce password protection?
 startup = True
 #;SHA256 password hash for single user mode.
