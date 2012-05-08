@@ -36,8 +36,11 @@ class MyApp(wx.App):
         self.res = xrc.XmlResource(os.path.join('xrc', 'menu.xrc'))
         self.init_frame()
         self.PhotoStorage = webcam.Storage()
-        self.setupDatabase()
+
         os.kill(child_pid, signal.SIGKILL)  #Close the splash
+        #Setup error handling:
+        #~ import sys
+        #~ sys.excepthook = self._excepthook
         return True
 
     def init_frame(self):
@@ -158,6 +161,9 @@ class MyApp(wx.App):
 
         #Bind buttons:
         self.MainMenu.Bind(wx.EVT_BUTTON, self.StartCheckin, self.MainMenu.begin)
+        #~ self.MainMenu.Bind(wx.EVT_BUTTON, self.ShowConfiguration, self.MainMenu.configure)
+        self.MainMenu.Bind(wx.EVT_BUTTON, self.EditServices, self.MainMenu.services)
+        #~ self.MainMenu.Bind(wx.EVT_BUTTON, self.EditActivities, self.MainMenu.activities)
         self.MainMenu.Bind(wx.EVT_BUTTON, self.OnAboutBox, self.MainMenu.about)
         self.MainMenu.Bind(wx.EVT_BUTTON, self.Quit, self.MainMenu.quit)
 
@@ -262,6 +268,95 @@ class MyApp(wx.App):
 
     def searchRadioButtonClick(self, event):
         self.Search.SetFocus()
+
+
+    def EditServices(self, event):
+        self.setupDatabase() #Open database
+        if self.PerformAuthentication(admin=conf.config['authentication']['config']):
+            #Access granted
+            dlg = dialogues.EditServices(self.frame, -1, self.db)  #Open dialogue
+            dlg.SetServices(self.db.GetServices()) #Set dialogue data (FIXME: do in EditServices class)
+            dlg.ShowModal() #Show dialogue
+            self.db.commit() #Just in case.
+        self.db.close() #close connection when done.
+
+
+    def PerformAuthentication(self, main=False, admin=False):
+        """
+        Returns True if the user answered the authentication prompt successfully.
+        Also sets the self.user variable with the appropriate data.
+        Returns False if user cancelled prompt. (Loops until user cancels).
+        """
+        conf.config.reload()
+        #No password needed
+        if conf.config['authentication']['method'].lower() == 'none' \
+          or conf.as_bool(conf.config['authentication']['startup']) == False:
+            #Access granted
+            self.user = {'user': 'admin', 'admin': True, 'leftHanded': False }
+            if main: self.SwitchUserDisable() #No other users to switch to
+            return True
+        #Single user mode:
+        elif conf.config['authentication']['method'].lower() == 'single' \
+          and conf.as_bool(conf.config['authentication']['startup']):
+            #~ print "Hash: ", conf.config['authentication']['hash']
+            hashobj = hashlib.sha256()
+            response = ''
+            while response != None:
+                response = dialogues.askPass()
+                if response == '': response = None
+                if response != None: hashobj.update(response)
+                #~ print "Computed hash: ", hashobj.hexdigest()
+                if response == None: break
+                elif conf.config['authentication']['hash'] == hashobj.hexdigest():
+                    #Access granted
+                    #Set local user to admin (defaults)
+                    self.user = {'user': 'admin', 'admin': True, 'leftHanded': False }
+                    if main: self.SwitchUserDisable() #No other users to switch to
+                    return True
+                    response = None #Just in case
+                elif conf.config['authentication']['hash'] != hashobj.hexdigest():
+                    #TODO: Nicer message boxes
+                    wx.MessageBox('Incorrect Password.', 'Taxidi', wx.OK | wx.ICON_EXCLAMATION)
+        #Authenticate user:
+        elif conf.config['authentication']['method'].lower() == 'database' \
+          and conf.as_bool(conf.config['authentication']['startup']):
+            response = ''
+            while response != None:
+                response = dialogues.askLogin()
+                #~ if response == ('', ''): response = None
+                if response == None: break
+                if self.db.AuthenticateUser(*response):
+                    #Access granted, but check if admin is required first:
+                    user = self.db.GetUser(response[0])
+                    if admin:
+                        if user['admin']:
+                            #Admin required, and user has admin priveledge: Grant access
+                            self.user = user
+                            return True
+                        else:
+                            #Admin required, but user isn't an administrator:
+                            wx.MessageBox('You do not have sufficient '
+                            'privileges to access this area.  Please contact '
+                            'your systems administrator for making changes.',
+                            'Taxidi', wx.OK | wx.ICON_ERROR)
+                            return False
+                    else:
+                        #Admin not required
+                        self.user = user
+                        return True
+                    response = None
+                else:
+                    #Access denied
+                    wx.MessageBox('Incorrect username or password.', 'Taxidi',
+                        wx.OK | wx.ICON_EXCLAMATION)
+        else:
+            wx.MessageBox(
+              '"{0}" is not a valid authentication method.\n' \
+              'Please check your program configuration.'.
+              format(conf.config['authentication']['method']),
+              'Configuration Error', wx.OK | wx.ICON_ERROR)
+
+        return False
 
     #TODO: (URGENT DEADLINE 04.05) Add basic record panel UI functionality.
     def setupRecordPanel(self):
@@ -873,58 +968,17 @@ class MyApp(wx.App):
         self.HideAll()
         self.MainMenu.Show()
 
+    def BeginCheckinRoutine(self, event):
+        self.MainMenu.Hide()
+        self.ShowSearchPanel()
+
     def StartCheckin(self, event):
         conf.config.reload()
-        #No password needed
-        if conf.config['authentication']['method'].lower() == 'none' \
-          or conf.as_bool(conf.config['authentication']['startup']) == False:
-            #Access granted
-            self.user = {'user': 'admin', 'admin': True, 'leftHanded': False }
-            self.SwitchUserDisable() #Disable user switching
-            self.MainMenu.Hide()
-            self.ShowSearchPanel()
-        #Single user mode:
-        elif conf.config['authentication']['method'].lower() == 'single' \
-          and conf.as_bool(conf.config['authentication']['startup']):
-            #~ print "Hash: ", conf.config['authentication']['hash']
-            hashobj = hashlib.sha256()
-            response = ''
-            while response != None:
-                response = dialogues.askPass()
-                if response == '': response = None
-                if response != None: hashobj.update(response)
-                #~ print "Computed hash: ", hashobj.hexdigest()
-                if response == None: break
-                elif conf.config['authentication']['hash'] == hashobj.hexdigest():
-                    #Access granted
-                    #Set local user to admin (defaults)
-                    self.user = {'user': 'admin', 'admin': True, 'leftHanded': False }
-                    self.SwitchUserDisable() #No other users to switch to
-                    self.MainMenu.Hide()
-                    self.ShowSearchPanel()
-                    response = None
-                elif conf.config['authentication']['hash'] != hashobj.hexdigest():
-                    #TODO: Nicer message boxes
-                    wx.MessageBox('Incorrect Password.', 'Taxidi', wx.OK | wx.ICON_EXCLAMATION)
-        #Authenticate user:
-        elif conf.config['authentication']['method'].lower() == 'database' \
-          and conf.as_bool(conf.config['authentication']['startup']):
-            response = ''
-            while response != None:
-                response = dialogues.askLogin()
-                #~ if response == ('', ''): response = None
-                if response == None: break
-                if self.db.AuthenticateUser(*response):
-                    #Access granted
-                    self.user = self.db.GetUser(response[0])
-                    self.MainMenu.Hide()
-                    self.ShowSearchPanel()
-                    self.SwitchUserEnable() #just in case
-                    response = None
-                else:
-                    #Access denied
-                    wx.MessageBox('Incorrect username or password.', 'Taxidi',
-                        wx.OK | wx.ICON_EXCLAMATION)
+        self.setupDatabase()
+        if self.PerformAuthentication(main=True):
+            self.BeginCheckinRoutine(None)
+        else:
+            self.db.close()
 
     def ShowSearchPanel(self):
         if self.user['leftHanded']:
@@ -951,6 +1005,9 @@ class MyApp(wx.App):
             response = ''
             while response != None:
                 response = dialogues.askLogin()
+                if response[0] == self.user['user']:
+                    #Already logged in.
+                    response = None
                 if response == None: break
                 if self.db.AuthenticateUser(*response):
                     #Access granted
@@ -970,6 +1027,22 @@ class MyApp(wx.App):
         self.ResultsPanel.opened = True
         self.HideAll()
         self.ResultsPanel.Show()
+
+    def _excepthook (self, etype, value, tb) :
+        if type is taxidi.Error:
+            # application error - display a wx.MessageBox with the error message
+            #wx.MessageBox()
+            pass
+        else:
+            import sys, traceback
+            xc = traceback.format_tb(tb)
+            import wx.lib.dialogs
+            msg = "Taxidi has encountered a program error.\n\n" \
+                "Traceback:\n" + ''.join(xc)
+            dlg = wx.lib.dialogs.ScrolledMessageDialog(self.frame, msg, "Program Traceback")
+            dlg.ShowModal()
+
+            dlg.Destroy()
 
 
     def OnAboutBox(self, event):
@@ -1035,6 +1108,7 @@ class SplashScreen(wx.SplashScreen):
         #~ self.Close()
         evt.Skip()  # Make sure the default handler runs too...
 
+
 def showSplash():
     app = wx.PySimpleApp()
     splash = SplashScreen()
@@ -1085,8 +1159,14 @@ if __name__ == '__main__':
             #Import file selection dialogue instead
             import wx.lib.imagebrowser as ib
             import webcam #for maniuplating database photos
-        app = MyApp(0)
-        app.MainLoop()
+
+        try:
+            app = MyApp(0)
+            app.MainLoop()
+        except:
+            import sys, traceback
+            xc = traceback.format_exception(*sys.exc_info())
+            wx.MessageBox(''.join(xc))
 
 
 #~ app = MyApp(0)
