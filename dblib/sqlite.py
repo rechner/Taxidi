@@ -117,7 +117,7 @@ class Database:
         #open database for writing and query
         self.conn = sqlite.connect(file)
         self.cursor = self.conn.cursor()
-        self.log.info("Created sqlite3 database instance using file '{}'".
+        self.log.info("Created sqlite3 database instance using file '{0}'".
             format(file))
 
     def close(self):
@@ -468,7 +468,7 @@ class Database:
     def GetServices(self):
         return self.to_dict(self.execute("SELECT * FROM services;"))
 
-    def AddService(self, name, day=0, time='', endTime=''):
+    def AddService(self, name, day=0, time='00:00:00', endTime='23:59:59'):
         self.execute("""INSERT INTO services(name, day, time, endTime)
                         VALUES (?, ?, ?, ?);""", (name, day, time, endTime))
 
@@ -755,7 +755,7 @@ if __name__ == '__main__':
     #~ print db.GetActivities()
 
     #Users
-    #~ if db.AddUser('zac', 'password', admin=True) == USER_EXISTS: print "User admin already exists"
+    #~ if db.AddUser('guest', 'password', admin=False) == USER_EXISTS: print "User admin already exists"
     #~ db.commit()
     #~ print db.GetUsers()
     #~ print
@@ -764,5 +764,10 @@ if __name__ == '__main__':
     #~ print (db.AuthenticateUser(u'admin', u'password') == AUTHORIZED)    #True
     #~ db.RemoveUser('admin') ; db.commit()
     #~ print (db.AuthenticateUser('admin', 'password') == AUTHORIZED)    #False
+
+    #~ db.AddService('Second Service')
+    #~ db.UpdateService(1, 'First Service', 7, '09:00:00', '09:59:00')
+    #~ db.commit()
+    print db.GetServices()
 
     db.close()
