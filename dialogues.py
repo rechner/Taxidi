@@ -582,8 +582,8 @@ if __name__ == '__main__':
     db = sqlite.Database('~/.taxidi/database/users.db')
 
     dlg = EditServices(None, -1, db)
-    services = db.GetServices()
-    dlg.SetServices(services)
+    #~ services = db.GetServices()
+    #~ dlg.SetServices(services)
 
     dlg.ShowModal()
     db.commit()
