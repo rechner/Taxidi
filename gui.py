@@ -663,8 +663,8 @@ class MyApp(wx.App):
             pane.ParentToggle = xrc.XRCCTRL(pane, 'ParentToggle')
             pane.MultiServiceButton = xrc.XRCCTRL(pane, 'MultiServiceButton')
             pane.PhoneButton = xrc.XRCCTRL(pane, 'PhoneButton')
-            pane.PhoneButton.Disable()
-            pane.CustomIDButton = xrc.XRCCTRL(pane, 'CustomIDButton')
+            pane.PhoneButton.Disable() #TODO: Phone button actions?
+            pane.CustomIDButton = xrc.XRCCTRL(pane, 'CustomIDButton') #TODO Custom ID Button (paging code)
             pane.Parent1Find = xrc.XRCCTRL(pane, 'Parent1Find')
             pane.AddSibling = xrc.XRCCTRL(pane, 'AddSibling')
             pane.NewsletterToggle = xrc.XRCCTRL(pane, 'NewsletterToggle')
@@ -702,10 +702,13 @@ class MyApp(wx.App):
             pane.DatePicker.Bind(wx.EVT_DATE_CHANGED, self.VisitorDateChanged)
             pane.Phone.Bind(wx.EVT_KILL_FOCUS, self.FormatPhone)
             pane.Phone.Bind(wx.EVT_TEXT, self.FormatPhoneLive)
+            pane.Activity.Bind(wx.EVT_CHOICE, self.OnSelectActivity)
             pane.Email.Bind(wx.EVT_TEXT, self.FormatEmailLive)
             pane.Parent1.Bind(wx.EVT_TEXT_ENTER, self.VisitorParentFind)
             pane.Parent1Find.Bind(wx.EVT_NAVIGATION_KEY, self.VisitorParentTab)
             pane.Email.Bind(wx.EVT_NAVIGATION_KEY, self.VisitorParentTab)
+
+            #~ pane.Activity.SetItems()
 
         #Set initial geometry:
         for pane in panels:
@@ -823,12 +826,22 @@ class MyApp(wx.App):
 
     def FormatPhone(self, event):
         phone = event.GetEventObject()
+        panel = phone.GetParent()
         validate.PhoneFormat(phone)
+        if len(panel.Phone.GetValue()) > 4:
+            panel.Paging.SetValue('{0}-{1}'.format(
+                self.activities[panel.Activity.GetSelection()]['prefix'],
+                phone.GetValue()[-4:]))
 
     def FormatPhoneLive(self, event):
         phone = event.GetEventObject()
         if phone.IsModified():
             validate.PhoneFormat(phone)
+            panel = phone.GetParent()
+            if len(panel.Phone.GetValue()) > 4:
+                panel.Paging.SetValue('{0}-{1}'.format(
+                    self.activities[panel.Activity.GetSelection()]['prefix'],
+                    phone.GetValue()[-4:]))
 
     def FormatDateLive(self, event):
         dob = event.GetEventObject()
@@ -861,9 +874,11 @@ class MyApp(wx.App):
             self.ToggleStateOff(btn) #Toggled off.
 
     def ToggleStateOn(self, btn):
+        btn.SetValue(True)
         btn.SetBackgroundColour(themeToggleColour)
 
     def ToggleStateOff(self, btn):
+        btn.SetValue(False)
         btn.SetBackgroundColour(wx.NullColor)
 
     def ToggleCheckBox(self, event):
@@ -887,10 +902,12 @@ class MyApp(wx.App):
                 self.VisitorPanelSetExpiry()
 
     def ToggleCheckBoxOn(self, btn):
+        btn.SetValue(True)
         btn.SetForegroundColour(themeCheckOnColour)
         btn.SetLabel(u'✔')
 
     def ToggleCheckBoxOff(self, btn):
+        btn.SetValue(False)
         btn.SetForegroundColour(themeCheckOffColour)
         btn.SetLabel(u'✘')
 
@@ -907,7 +924,61 @@ class MyApp(wx.App):
             self.VisitorPanel.ExpiryText.SetLabel(self.VisitorPanel.Expires.strftime("%d %b %Y"))
 
     def OnVisitor(self, event):
-        self.ShowVisitorPanel()
+        #Setup the inputs, etc:
+        self.activities = self.db.GetActivities() #Load activities from database
+        self.ShowVisitorPanel() #Show the panel (Needed to set self.VisitorPanel)
+        #Set the activity options:
+        self.VisitorPanel.Activity.SetItems([ i['name'] for i in self.activities ])
+        self.VisitorPanel.Activity.SetStringSelection(
+            conf.config['config']['defaultActivity']) #Set default activity
+        self.rooms = self.db.GetRooms()
+        items = [ i['name'] for i in self.db.GetRoom(
+            conf.config['config']['defaultActivity']) ]
+        items.insert(0, '') #Allow blank selection
+        self.VisitorPanel.Room.SetItems(items)
+        self.VisitorPanel.Room.SetStringSelection('')
+
+    def OnSelectActivity(self, event):
+        choice = event.GetEventObject()
+        panel = choice.GetParent()
+        selection = event.GetString()
+        #Set the rooms accordingly:
+        items = [ i['name'] for i in self.db.GetRoom(selection) ]
+        items.insert(0, '') #Allow blank selection
+        panel.Room.SetItems(items)
+        panel.Room.SetStringSelection('')
+        #Reformat the paging number:
+        if len(panel.Phone.GetValue()) > 4:
+            panel.Paging.SetValue('{0}-{1}'.format(
+                self.activities[event.GetSelection()]['prefix'],
+                panel.Phone.GetValue()[-4:]))
+        #Set the appropriate defaults for nametag settings:
+        if self.activities[event.GetSelection()]['nametagEnable']:
+            self.ToggleStateOn(panel.NametagToggle)
+        else:
+            self.ToggleStateOff(panel.NametagToggle)
+
+        if self.activities[event.GetSelection()]['parentTagEnable']:
+            self.ToggleStateOn(panel.ParentToggle)
+        else:
+            self.ToggleStateOff(panel.ParentToggle)
+
+        #== VisitorPanel specific items ==
+        #Set expire settings:
+        if self.activities[event.GetSelection()]['autoExpire']:
+            self.ToggleCheckBoxOff(self.VisitorPanel.NeverExpireToggle)
+        else:
+            self.ToggleCheckBoxOn(self.VisitorPanel.NeverExpireToggle)
+            self.VisitorPanel.DatePicker.Disable()
+        if self.activities[event.GetSelection()]['notifyExpire']:
+            self.ToggleCheckBoxOn(self.VisitorPanel.NotifyWhenExpiresToggle)
+        else:
+            self.ToggleCheckBoxOff(self.VisitorPanel.NotifyWhenExpiresToggle)
+        #Set newsletter default:
+        if self.activities[event.GetSelection()]['newsletter']:
+            self.ToggleCheckBoxOn(self.VisitorPanel.NewsletterToggle)
+        else:
+            self.ToggleCheckBoxOff(self.VisitorPanel.NewsletterToggle)
 
     def ShowVisitorPanel(self):
         self.HideAll()
