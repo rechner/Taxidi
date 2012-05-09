@@ -98,6 +98,59 @@ def EmailFormat(email):
     else:
         email.SetBackgroundColour('pink')
 
+def DateFormatPost(date):
+    #Clear the input if needed
+    value = date.GetValue()
+    if value == '':
+        date.SetValue('YYYY-MM-DD')
+        date.SetForegroundColour('#cdcdcd')
+        date.SetBackgroundColour(NullColour)
+    if len(value) == 9: #2011-9-14 or 2011-09-5
+        if value[4] in '-./\\' and value[5].isdigit() and value[6] in '-./\\':
+            #YYYY-M-DD
+            date.SetValue('{0}-0{1}-{2}'.format(value[0:4], value[5:6], value[7:9]))
+            date.SetBackgroundColour('green')
+            date.SetInsertionPointEnd()
+        elif value[4] in '-./\\' and value[5:7].isdigit() and value[7] in '-./\\':
+            #YYYY-MM-D
+            date.SetValue('{0}-{1}-0{2}'.format(value[0:4], value[5:7], value[8:9]))
+            date.SetBackgroundColour('green')
+            date.SetInsertionPointEnd()
+
+
+def DateFormat(date):
+    value = date.GetValue()
+    date.SetForegroundColour('black')
+    #~ if len(value) == 0:
+        #~ date.SetBackgroundColour(NullColour)
+        #~ date.SetForegroundColour('#cdcdcd')
+        #~ date.SetValue('YYYY-MM-DD')
+        #~ date.SelectAll()
+    if len(value) > 1:
+        date.SetBackgroundColour('pink')
+    else:
+        date.SetBackgroundColour(NullColour)
+    if len(value) == 8 and value.isdigit():
+        date.SetValue('{0}-{1}-{2}'.format(value[0:4], value[4:6], value[6:8]))
+        date.SetBackgroundColour('green')
+        date.SetInsertionPointEnd()
+    if len(value) == 10:
+        if value == 'YYYY-MM-DD':
+            date.Clear()
+            date.SetForegroundColour('black')
+            pass
+        else:
+            if (value[0:4]+value[5:7]+value[8:10]).isdigit():
+                #Format is correct. Replace separators:
+                trans = Translator(delete='-./\\ ')
+                unformat = trans(value.encode('ascii')) #doesn't work with unicode.
+                date.SetValue('{0}-{1}-{2}'.format(unformat[0:4], unformat[4:6], unformat[6:8]))
+                date.SetBackgroundColour('green')
+                date.SetInsertionPointEnd()
+            else:
+                date.SetBackgroundColour('pink')
+            if int(value[5:7]) > 12 or int(value[8:10]) > 31:
+                date.SetBackgroundColour('red')
 
 def Email(email):
     """

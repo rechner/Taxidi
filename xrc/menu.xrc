@@ -5,7 +5,166 @@
         <size>1020,700</size>
         <title>Taxidi Alpha</title>
 
-
+        <!-- menu items are disabled by default for main menu panel view -->
+        <object class="wxMenuBar" name="MainMenubar">
+            <label>Taxidi</label>
+            <object class="wxMenu" name="FileMenu">
+                <label>&amp;File</label>
+                <object class="wxMenuItem" name="MenuNurseryAlert">
+                    <label>Nursery &amp;Alert\tCtrl+S</label>
+                    <help></help>
+                    <bitmap>../resources/icons/dialog-warning-16.png</bitmap>
+                    <enabled>0</enabled>
+                </object>
+                <object class="separator" />
+                <object class="wxMenuItem" name="MenuPrintForm">
+                    <label>&amp;Print Form\tCtrl+P</label>
+                    <help></help>
+                    <bitmap>../resources/icons/document-print-16.png</bitmap>
+                    <enabled>0</enabled>
+                </object>
+                <object class="wxMenuItem" name="MenuPrintNametag">
+                    <label>Print &amp;Nametag\tShift+Ctrl+P</label>
+                    <help></help>
+                    <bitmap>../resources/icons/nametag.png</bitmap>
+                    <enabled>0</enabled>
+                </object>
+                <object class="separator" />
+                <object class="wxMenuItem" name="MenuLockScreen">
+                    <label>&amp;Lock Kiosk\tCtrl+L</label>
+                    <help></help>
+                    <bitmap>../resources/icons/system-lock-screen-16.png</bitmap>
+                    <enabled>0</enabled>
+                </object>
+                <object class="wxMenuItem" name="ExitMenu">
+                    <label>Log Out &amp;&amp; &amp;Exit\tCtrl+W</label>
+                    <bitmap>../resources/icons/window-close-16.png</bitmap>
+                    <help></help>
+                    <enabled>0</enabled>
+                </object>
+                <object class="separator" />
+                <object class="wxMenuItem" name="MenuQuit">
+                    <label>&amp;Quit\tCtrl+Q</label>
+                    <help></help>
+                    <bitmap>../resources/icons/system-shutdown-22.png</bitmap>
+                </object>
+            </object>
+            <object class="wxMenu" name="ViewMenu">
+                <label>&amp;View</label>
+                <object class="wxMenu" name="MenuKeypad">
+                    <label>&amp;Keypad</label>
+                    <object class="wxMenuItem" name="MenuKeypadEnable">
+                        <label>&amp;Enable</label>
+                        <help></help>
+                        <enabled>0</enabled>
+                        <checkable>1</checkable>
+                    </object>
+                    <object class="separator" />
+                    <object class="wxMenuItem" name="MenuKeypadRight">
+                        <label>&amp;Right Hand</label>
+                        <help></help>
+                        <radio>1</radio>
+                        <enabled>0</enabled>
+                    </object>
+                    <object class="wxMenuItem" name="MenuKeypadLeft">
+                        <label>&amp;Left Hand</label>
+                        <help></help>
+                        <radio>1</radio>
+                        <enabled>0</enabled>
+                    </object>
+                </object>
+                <object class="wxMenuItem" name="MenuSearchHistory">
+                    <label>Search &amp;History</label>
+                    <help></help>
+                    <enabled>0</enabled>
+                    <checkable>1</checkable>
+                </object>
+                <object class="separator" />
+                <object class="wxMenuItem" name="MenuFullScreen">
+                    <label>&amp;Full Screen\tF11</label>
+                    <help></help>
+                    <checkable>1</checkable>
+                </object>
+            </object>
+            <object class="wxMenu" name="DatabaseMenu">
+                <label>&amp;Database</label>
+                <object class="wxMenuItem" name="MenuRegister">
+                    <label>&amp;Register\tCtrl+N</label>
+                    <help></help>
+                    <enabled>0</enabled>
+                    <bitmap>../resources/icons/contact-new-22.png</bitmap>
+                </object>
+                <object class="wxMenuItem" name="MenuVisitor">
+                    <label>Quick Register (&amp;Visitor)</label>
+                    <help></help>
+                    <enabled>0</enabled>
+                    <bitmap>../resources/icons/quick-register-22.png</bitmap>
+                </object>
+                <object class="separator" />
+                <object class="wxMenuItem" name="MenuStatistics">
+                    <label>Print &amp;Statistics</label>
+                    <help></help>
+                    <enabled>0</enabled>
+                    <bitmap>../resources/icons/document-print-22.png</bitmap>
+                </object>
+                <object class="wxMenuItem" name="MenuEmergencyList">
+                    <label>Print &amp;Emergency List</label>
+                    <help></help>
+                    <bitmap>../resources/icons/document-print-emergency-22.png</bitmap>
+                    <enabled>0</enabled>
+                </object>
+                <object class="separator" />
+                <object class="wxMenuItem" name="MenuViewCheckIns">
+                    <label>View Check-&amp;ins</label>
+                    <help></help>
+                    <enabled>0</enabled>
+                    <bitmap>../resources/icons/check-in-22.png</bitmap>
+                </object>
+                <object class="wxMenuItem" name="MenuViewCheckOuts">
+                    <label>View Check-&amp;outs</label>
+                    <help></help>
+                    <enabled>0</enabled>
+                    <bitmap>../resources/icons/check-out-22.png</bitmap>
+                </object>
+            </object>
+            <object class="wxMenu" name="VolunteerMenu">
+                <label>V&amp;olunteer</label>
+                <object class="wxMenuItem" name="m_menuItem41">
+                    <label>&amp;Register</label>
+                    <help></help>
+                    <bitmap>../resources/icons/contact-new-22.png</bitmap>
+                </object>
+            </object>
+            <object class="wxMenu" name="UserMenu">
+                <label>&amp;User</label>
+                <object class="wxMenuItem" name="MenuChangePassword">
+                    <label>Change &amp;Password</label>
+                    <help></help>
+                    <bitmap>../resources/icons/stock_keyring.png</bitmap>
+                </object>
+                <object class="wxMenuItem" name="MenuUpdateInfo">
+                    <label>Update &amp;Information</label>
+                    <help></help>
+                    <enabled>0</enabled>
+                    <bitmap>../resources/icons/user-info-16.png</bitmap>
+                </object>
+                <object class="separator" />
+                <object class="wxMenuItem" name="MenuSwitchUser">
+                    <label>&amp;Switch User</label>
+                    <help></help>
+                    <enabled>0</enabled>
+                    <bitmap>../resources/icons/gnome-session-switch-24.png</bitmap>
+                </object>
+            </object>
+            <object class="wxMenu" name="HelpMenu">
+                <label>&amp;Help</label>
+                <object class="wxMenuItem" name="MenuAbout">
+                    <label>&amp;About\tF1</label>
+                    <help></help>
+                    <bitmap>../resources/icons/help-about-16.png</bitmap>
+                </object>
+            </object>
+        </object>
 
         <!-- main menu -->
         <object class="wxPanel" name="MainMenu">

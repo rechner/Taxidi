@@ -10,6 +10,8 @@
 #TODO: Set radiobutton background colours if possible.
 #TODO: Clean up XML.
 
+#Couldn't get the wx-esque validator classes to work, so I wrote my own (validate.py)
+
 #Imports for splash screen
 import wx
 import os
@@ -69,6 +71,9 @@ class MyApp(wx.App):
         self.setupRecordPanel()
         self.setupResultsList()
         self.setupVisitorPanel()
+
+        #Setup programme menus:
+        self.InitMenus()
 
         #Load generic icons
         self.NoPhoto128 = wx.Image(os.path.join(themeIconPath, 'no-photo-128.png')).ConvertToBitmap()
@@ -143,6 +148,9 @@ class MyApp(wx.App):
                     'confirm your configuration before continuing.'.format(datafile),
                     'Taxidi', wx.OK | wx.ICON_INFORMATION)
 
+    def InitMenus(self):
+        #Setup the programme menus
+        self.frame.Bind(wx.EVT_MENU, self.OnAboutBox, id=xrc.XRCID("MenuAbout"))
 
     def setupMainMenu(self):
         #Make it pretty
@@ -424,6 +432,16 @@ class MyApp(wx.App):
             modifiedSt.SetForegroundColour(themeTextColour)
             countSt.SetForegroundColour(themeTextColour)
 
+        #Setup inputs:
+        for pane in panels:
+            pane.DOB = xrc.XRCCTRL(pane, 'DOB')
+            #~ validator = ObjectAttrValidator2.ObjectAttrTextValidator( pane, 'DOB',
+                #~ DateFormatter(), False, self._validationCB )
+            #~ pane.DOB.Validator = validator
+            pane.DOB.Bind(wx.EVT_TEXT, self.FormatDateLive)
+            pane.DOB.Bind(wx.EVT_SET_FOCUS, self.FormatDate)
+            pane.DOB.Bind(wx.EVT_KILL_FOCUS, self.FormatDatePost)
+
         #Add buttons and their bindings:
         for pane in panels:
             pane.ProfilePicture = xrc.XRCCTRL(pane, 'ProfilePicture')
@@ -450,7 +468,6 @@ class MyApp(wx.App):
         for pane in panels:
             pane.SetPosition((0, 160))
             pane.SetClientSize((self.frame.GetSize()[0]-20, -1))
-
 
     def CloseRecordPanel(self, event):
         self.RecordPanelLeft.Hide()
@@ -813,6 +830,20 @@ class MyApp(wx.App):
         if phone.IsModified():
             validate.PhoneFormat(phone)
 
+    def FormatDateLive(self, event):
+        dob = event.GetEventObject()
+        if dob.IsModified():
+            validate.DateFormat(dob)
+
+    def FormatDate(self, event):
+        dob = event.GetEventObject()
+        validate.DateFormat(dob)
+        #Set focus
+
+    def FormatDatePost(self, event):
+        dob = event.GetEventObject()
+        validate.DateFormatPost(dob)
+
 
     def ToggleState(self, event):
         """
@@ -1107,7 +1138,6 @@ class SplashScreen(wx.SplashScreen):
         self.Hide()
         #~ self.Close()
         evt.Skip()  # Make sure the default handler runs too...
-
 
 def showSplash():
     app = wx.PySimpleApp()
