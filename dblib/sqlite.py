@@ -31,16 +31,11 @@
 # Note that because SQLite has no bool data type, all booleans must be
 #   converted to integers before storing (False=0, True=1)
 
-#TODO:
-# - Code to check if database file is writeable
-# - Implement fulltext search extension.
-# - Combine phone fields and allow for international formats?
-#       ¤ Still perform search by last n digits
-#       ¤ Phone as text; '334|832|1234' '015225428548' '+49|1606128338'
-#       ¤ Mask options: US, International, No formatting (numbers only)
-#       ¤ > SELECT ... WHERE phone LIKE '%'+Query
-# - Check if tables exists before continuing?  No table checking for now.
-# - Timer to automatically commit records after 'n' seconds (?)
+# NOTE: Since not all versions of sqlite come with forgein key support
+#  (Ubuntu 11.04 sqlite 3.7.4 doesn't), all constraints will have to be
+#  maintained by this driver (TODO)
+
+#TODO: FORGEIN KEY enforcements
 
 import os
 import logging
@@ -136,7 +131,7 @@ class Database:
             parent2 text, parent1Link text, parent2Link text,
             parentEmail text, medical text, joinDate text,
             lastSeen text, lastModified text, count integer,
-            visitor integer, noParentTag integer,
+            visitor bool, noParentTag bool,
             barcode integer, picture text, authorized integer,
             unauthorized integer, notes text);""")
         #barcode
@@ -155,10 +150,10 @@ class Database:
         self.execute("""CREATE TABLE volunteers(id integer primary key,
             name text, lastname text, dob text, email text,
             username text, phoneHome text, phoneMobile text,
-            mobileCarrier integer, backgroundCheck integer,
+            mobileCarrier integer, backgroundCheck bool,
             backgroundDocuments text, profession text, title text,
             company text, jobContact text, address text, city text,
-            zip text, state text, country text, nametag integer,
+            zip text, state text, country text, nametag bool,
             category text, subtitle text, services text, rooms text,
             notifoUser text, notifoSecret text,
             availability text, joinDate text, lastSeen text,
@@ -174,17 +169,19 @@ class Database:
         #activities
         self.execute("""CREATE TABLE activities(id integer primary key,
             name text, prefix text, securityTag text, securityMode text,
-            theme text, nametagEnable integer, nametag text,
-            parentTagEnable integer, parentTag text,
-            admin integer, autoExpire integer, notifyExpire integer);""")
+            nametagEnable bool, nametag text,
+            parentTagEnable bool, parentTag text,
+            admin integer, autoExpire bool, notifyExpire integer,
+            newsletter bool, newsletterLink text);""")
         #services
         self.execute("""CREATE TABLE services(id integer primary key,
             name text, day integer, time text, endTime text);""")
         #rooms
         self.execute("""CREATE TABLE rooms(id integer primary key,
-            name text, volunteerMinimum integer,
-            maximumOccupancy integer, camera text, cameraFPS integer,
-            admin integer, email text, mobile text, carrier integer);""")
+            name text NOT NULL, activity integer NOT NULL,
+            volunteerMinimum integer, maximumOccupancy integer, camera text,
+            cameraFPS integer, admin integer, notifoUser, notifoSecret,
+            email text, mobile text, carrier integer);""")
         #carriers
         self.execute("""CREATE TABLE carriers(id integer primary key,
             name text, region text, address text, subject text,
@@ -210,7 +207,7 @@ class Database:
             mobileCarrier=0, activity=0, room=0, grade='', parent2='',
             parent1Link='', parent2Link='', parentEmail='', dob='',
             medical='', joinDate='', lastSeen='', lastModified='', count=0,
-            visitor=False, noParentTag=False, barcode=None, picture='',
+            visitor=False, noParentTag=None, barcode=None, picture='',
             authorized=None, unauthorized=None, notes=''):
         """Enter a new child's record into the data table.
 
@@ -486,38 +483,80 @@ class Database:
         return self.to_dict(self.execute("SELECT * FROM activities;"))
 
     def AddActivity(self, name, prefix='', securityTag=False, securityMode='simple',
-                    theme='default', nametag='default', nametagEnable=True,
+                    nametag='default', nametagEnable=True,
                     parentTag='default', parentTagEnable=True, admin=None,
-                    autoExpire = False, notifyExpire = False):
+                    autoExpire = False, notifyExpire = False, newsletter=False,
+                    newsletterLink=''):
         if prefix == '' or prefix == None:
             prefix = name[0].upper()
         self.execute("""INSERT INTO activities(name, prefix, securityTag,
-                        securityMode, theme, nametagEnable, nametag,
+                        securityMode, nametagEnable, nametag,
                         parentTagEnable, parentTag, admin, autoExpire,
-                        notifyExpire)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""",
-                        (name, prefix, securityTag, securityMode, theme,
+                        notifyExpire, newsletter, newsletterLink)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""",
+                        (name, prefix, securityTag, securityMode,
                         nametagEnable, nametag, parentTagEnable, parentTag,
-                        admin, autoExpire, notifyExpire))
+                        admin, autoExpire, notifyExpire, newsletter,
+                        newsletterLink))
 
     def RemoveActivity(self, ref):
         self.execute("DELETE FROM activities WHERE id = ?;", (ref,))
         pass
 
     def UpdateActivity(self, ref, name, prefix, securityTag, securityMode,
-                       theme, nametag, nametagEnable, parentTag,
-                       parentTagEnable, admin, autoExpire, notifyExpire):
+                       nametag, nametagEnable, parentTag,
+                       parentTagEnable, admin, autoExpire, notifyExpire,
+                       newsletter, newsletterLink):
         if prefix == '' or prefix == None:
             prefix = name[0].upper()
         self.execute("""UPDATE activities SET name = ?, prefix = ?,
-                        securityTag = ?, securityMode = ?, theme = ?,
+                        securityTag = ?, securityMode = ?,
                         nametag = ?, nametagEnable = ?, parentTag = ?,
                         parentTagEnable = ?, admin = ?, autoExpire = ?,
-                        notifyExpire = ? WHERE id = ?;""", (name, prefix,
-                        securityTag, securityMode, theme, nametag,
+                        notifyExpire = ?, newsletter = ?,
+                        newsletterLink = ? WHERE id = ?;""", (name, prefix,
+                        securityTag, securityMode, nametag,
                         nametagEnable, parentTag, parentTagEnable, admin,
-                        autoExpire, notifyExpire, ref))
+                        autoExpire, notifyExpire, newsletter,
+                        newsletterLink, ref))
     # === end activities functions ==
+
+    # === rooms functions ===
+    def AddRoom(self, name, activity, volunteerMinimum=0, maximumOccupancy=0,
+                camera='', cameraFPS=0, admin=0, notifoUser=None,
+                notifoSecret=None, email='', mobile='', carrier=None):
+        #Check to see that activity exists:
+        ret = self.execute('SELECT id FROM activities WHERE id = ?;',
+            (activity,)).fetchall()
+        if len(ret) == 1:
+            #Activity exists.  Create room.
+            self.execute("""INSERT INTO rooms(name, activity, volunteerMinimum,
+                            maximumOccupancy, camera, cameraFPS, admin,
+                            notifoUser, notifoSecret, email, mobile, carrier)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            (name, activity, volunteerMinimum, maximumOccupancy,
+                            camera, cameraFPS, admin, notifoUser,
+                            notifoSecret, email, mobile, carrier))
+            return SUCCESS
+        else:
+            return CONSTRAINT_FAILED #Forgein key constraint failed
+
+    def GetRooms(self):
+        return self.to_dict(self.execute('SELECT * FROM rooms;'))
+
+    def GetRoom(self, activity):
+        """
+        Returns rooms dictionary matching a given activity (by name).
+        """
+        return self.to_dict(self.execute("""SELECT rooms.*
+                                            FROM rooms
+                                            INNER JOIN activities ON
+                                            activities.id = rooms.activity
+                                            WHERE activities.name = ?;""",
+                                            (activity,)))
+
+    def RemoveRoom(self, ref):
+        self.execute("DELETE FROM rooms WHERE id = ?;", (ref,))
 
     # === users functions ===
     def GetUsers(self):
@@ -768,6 +807,19 @@ if __name__ == '__main__':
     #~ db.AddService('Second Service')
     #~ db.UpdateService(1, 'First Service', 7, '09:00:00', '09:59:00')
     #~ db.commit()
-    print db.GetServices()
+    #~ print db.GetServices()
 
+    #Activities:
+    db.AddActivity('Explorers', parentTagEnable=True, newsletter=True)
+    db.AddActivity('Outfitters', parentTagEnable=False, newsletter=False)
+    #~ print db.GetActivities()
+
+    #Rooms
+    #~ print bool(db.AddRoom('Outfitters Room', 2) & SUCCESS)
+    #~ print db.GetRooms()
+    #~ print
+    #~ print db.GetRoom('Explorers')
+    #~ db.RemoveRoom(3)
+
+    db.commit()
     db.close()
