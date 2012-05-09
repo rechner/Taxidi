@@ -8,6 +8,7 @@ user =
 pass =
 key =   #(self-signed) certificate or key file
 name = 'Kiosk1'     #;This instance's name.
+defaultActivity = 'Explorers'
 
 [database]
 driver = sqlite     #sqlite, postgres, or mysql
