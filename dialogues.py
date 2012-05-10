@@ -371,9 +371,12 @@ class EditServices(wx.Dialog):
         listctrl = self.elb.GetListCtrl()
         self.selected = event.m_itemIndex
 
-        if len(self.elb.GetStrings()) == len(self.services) + 1:
-            wx.CallAfter(self.AddAfter) #Until the EditableListCtrl has run it's
-            # routine, the new item won't be in elb.GetStrings().
+        try:
+            if len(self.elb.GetStrings()) == len(self.services) + 1:
+                wx.CallAfter(self.AddAfter) #Until the EditableListCtrl has run it's
+                # routine, the new item won't be in elb.GetStrings().
+        except AttributeError:
+            self.services = []
 
         if self.selected >= len(self.services):
             #~ print "Not valid"
@@ -582,8 +585,8 @@ if __name__ == '__main__':
     db = sqlite.Database('~/.taxidi/database/users.db')
 
     dlg = EditServices(None, -1, db)
-    #~ services = db.GetServices()
-    #~ dlg.SetServices(services)
+    services = db.GetServices()
+    dlg.SetServices(services)
 
     dlg.ShowModal()
     db.commit()
