@@ -12,7 +12,7 @@ defaultActivity = 'Explorers'
 
 [database]
 driver = sqlite     #sqlite, postgres, or mysql
-file = 'users.db'   #for sqlite only
+file = 'database/users.db'   #for sqlite only
 host =              #[TODO] For Postgres and MySQL
 user =
 pass =
@@ -75,8 +75,8 @@ user =
 pass =
 
 [authentication]
-method = database          #;none, single, database, (unix?, kerberos?, ldap?)
+method = none          #;none, single, database, (unix?, kerberos?, ldap?)
 config = True          #;enforce password protection?
-startup = True
+startup = False
 #;SHA256 password hash for single user mode.
 hash = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'
