@@ -61,6 +61,8 @@ class MyApp(wx.App):
         self.RecordPanelLeft = xrc.XRCCTRL(self.frame, 'RecordPanelLeft')
         self.VisitorPanelRight = xrc.XRCCTRL(self.frame, 'VisitorRight')
         self.VisitorPanelLeft = xrc.XRCCTRL(self.frame, 'VisitorLeft')
+        self.RegisterRight = xrc.XRCCTRL(self.frame, 'RegisterRight')
+        self.RegisterLeft = xrc.XRCCTRL(self.frame, 'RegisterLeft')
         if conf.as_bool(conf.config['webcam']['enable']):
             self.WebcamPanel = webcam.Panel(self.frame)
             self.setupWebcamPanel()
@@ -71,6 +73,7 @@ class MyApp(wx.App):
         self.setupRecordPanel()
         self.setupResultsList()
         self.setupVisitorPanel()
+        self.setupRegisterPanel()
 
         #Setup programme menus:
         self.InitMenus()
@@ -89,15 +92,16 @@ class MyApp(wx.App):
 
 
         #Put everything in a list for convenience when resizing, etc:
-        self.panels =      [ self.MainMenu,
+        self.panels =      ( self.MainMenu,
                              self.LeftHandSearch,   self.RightHandSearch,
                              self.RecordPanelLeft,  self.RecordPanelRight,
                              self.ResultsPanel,
-                             self.VisitorPanelLeft, self.VisitorPanelRight ]
-        self.panelsLeft =  [ self.LeftHandSearch,  self.RecordPanelLeft,
-                             self.VisitorPanelLeft ]
-        self.panelsRight = [ self.RightHandSearch, self.RecordPanelRight,
-                             self.VisitorPanelRight ]
+                             self.VisitorPanelLeft, self.VisitorPanelRight,
+                             self.RegisterLeft, self.RegisterRight )
+        self.panelsLeft =  ( self.LeftHandSearch,  self.RecordPanelLeft,
+                             self.VisitorPanelLeft, self.RegisterLeft )
+        self.panelsRight = ( self.RightHandSearch, self.RecordPanelRight,
+                             self.VisitorPanelRight, self.RegisterRight )
 
         for i in self.panels:
             i.SetBackgroundColour(themeBackgroundColour)
@@ -177,7 +181,7 @@ class MyApp(wx.App):
         self.MainMenu.Bind(wx.EVT_BUTTON, self.Quit, self.MainMenu.quit)
 
     def setupSearch(self):
-        panels = [self.RightHandSearch, self.LeftHandSearch]
+        panels = (self.RightHandSearch, self.LeftHandSearch)
 
         #set text colours:
         for pane in panels:
@@ -225,6 +229,7 @@ class MyApp(wx.App):
             pane.Search = xrc.XRCCTRL(pane, 'Search')
             pane.ClearButton = xrc.XRCCTRL(pane, 'ClearButton')
             pane.SearchButton = xrc.XRCCTRL(pane, 'SearchButton')
+            pane.RegisterButton = xrc.XRCCTRL(pane, 'RegisterButton')
             pane.VisitorButton = xrc.XRCCTRL(pane, 'VisitorButton')
             pane.SwitchUserButton = xrc.XRCCTRL(pane, 'SwitchUserButton')
             pane.ExitButton = xrc.XRCCTRL(pane, 'ExitButton')
@@ -233,6 +238,7 @@ class MyApp(wx.App):
             pane.Search.Bind(wx.EVT_TEXT, self.ResetSearchColour)
             pane.ClearButton.Bind(wx.EVT_BUTTON, self.clearSearchEvent)
             self.frame.Bind(wx.EVT_BUTTON, self.OnSearch, pane.SearchButton)
+            self.frame.Bind(wx.EVT_BUTTON, self.OnRegister, pane.RegisterButton)
             self.frame.Bind(wx.EVT_BUTTON, self.OnVisitor, pane.VisitorButton)
             self.Bind(wx.EVT_BUTTON, self.SwitchUser, pane.SwitchUserButton)
             self.frame.Bind(wx.EVT_BUTTON, self.ExitSearch, pane.ExitButton)
@@ -369,7 +375,7 @@ class MyApp(wx.App):
 
     #TODO: (URGENT DEADLINE 04.05) Add basic record panel UI functionality.
     def setupRecordPanel(self):
-        panels = [self.RecordPanelLeft, self.RecordPanelRight]
+        panels = (self.RecordPanelLeft, self.RecordPanelRight)
 
         #Add static text controls and set font colour:
         for pane in panels:
@@ -478,6 +484,172 @@ class MyApp(wx.App):
         else:
             self.ShowSearchPanel()
 
+    def ShowRegisterPanel(self, event=None):
+        if self.user['leftHanded']:
+            self.RegisterLeft.Show()
+            self.RegisterPanel = self.RegisterLeft
+        else:
+            self.RegisterRight.Show()
+            self.RegisterPanel = self.RegisterRight
+
+    def setupRegisterPanel(self):
+        panels = (self.RegisterRight, self.RegisterLeft)
+        for pane in panels:
+            #Mutable texts:
+            pane.NameText = xrc.XRCCTRL(pane, 'NameText')
+            pane.SurnameText = xrc.XRCCTRL(pane, 'SurnameText')
+            pane.StatusText = xrc.XRCCTRL(pane, 'StatusText')
+            pane.AgeText = xrc.XRCCTRL(pane, 'AgeText')
+            pane.CreatedText = xrc.XRCCTRL(pane, 'CreatedText')
+            pane.LastSeenText = xrc.XRCCTRL(pane, 'LastSeenText')
+            pane.ModifiedText = xrc.XRCCTRL(pane, 'ModifiedText')
+            pane.CountText = xrc.XRCCTRL(pane, 'CountText')
+
+            pane.NameText.SetForegroundColour(themeTextColour)
+            pane.SurnameText.SetForegroundColour(themeTextColour)
+            pane.StatusText.SetForegroundColour(themeTextDisabled)
+            pane.AgeText.SetForegroundColour(themeTextColour)
+            pane.CreatedText.SetForegroundColour(themeTextColour)
+            pane.LastSeenText.SetForegroundColour(themeTextColour)
+            pane.ModifiedText.SetForegroundColour(themeTextColour)
+            pane.CountText.SetForegroundColour(themeTextColour)
+
+            #Immutable:
+            firstSt = xrc.XRCCTRL(pane, 'firstSt')
+            lastSt = xrc.XRCCTRL(pane, 'lastSt')
+            gradeSt = xrc.XRCCTRL(pane, 'gradeSt')
+            phoneSt = xrc.XRCCTRL(pane, 'phoneSt')
+            carrierSt = xrc.XRCCTRL(pane, 'carrierSt')
+            pagingSt = xrc.XRCCTRL(pane, 'pagingSt')
+            dobSt = xrc.XRCCTRL(pane, 'dobSt')
+            ageSt = xrc.XRCCTRL(pane, 'ageSt')
+            activitySt = xrc.XRCCTRL(pane, 'activitySt')
+            roomSt = xrc.XRCCTRL(pane, 'roomSt')
+            parent1St = xrc.XRCCTRL(pane, 'parent1St')
+            parent2St = xrc.XRCCTRL(pane, 'parent2St')
+            emailSt = xrc.XRCCTRL(pane, 'emailSt')
+            medicalSt = xrc.XRCCTRL(pane, 'medicalSt')
+            notesSt = xrc.XRCCTRL(pane, 'notesSt')
+            createdSt = xrc.XRCCTRL(pane, 'createdSt')
+            lastSeenSt = xrc.XRCCTRL(pane, 'lastSeenSt')
+            modifiedSt = xrc.XRCCTRL(pane, 'modifiedSt')
+            countSt = xrc.XRCCTRL(pane, 'countSt')
+
+            firstSt.SetForegroundColour(themeTextColour)
+            lastSt.SetForegroundColour(themeTextColour)
+            gradeSt.SetForegroundColour(themeTextColour)
+            phoneSt.SetForegroundColour(themeTextColour)
+            carrierSt.SetForegroundColour(themeTextColour)
+            pagingSt.SetForegroundColour(themeTextColour)
+            dobSt.SetForegroundColour(themeTextColour)
+            ageSt.SetForegroundColour(themeTextColour)
+            activitySt.SetForegroundColour(themeTextColour)
+            roomSt.SetForegroundColour(themeTextColour)
+            parent1St.SetForegroundColour(themeTextColour)
+            parent2St.SetForegroundColour(themeTextColour)
+            emailSt.SetForegroundColour(themeTextColour)
+            medicalSt.SetForegroundColour(themeTextColour)
+            notesSt.SetForegroundColour(themeTextColour)
+            createdSt.SetForegroundColour(themeTextColour)
+            lastSeenSt.SetForegroundColour(themeTextColour)
+            modifiedSt.SetForegroundColour(themeTextColour)
+            countSt.SetForegroundColour(themeTextColour)
+
+        #Setup inputs:
+        for pane in panels:
+            pane.DOB = xrc.XRCCTRL(pane, 'DOB')
+            #~ validator = ObjectAttrValidator2.ObjectAttrTextValidator( pane, 'DOB',
+                #~ DateFormatter(), False, self._validationCB )
+            #~ pane.DOB.Validator = validator
+            pane.Phone = xrc.XRCCTRL(pane, 'Phone')
+            pane.FirstName = xrc.XRCCTRL(pane, 'Name')
+            pane.Surname = xrc.XRCCTRL(pane, 'Surname')
+            pane.Grade = xrc.XRCCTRL(pane, 'Grade')
+            pane.PhoneCarrier = xrc.XRCCTRL(pane, 'PhoneCarrier')
+            pane.Paging = xrc.XRCCTRL(pane, 'Paging')
+            pane.Activity = xrc.XRCCTRL(pane, 'Activity')
+            pane.Room = xrc.XRCCTRL(pane, 'Room')
+            pane.Medical = xrc.XRCCTRL(pane, 'Medical')
+            pane.Parent1 = xrc.XRCCTRL(pane, 'Parent1')
+            pane.Parent2 = xrc.XRCCTRL(pane, 'Parent2')
+            pane.Email = xrc.XRCCTRL(pane, 'Email')
+            pane.Notes = xrc.XRCCTRL(pane, 'Notes')
+            pane.DOB.Bind(wx.EVT_TEXT, self.FormatDateLive)
+            pane.DOB.Bind(wx.EVT_SET_FOCUS, self.FormatDate)
+            pane.DOB.Bind(wx.EVT_KILL_FOCUS, self.FormatDatePost)
+
+        #Add buttons and their bindings:
+        for pane in panels:
+            pane.ProfilePicture = xrc.XRCCTRL(pane, 'ProfilePicture')
+            pane.CloseButton = xrc.XRCCTRL(pane, 'CloseButton')
+            pane.CheckinButton = xrc.XRCCTRL(pane, 'CheckinButton')
+            pane.MultiServiceButton = xrc.XRCCTRL(pane, 'MultiServiceButton')
+            pane.NametagToggle = xrc.XRCCTRL(pane, 'NametagToggle')
+            pane.ParentToggle = xrc.XRCCTRL(pane, 'ParentToggle')
+            pane.SaveButton = xrc.XRCCTRL(pane, 'SaveButton')
+            pane.BarcodeButton = xrc.XRCCTRL(pane, 'BarcodeButton')
+            pane.PhoneButton = xrc.XRCCTRL(pane, 'PhoneButton')
+            pane.CustomIDButton = xrc.XRCCTRL(pane, 'CustomIDButton')
+            pane.Parent1Find = xrc.XRCCTRL(pane, 'Parent1Find')
+            pane.Parent2Find = xrc.XRCCTRL(pane, 'Parent2Find')
+            pane.AuthorizePickupButton = xrc.XRCCTRL(pane,
+                'AuthorizePickupButton')
+            pane.DenyPickupButton = xrc.XRCCTRL(pane, 'DenyPickupButton')
+            pane.EmergencyContactButton = xrc.XRCCTRL(pane,
+                'EmergencyContactButton')
+
+            pane.ProfilePicture.Bind(wx.EVT_BUTTON, self.RegisterPhoto)
+            pane.Activity.Bind(wx.EVT_CHOICE, self.OnSelectActivity)
+            pane.Email.Bind(wx.EVT_TEXT, self.FormatEmailLive)
+            pane.Phone.Bind(wx.EVT_KILL_FOCUS, self.FormatPhone)
+            pane.Phone.Bind(wx.EVT_TEXT, self.FormatPhoneLive)
+            pane.FirstName.Bind(wx.EVT_TEXT, self.ResetBackgroundColour)
+            pane.Surname.Bind(wx.EVT_TEXT, self.ResetBackgroundColour)
+            pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseRegisterPanel)
+
+            pane.NametagToggle.SetBackgroundColour(themeToggleColour) #On by default
+            pane.NametagToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
+            pane.ParentToggle.SetBackgroundColour(themeToggleColour)  #On by default
+            pane.ParentToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
+
+        #Set some default variables:
+        for pane in panels:
+            pane.photo = None
+
+    def CloseRegisterPanel(self, event):
+        self.RegisterPanel.ProfilePicture.SetBitmapLabel(self.NoPhoto128)
+        self.RegisterPanel.FirstName.SetValue('')
+        self.RegisterPanel.Surname.SetValue('')
+        self.RegisterPanel.Grade.SetValue('')
+        self.RegisterPanel.Phone.SetValue('')
+        self.RegisterPanel.Phone.SetBackgroundColour(wx.NullColour)
+        #~ self.RegisterPanel.PhoneCarrier.SetValue(0)
+        self.RegisterPanel.Paging.SetValue('')
+        #~ self.RegisterPanel.Activity.SetValue(0)
+        self.RegisterPanel.Medical.SetValue('')
+        self.RegisterPanel.Parent1.SetValue('')
+        self.RegisterPanel.Parent2.SetValue('')
+        self.RegisterPanel.Notes.SetValue('')
+        self.RegisterPanel.DOB.SetValue('YYYY-MM-DD')
+        self.RegisterPanel.DOB.SetBackgroundColour(wx.NullColour)
+        self.RegisterPanel.DOB.SetForegroundColour('grey')
+        self.RegisterPanel.Email.SetValue('')
+        self.RegisterPanel.Email.SetBackgroundColour(wx.NullColour)
+
+        #Reset checkboxes:
+        self.RegisterPanel.NametagToggle.SetValue(True)
+        self.ToggleStateOn(self.RegisterPanel.NametagToggle)
+        self.RegisterPanel.ParentToggle.SetValue(True)
+        self.ToggleStateOn(self.RegisterPanel.ParentToggle)
+
+        if self.RegisterPanel.photo != None:
+            #remove the orphaned photo:
+            self.PhotoStorage.delete(self.RegisterPanel.photo)
+
+        #Reset variables and events:
+        self.RegisterPanel.photo = None
+        self.HideAll()
+        self.ShowSearchPanel()
 
     def setupResultsList(self):
         u"""
@@ -595,7 +767,7 @@ class MyApp(wx.App):
         self.WebcamPanel.Hide()
 
     def setupVisitorPanel(self):
-        panels = [self.VisitorPanelRight, self.VisitorPanelLeft]
+        panels = (self.VisitorPanelRight, self.VisitorPanelLeft)
         #Add static text controls and set font colour:
         for pane in panels:
             #Mutable texts:
@@ -855,6 +1027,43 @@ class MyApp(wx.App):
 
             dlg.Destroy()
 
+    def RegisterPhoto(self, event):
+        if conf.as_bool(conf.config['webcam']['enable']): #Webcam enabled?
+            #Hide the register panel
+            self.HideAll()
+            if self.RegisterPanel.photo != None:
+                #re-take; overwrite the old photo.
+                self.WebcamPanel.SetOverwrite(self.RegisterPanel.photo)
+            #Show the webcam input panel.
+            self.ShowWebcamPanel(self.RegisterPhotoCancel, \
+                self.RegisterPhotoSave, self.RegisterPhotoFile)
+        else:
+            #Just open a file selection dialog.
+            path = os.path.abspath(os.path.expanduser(
+                conf.config['webcam']['target']))
+            dlg = ib.ImageDialog(self.frame, path)
+            dlg.Centre()
+            if dlg.ShowModal() == wx.ID_OK:
+                if self.RegisterPanel.photo != None:
+                    self.RegisterPanel.photo = \
+                        self.PhotoStorage.saveImage(dlg.GetFile(),
+                        int(self.RegisterPanel.photo))
+                else:
+                    self.RegisterPanel.photo = self.PhotoStorage.saveImage(dlg.GetFile())
+
+                photoPath = self.PhotoStorage.getThumbnailPath(self.RegisterPanel.photo)
+                #~ print "Resolves to file: {0}".format(photoPath)
+                #Load and display new photo
+                wximg = wx.Image(photoPath)
+                wxbmp = wximg.ConvertToBitmap()
+                self.RegisterPanel.ProfilePicture.SetBitmapLabel(wxbmp)
+
+            else:
+                #~ self.log.debug("> Dialogue cancelled.")
+                pass
+
+            dlg.Destroy()
+
     def VisitorPhotoFile(self, event):
         self.ShowVisitorPanel()
         self.CloseWebcamPanel()
@@ -872,6 +1081,23 @@ class MyApp(wx.App):
         wxbmp = wximg.ConvertToBitmap()
         self.VisitorPanel.ProfilePicture.SetBitmapLabel(wxbmp)
 
+    def RegisterPhotoFile(self, event):
+        self.ShowRegisterPanel()
+        self.CloseWebcamPanel()
+        photo = self.WebcamPanel.GetFile()
+        if self.RegisterPanel.photo != None:
+            self.RegisterPanel.photo = self.PhotoStorage.saveImage(photo, \
+                int(self.RegisterPanel.photo))
+        else:
+            self.RegisterPanel.photo = self.PhotoStorage.saveImage(photo)
+
+        photoPath = self.PhotoStorage.getThumbnailPath(self.RegisterPanel.photo)
+        print "Resolves to file: {0}".format(photoPath)
+        #Load and display new photo
+        wximg = wx.Image(photoPath)
+        wxbmp = wximg.ConvertToBitmap()
+        self.RegisterPanel.ProfilePicture.SetBitmapLabel(wxbmp)
+
     def VisitorPhotoSave(self, evt):
         photo = self.WebcamPanel.GetFile()
         print "Got photo ID: {0}".format(photo)
@@ -885,8 +1111,25 @@ class MyApp(wx.App):
         self.VisitorPanel.ProfilePicture.SetBitmapLabel(wxbmp)
         self.CloseWebcamPanel()
 
+    def RegisterPhotoSave(self, evt):
+        photo = self.WebcamPanel.GetFile()
+        print "Got photo ID: {0}".format(photo)
+        self.RegisterPanel.photo = photo
+        photoPath = self.PhotoStorage.getThumbnailPath(photo)
+        print "Resolves to file: {0}".format(photoPath)
+        self.ShowRegisterPanel()
+        #Load and display new photo
+        wximg = wx.Image(photoPath)
+        wxbmp = wximg.ConvertToBitmap()
+        self.RegisterPanel.ProfilePicture.SetBitmapLabel(wxbmp)
+        self.CloseWebcamPanel()
+
     def VisitorPhotoCancel(self, evt):
         self.ShowVisitorPanel()
+        self.CloseWebcamPanel()
+
+    def RegisterPhotoCancel(self, evt):
+        self.ShowRegisterPanel()
         self.CloseWebcamPanel()
 
     def VisitorDateChanged(self, evt):
@@ -1027,6 +1270,22 @@ class MyApp(wx.App):
         self.VisitorPanel.Room.SetItems(items)
         self.VisitorPanel.Room.SetStringSelection('')
 
+    def OnRegister(self, event):
+        #Setup the inputs, etc.
+        print "On register"
+        self.activities = self.db.GetActivities() #Load activities from database
+        self.ShowRegisterPanel() #Show panel (sets self.RegisterPanel to the appropriate value.)
+        #Set activity options:
+        self.RegisterPanel.Activity.SetItems([ i['name'] for i in self.activities ])
+        self.RegisterPanel.Activity.SetStringSelection(
+            conf.config['config']['defaultActivity']) #Set default activity
+        self.rooms = self.db.GetRooms()
+        items = [ i['name'] for i in self.db.GetRoom(
+            conf.config['config']['defaultActivity']) ]
+        items.insert(0, '') #Allow blank selection
+        self.RegisterPanel.Room.SetItems(items)
+        self.RegisterPanel.Room.SetStringSelection('')
+
     def OnSelectActivity(self, event):
         choice = event.GetEventObject()
         panel = choice.GetParent()
@@ -1053,21 +1312,22 @@ class MyApp(wx.App):
             self.ToggleStateOff(panel.ParentToggle)
 
         #== VisitorPanel specific items ==
-        #Set expire settings:
-        if self.activities[event.GetSelection()]['autoExpire']:
-            self.ToggleCheckBoxOff(self.VisitorPanel.NeverExpireToggle)
-        else:
-            self.ToggleCheckBoxOn(self.VisitorPanel.NeverExpireToggle)
-            self.VisitorPanel.DatePicker.Disable()
-        if self.activities[event.GetSelection()]['notifyExpire']:
-            self.ToggleCheckBoxOn(self.VisitorPanel.NotifyWhenExpiresToggle)
-        else:
-            self.ToggleCheckBoxOff(self.VisitorPanel.NotifyWhenExpiresToggle)
-        #Set newsletter default:
-        if self.activities[event.GetSelection()]['newsletter']:
-            self.ToggleCheckBoxOn(self.VisitorPanel.NewsletterToggle)
-        else:
-            self.ToggleCheckBoxOff(self.VisitorPanel.NewsletterToggle)
+        if panel == self.VisitorPanelLeft or panel == self.VisitorPanelRight:
+            #Set expire settings:
+            if self.activities[event.GetSelection()]['autoExpire']:
+                self.ToggleCheckBoxOff(self.VisitorPanel.NeverExpireToggle)
+            else:
+                self.ToggleCheckBoxOn(self.VisitorPanel.NeverExpireToggle)
+                self.VisitorPanel.DatePicker.Disable()
+            if self.activities[event.GetSelection()]['notifyExpire']:
+                self.ToggleCheckBoxOn(self.VisitorPanel.NotifyWhenExpiresToggle)
+            else:
+                self.ToggleCheckBoxOff(self.VisitorPanel.NotifyWhenExpiresToggle)
+            #Set newsletter default:
+            if self.activities[event.GetSelection()]['newsletter']:
+                self.ToggleCheckBoxOn(self.VisitorPanel.NewsletterToggle)
+            else:
+                self.ToggleCheckBoxOff(self.VisitorPanel.NewsletterToggle)
 
     def ShowVisitorPanel(self):
         self.HideAll()
