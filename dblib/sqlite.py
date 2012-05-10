@@ -55,6 +55,9 @@ AUTHORIZED = 1
 UNAUTHORIZED = 0
 NEW = 128
 
+#Database schema version (integer):
+databaseVersion = 1
+
 class Database:
     """SQLite3 driver class for taxídí database."""
     def __init__(self, file, log=''):
@@ -123,6 +126,8 @@ class Database:
         Initializes the database, creating required tables.
         """
         self.log.warning('Tables did not exist. Creating...')
+        #Set database version:
+        self.execute("PRAGMA user_version = ?;", (database_version,))
         #main data
         self.execute("""CREATE TABLE data(id integer primary key,
             name text, lastname text,  dob text, activity integer,
@@ -131,7 +136,7 @@ class Database:
             parent2 text, parent1Link text, parent2Link text,
             parentEmail text, medical text, joinDate text,
             lastSeen text, lastModified text, count integer,
-            visitor bool, noParentTag bool,
+            visitor bool, expiry text, noParentTag bool,
             barcode integer, picture text, authorized integer,
             unauthorized integer, notes text);""")
         #barcode
@@ -207,8 +212,8 @@ class Database:
             mobileCarrier=0, activity=0, room=0, grade='', parent2='',
             parent1Link='', parent2Link='', parentEmail='', dob='',
             medical='', joinDate='', lastSeen='', lastModified='', count=0,
-            visitor=False, noParentTag=None, barcode=None, picture='',
-            authorized=None, unauthorized=None, notes=''):
+            visitor=False, expiry=None, noParentTag=None, barcode=None,
+            picture='',  authorized=None, unauthorized=None, notes=''):
         """Enter a new child's record into the data table.
 
         name, lastname, phone, parent1, paging=''
@@ -239,15 +244,15 @@ class Database:
 
         #escape and execute
         self.execute("""INSERT INTO data(name, lastname, dob, phone,
-        primaryKey, parent1, mobileCarrier, activity, room, grade,
+        paging, parent1, mobileCarrier, activity, room, grade,
         parent2, parent1Link, parent2Link, parentEmail, medical,
-        joinDate, lastSeen, lastModified, count, visitor, noParentTag,
-        barcode, picture, notes) VALUES
-        (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);""",
-        [name, lastname, dob, phone, primaryKey, parent1, mobileCarrier,
+        joinDate, lastSeen, lastModified, count, visitor, expiry,
+        noParentTag, barcode, picture, notes) VALUES
+        (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);""",
+        (name, lastname, dob, phone, paging, parent1, mobileCarrier,
         activity, room, grade, parent2, parent1Link, parent2Link,
         parentEmail, medical, joinDate, lastSeen, lastModified, count,
-        int(visitor), int(noParentTag), barcode, picture, notes])
+        int(visitor), expiry, int(noParentTag), barcode, picture, notes))
 
         ret = self.execute("""SELECT id FROM data WHERE
                                name = ? AND lastname = ?
@@ -264,14 +269,14 @@ class Database:
         """Delete a row in the data table by index."""
         self.execute("DELETE FROM data WHERE id = ?;", (index))
 
-    def Update(self, index, name, lastname, dob, phone, primaryKey,
+    def Update(self, index, name, lastname, dob, phone, paging,
             parent1, mobileCarrier=0, activity=0, room=0, grade='',
             parent2='', parent1Link='', parent2Link='', parentEmail='',
-            medical='', joinDate='', lastSeen='', visitor=False,
+            medical='', joinDate='', lastSeen='', visitor=False, expiry=None,
             noParentTag=False, barcode='', picture='', notes=''):
         """Update a record.  Pass index as first argument.  lastModified automatically set.
 
-        name, lastname, dob, phone, primaryKey, and parent1 are mandatory.
+        name, lastname, dob, phone, paging, and parent1 are mandatory.
         Defaults are as follows: mobileCarrier=0, activity=0, room=0, grade='',
         parent2='', parent1Link='', parent2Link='', parentEmail='', medical='',
         joinDate='', lastSeen='', visitor=False,
@@ -279,7 +284,7 @@ class Database:
         """
         self.execute("UPDATE data SET name=?, lastname=? WHERE id=?;", (name, lastname, index))
         self.execute("UPDATE data SET dob=? WHERE id=?;", (dob, index))
-        self.execute("UPDATE data SET phone=?, primarykey=? WHERE id=?;",(phone, primaryKey, index))
+        self.execute("UPDATE data SET phone=?, paging=? WHERE id=?;",(phone, paging, index))
         self.execute("UPDATE data SET mobileCarrier=? WHERE id=?;",
             (mobileCarrier, index))
         self.execute("""UPDATE data SET parent1=?, parent2=?,
@@ -291,9 +296,9 @@ class Database:
             (parentEmail, medical, index))
         self.execute("UPDATE data SET joinDate=?, lastSeen=?, lastModified=? WHERE id=?;",
             (joinDate, lastSeen, time.ctime(), index))
-        self.execute("""UPDATE data SET visitor=?, noParentTag=?, barcode=?,
-            picture=?, notes=? WHERE id=?;""", (int(visitor), int(noParentTag),
-            barcode, picture, notes, index))
+        self.execute("""UPDATE data SET visitor=?, expiry=?, noParentTag=?,
+            barcode=?,  picture=?, notes=? WHERE id=?;""", (int(visitor), expiry,
+            int(noParentTag),  barcode, picture, notes, index))
     # === end data functions ===
 
     #return all entries (for browsing)
@@ -309,7 +314,7 @@ class Database:
         Searches first through `data`, then passes to SearchVolunteer()
         Accepts query as first argument.  Searches the following in data table:
         - Last four digits of phone number (if len == 4)
-        - primaryKey
+        - paging(?)
         - lastname
         - firstname
         Then searches through volunteers table.
@@ -554,6 +559,12 @@ class Database:
                                             activities.id = rooms.activity
                                             WHERE activities.name = ?;""",
                                             (activity,)))
+
+    def GetRoomID(self, name):
+        """
+        Return's a room's primary key (id) given a name.
+        """
+        return self.execute("SELECT id FROM rooms WHERE name = ?;", (name,)).fetchone()
 
     def RemoveRoom(self, ref):
         self.execute("DELETE FROM rooms WHERE id = ?;", (ref,))

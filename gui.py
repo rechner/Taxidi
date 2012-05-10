@@ -17,7 +17,7 @@ import wx
 import os
 import signal
 
-__version__ = '0.70.01-dev'
+__version__ = '0.70.02-dev'
 
 userHand = 'right'
 
@@ -133,6 +133,7 @@ class MyApp(wx.App):
         if conf.config['database']['driver'].lower() == 'sqlite':
             datafile = conf.homeAbsolutePath(conf.config['database']['file'])
             import dblib.sqlite as database
+            self.database = database
             try:
                 self.db = database.Database(datafile)
             except TypeError:
@@ -634,7 +635,6 @@ class MyApp(wx.App):
             neverExpiresSt = xrc.XRCCTRL(pane, 'neverExpireSt')
             notifyWhenExpiresSt = xrc.XRCCTRL(pane, 'notifyWhenExpiresSt')
 
-
             firstSt.SetForegroundColour(themeTextColour)
             lastSt.SetForegroundColour(themeTextColour)
             phoneSt.SetForegroundColour(themeTextColour)
@@ -671,6 +671,7 @@ class MyApp(wx.App):
             pane.NeverExpireToggle = xrc.XRCCTRL(pane, 'NeverExpireToggle')
             pane.NotifyWhenExpiresToggle = xrc.XRCCTRL(pane, 'NotifyWhenExpiresToggle')
 
+            pane.CheckinButton.Bind(wx.EVT_BUTTON, self.RegisterVisitor)
             pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseVisitorPanel)
             pane.Parent1Find.Bind(wx.EVT_BUTTON, self.VisitorParentFind)
             pane.ProfilePicture.Bind(wx.EVT_BUTTON, self.VisitorPhoto)
@@ -702,6 +703,8 @@ class MyApp(wx.App):
             pane.DatePicker.Bind(wx.EVT_DATE_CHANGED, self.VisitorDateChanged)
             pane.Phone.Bind(wx.EVT_KILL_FOCUS, self.FormatPhone)
             pane.Phone.Bind(wx.EVT_TEXT, self.FormatPhoneLive)
+            pane.FirstName.Bind(wx.EVT_TEXT, self.ResetBackgroundColour)
+            pane.Surname.Bind(wx.EVT_TEXT, self.ResetBackgroundColour)
             pane.Activity.Bind(wx.EVT_CHOICE, self.OnSelectActivity)
             pane.Email.Bind(wx.EVT_TEXT, self.FormatEmailLive)
             pane.Parent1.Bind(wx.EVT_TEXT_ENTER, self.VisitorParentFind)
@@ -718,6 +721,92 @@ class MyApp(wx.App):
         #Initialize stored variables:
         self.VisitorPanelLeft.photo = None
         self.VisitorPanelRight.photo = None
+
+    def RegisterVisitor(self, event):
+        nametagEnable = self.VisitorPanel.NametagToggle.GetValue()
+        parentEnable = self.VisitorPanel.ParentToggle.GetValue()
+        name = self.VisitorPanel.FirstName.GetValue()  #Required
+        surname = self.VisitorPanel.Surname.GetValue() #Required
+        phone = self.VisitorPanel.Phone.GetValue()     #Required
+        invalid = False
+        if name == '':
+            self.VisitorPanel.FirstName.SetBackgroundColour('red')
+            invalid = True
+        if surname == '':
+            self.VisitorPanel.Surname.SetBackgroundColour('red')
+            invalid = True
+        if phone == '':
+            self.VisitorPanel.Phone.SetBackgroundColour('red')
+            invalid = True
+        if invalid:
+            return 0
+        paging = self.VisitorPanel.Paging.GetValue()   #(automatically generated)
+        activity = self.activities[self.VisitorPanel.Activity.GetSelection()]
+        medical = self.VisitorPanel.Medical.GetValue()
+        #TODO: Parent linking
+        parent = self.VisitorPanel.Parent1.GetValue()
+        email = self.VisitorPanel.Email.GetValue()
+        newsletter = self.VisitorPanel.NewsletterToggle.GetValue()
+        neverExpires = self.VisitorPanel.NeverExpireToggle.GetValue()
+        if neverExpires:
+            expiration = None
+        else:
+            expiration = _wxdate2pydate(self.VisitorPanel.DatePicker.GetValue()).strftime('%Y-%m-%d')
+        notifyExpires = self.VisitorPanel.NotifyWhenExpiresToggle.GetValue()
+
+        room = self.VisitorPanel.Room.GetStringSelection()
+        if room == '':  #No room assigned.
+            room = None
+        if room != None:
+            #Convert it to an explicit id reference (I'd use GetSelection(), but the order might be wrong).
+            room = self.db.GetRoomID(room)[0]
+
+        if activity['parentTag'] == parentEnable:
+            noParentTag = not(activity['parentTag'])
+        else:
+            noParentTag = not(parentEnable)
+
+        print nametagEnable
+        print parentEnable
+        print name
+        print surname
+        print phone
+        print paging
+        print activity['name']
+        print room
+        print medical
+        print parent
+        print email
+        print newsletter
+        print expiration
+        print notifyExpires
+        print self.VisitorPanel.photo
+
+        #Attempt to add record to database:
+        try:
+            self.db.Register(name, surname, phone, parent, paging=paging,
+                mobileCarrier=0, activity=activity['id'], room=room,
+                parentEmail=email, medical=medical, visitor=True,
+                expiry=expiration, noParentTag=noParentTag, barcode=None,
+                picture=self.VisitorPanel.photo,
+                authorized=None, unauthorized=None, notes='')
+            self.db.commit()
+        except self.database.DatabaseError as e:
+            if e.code == self.database.EMPTY_RESULT:
+                wx.MessageBox('The record was unable to be added to the database.',
+                              'Taxidi Database Error', wx.OK | wx.ICON_ERROR)
+
+            return 0  #Don't close the panel
+
+        #TODO: Add Visitor: Do printing if needed
+
+        #Cleanup and close:
+        self.VisitorPanel.photo = None
+        self.CloseVisitorPanel(None)
+
+    def ResetBackgroundColour(self, event):
+        ctrl = event.GetEventObject()
+        ctrl.SetBackgroundColour(wx.NullColour)
 
     def VisitorParentTab(self, event):
         if event.IsFromTab() and event.GetDirection(): #Direction is forward and caused by tab key
