@@ -37,6 +37,8 @@
 
 #TODO: FORGEIN KEY enforcements
 
+debug = False  #Set to true to enable [very] verbose logging to console
+
 import os
 import logging
 import time
@@ -56,7 +58,7 @@ UNAUTHORIZED = 0
 NEW = 128
 
 #Database schema version (integer):
-databaseVersion = 1
+database_version = 1
 
 class Database:
     """SQLite3 driver class for taxídí database."""
@@ -86,6 +88,8 @@ class Database:
             formatter = logging.Formatter('[%(asctime)s] %(module)-6s  [%(levelname)-8s]  %(message)s')
             ch.setFormatter(formatter)
             self.log.addHandler(ch)
+            if debug:
+                self.log.setLevel(logging.DEBUG)
 
         file = os.path.expanduser(file)
         self.log.debug('Attempting to open sqlite3 database at {0}'.format(file))
@@ -127,7 +131,8 @@ class Database:
         """
         self.log.warning('Tables did not exist. Creating...')
         #Set database version:
-        self.execute("PRAGMA user_version = ?;", (database_version,))
+        #NOTE: No chance of injection here - not an user input.
+        self.execute("PRAGMA user_version = {0};".format(database_version))
         #main data
         self.execute("""CREATE TABLE data(id integer primary key,
             name text, lastname text,  dob text, activity integer,
@@ -771,9 +776,11 @@ def Translator(frm='', to='', delete='', keep=None):
 
 if __name__ == '__main__':
     try:
-        #~ db = Database('~/.taxidi/database/users.db')
-        #~ db = Database('~/test.db')
         db = Database('~/.taxidi/database/users.db')
+        #~ db = Database('~/test.db')
+        if db.status == NEW:
+            #Show a nice welcome dialogue, etc.
+            pass
     except TypeError:
         print 'Unable to open database (file write-protected?)'
         #display an error dialogue and exit
@@ -821,8 +828,8 @@ if __name__ == '__main__':
     #~ print db.GetServices()
 
     #Activities:
-    db.AddActivity('Explorers', parentTagEnable=True, newsletter=True)
-    db.AddActivity('Outfitters', parentTagEnable=False, newsletter=False)
+    #~ db.AddActivity('Explorers', parentTagEnable=True, newsletter=True)
+    #~ db.AddActivity('Outfitters', parentTagEnable=False, newsletter=False)
     #~ print db.GetActivities()
 
     #Rooms
@@ -832,5 +839,5 @@ if __name__ == '__main__':
     #~ print db.GetRoom('Explorers')
     #~ db.RemoveRoom(3)
 
-    db.commit()
+    #~ db.commit()
     db.close()
