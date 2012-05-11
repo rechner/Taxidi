@@ -606,6 +606,7 @@ class MyApp(wx.App):
             pane.FirstName.Bind(wx.EVT_TEXT, self.ResetBackgroundColour)
             pane.Surname.Bind(wx.EVT_TEXT, self.ResetBackgroundColour)
             pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseRegisterPanel)
+            pane.SaveButton.Bind(wx.EVT_BUTTON, self.OnRegisterSave)
 
             pane.NametagToggle.SetBackgroundColour(themeToggleColour) #On by default
             pane.NametagToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
@@ -650,6 +651,62 @@ class MyApp(wx.App):
         self.RegisterPanel.photo = None
         self.HideAll()
         self.ShowSearchPanel()
+
+    def OnRegisterSave(self, event):
+        button = event.GetEventObject()
+        panel = button.GetParent()
+        nametagEnable = panel.NametagToggle.GetValue()
+        parentEnable = panel.ParentToggle.GetValue()
+        name = panel.FirstName.GetValue()  #Required
+        surname = panel.Surname.GetValue() #Required
+        phone = panel.Phone.GetValue()     #Required
+        invalid = False
+        if name == '':
+            panel.FirstName.SetBackgroundColour('red')
+            invalid = True
+        if surname == '':
+            panel.Surname.SetBackgroundColour('red')
+            invalid = True
+        if phone == '':
+            panel.Phone.SetBackgroundColour('red')
+            invalid = True
+        if invalid:
+            return 0 #Cancel saving, mark the missing required fields in red.
+        paging = panel.Paging.GetValue()   #(automatically generated)
+        activity = self.activities[panel.Activity.GetSelection()]
+        medical = panel.Medical.GetValue()
+        parent1 = panel.Parent1.GetValue()  #TODO: Add parent linking
+        parent2 = panel.Parent2.GetValue()
+        email = panel.Email.GetValue()
+        notes = panel.Notes.GetValue()
+
+        room = panel.Room.GetStringSelection()
+        if room == '':  #No room assigned.
+            room = None
+        if room != None:
+            #Convert it to an explicit id reference (I'd use GetSelection(), but the order might be wrong).
+            room = self.db.GetRoomID(room)[0]
+
+        if activity['parentTag'] == parentEnable: #Check if the nametag settings have been overridden.
+            noParentTag = not(activity['parentTag']) # and set the appropriate value.
+        else:
+            noParentTag = not(parentEnable)
+
+        print panel.photo
+        print nametagEnable
+        print parentEnable
+        print name
+        print surname
+        print phone
+        print paging
+        print activity['name']
+        print room
+        print medical
+        print parent1
+        print parent2
+        print email
+        print notes
+
 
     def setupResultsList(self):
         u"""
@@ -1272,7 +1329,6 @@ class MyApp(wx.App):
 
     def OnRegister(self, event):
         #Setup the inputs, etc.
-        print "On register"
         self.activities = self.db.GetActivities() #Load activities from database
         self.ShowRegisterPanel() #Show panel (sets self.RegisterPanel to the appropriate value.)
         #Set activity options:
