@@ -120,12 +120,19 @@ def DateFormatPost(date):
 
 def DateFormat(date):
     value = date.GetValue()
-    date.SetForegroundColour('black')
+    import wx
+    wxApp = wx.GetApp() #Get the current wx.App(), if possible.
+    if not wxApp:
+        foreground = 'black'
+    else: #Set the appropriate system text colour
+        foreground = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT)
+    date.SetForegroundColour(foreground)
     #~ if len(value) == 0:
         #~ date.SetBackgroundColour(NullColour)
         #~ date.SetForegroundColour('#cdcdcd')
         #~ date.SetValue('YYYY-MM-DD')
         #~ date.SelectAll()
+    valid = False
     if len(value) > 1:
         date.SetBackgroundColour('pink')
     else:
@@ -134,11 +141,12 @@ def DateFormat(date):
         date.SetValue('{0}-{1}-{2}'.format(value[0:4], value[4:6], value[6:8]))
         date.SetBackgroundColour('green')
         date.SetInsertionPointEnd()
+        valid = True
     if len(value) == 10:
         if value == 'YYYY-MM-DD':
             date.Clear()
-            date.SetForegroundColour('black')
-            pass
+            date.SetForegroundColour(foreground)
+            valid = False
         else:
             if (value[0:4]+value[5:7]+value[8:10]).isdigit():
                 #Format is correct. Replace separators:
@@ -147,10 +155,14 @@ def DateFormat(date):
                 date.SetValue('{0}-{1}-{2}'.format(unformat[0:4], unformat[4:6], unformat[6:8]))
                 date.SetBackgroundColour('green')
                 date.SetInsertionPointEnd()
+                valid = True
+                if int(value[5:7]) > 12 or int(value[8:10]) > 31: #check day/month ranges
+                    date.SetBackgroundColour('red')
+                    valid = False
             else:
                 date.SetBackgroundColour('pink')
-            if int(value[5:7]) > 12 or int(value[8:10]) > 31:
-                date.SetBackgroundColour('red')
+                valid = False
+    return valid
 
 def Email(email):
     """

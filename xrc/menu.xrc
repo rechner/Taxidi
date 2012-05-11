@@ -207,7 +207,7 @@
                                             <weight>bold</weight>
                                             <underlined>0</underlined>
                                         </font>
-                                        <label>Begin Check-in</label>
+                                        <label>&amp;Begin Check-in</label>
                                         <default>0</default>
                                     </object>
                                 </object>
@@ -223,7 +223,7 @@
                                             <weight>bold</weight>
                                             <underlined>0</underlined>
                                         </font>
-                                        <label>Configure</label>
+                                        <label>&amp;Configure</label>
                                         <default>0</default>
                                     </object>
                                 </object>
@@ -259,7 +259,7 @@
                                             <weight>bold</weight>
                                             <underlined>0</underlined>
                                         </font>
-                                        <label>About Taxídí</label>
+                                        <label>&amp;About Taxídí</label>
                                         <default>0</default>
                                     </object>
                                 </object>
@@ -275,7 +275,7 @@
                                             <weight>bold</weight>
                                             <underlined>0</underlined>
                                         </font>
-                                        <label>Manage Services</label>
+                                        <label>Manage &amp;Services</label>
                                         <default>0</default>
                                     </object>
                                 </object>
@@ -311,7 +311,7 @@
                                             <weight>bold</weight>
                                             <underlined>0</underlined>
                                         </font>
-                                        <label>Quit</label>
+                                        <label>&amp;Quit</label>
                                         <default>0</default>
                                     </object>
                                 </object>
@@ -327,7 +327,7 @@
                                             <weight>bold</weight>
                                             <underlined>0</underlined>
                                         </font>
-                                        <label>Manage Activities</label>
+                                        <label>Manage Ac&amp;tivities</label>
                                         <default>0</default>
                                     </object>
                                 </object>
@@ -839,7 +839,7 @@
                         <flag>wxALL|wxEXPAND</flag>
                         <border>5</border>
                         <object class="wxButton" name="RegisterButton">
-                            <label>Register</label>
+                            <label>&amp;Register</label>
                             <default>0</default>
                         </object>
                     </object>
@@ -1584,7 +1584,7 @@
                                                     <flag>wxALL|wxEXPAND</flag>
                                                     <border>3</border>
                                                     <object class="wxButton" name="SaveButton">
-                                                        <label>Save</label>
+                                                        <label>&amp;Save</label>
                                                         <default>0</default>
                                                     </object>
                                                 </object>
@@ -1661,7 +1661,7 @@
                             <option>1</option>
                             <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
-                            <object class="wxTextCtrl" name="FirstName">
+                            <object class="wxTextCtrl" name="Name">
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -2278,7 +2278,7 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL</flag>
-                            <border>10</border>
+                            <border>5</border>
                             <object class="wxStaticText" name="createdSt">
                                 <font>
                                     <size>11</size>
@@ -2293,15 +2293,15 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="CreatedText">
-                                <label>1 Jan 2011</label>
+                                <label>01 May 2011</label>
                             </object>
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
-                            <border>10</border>
+                            <border>5</border>
                             <object class="wxStaticText" name="lastSeenSt">
                                 <font>
                                     <size>11</size>
@@ -2316,9 +2316,9 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="LastSeenText">
-                                <label>1 Jan 2011</label>
+                                <label>01 May 2011</label>
                             </object>
                         </object>
                         <object class="sizeritem">
@@ -2338,16 +2338,16 @@
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
-                            <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
-                            <border>5</border>
+                            <flag>wxALIGN_CENTER_VERTICAL</flag>
+                            <border>3</border>
                             <object class="wxStaticText" name="ModifiedText">
-                                <label>1 Jan 2011</label>
+                                <label>01 May 2011</label>
                             </object>
                         </object>
                         <object class="sizeritem">
                             <option>1</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
-                            <border>10</border>
+                            <border>5</border>
                             <object class="wxStaticText" name="countSt">
                                 <font>
                                     <size>11</size>
@@ -2369,7 +2369,7 @@
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
-                            <flag>wxALL</flag>
+                            <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
                             <object class="wxButton" name="EmergencyContactButton">
                                 <label>Emergency Contact</label>
@@ -2378,7 +2378,7 @@
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
-                            <flag>wxALL</flag>
+                            <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
                             <object class="wxButton" name="HistoryButton">
                                 <label>History</label>
@@ -2387,7 +2387,7 @@
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
-                            <flag>wxALL|wxALIGN_RIGHT</flag>
+                            <flag>wxALL|wxALIGN_RIGHT|wxEXPAND</flag>
                             <border>5</border>
                             <object class="wxButton" name="DeleteButton">
                                 <font>
@@ -2517,7 +2517,7 @@
                                                     <flag>wxALL|wxEXPAND</flag>
                                                     <border>3</border>
                                                     <object class="wxButton" name="SaveButton">
-                                                        <label>Save</label>
+                                                        <label>&amp;Save</label>
                                                         <default>0</default>
                                                     </object>
                                                 </object>
@@ -2706,7 +2706,7 @@
                             <option>1</option>
                             <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
-                            <object class="wxTextCtrl" name="FirstName">
+                            <object class="wxTextCtrl" name="Name">
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -3340,7 +3340,7 @@
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
                             <border>5</border>
                             <object class="wxStaticText" name="CreatedText">
-                                <label>1 Jan 2011</label>
+                                <label>01 May 2011</label>
                             </object>
                         </object>
                         <object class="sizeritem">
@@ -3361,9 +3361,9 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="LastSeenText">
-                                <label>1 Jan 2011</label>
+                                <label>01 May 2011</label>
                             </object>
                         </object>
                         <object class="sizeritem">
@@ -3383,16 +3383,16 @@
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
-                            <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
-                            <border>5</border>
+                            <flag>wxALIGN_CENTER_VERTICAL</flag>
+                            <border>3</border>
                             <object class="wxStaticText" name="ModifiedText">
-                                <label>1 Jan 2011</label>
+                                <label>01 May 2011</label>
                             </object>
                         </object>
                         <object class="sizeritem">
                             <option>1</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
-                            <border>10</border>
+                            <border>5</border>
                             <object class="wxStaticText" name="countSt">
                                 <font>
                                     <size>11</size>
@@ -3414,7 +3414,7 @@
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
-                            <flag>wxALL</flag>
+                            <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
                             <object class="wxButton" name="EmergencyContactButton">
                                 <label>Emergency Contact</label>
@@ -3423,7 +3423,7 @@
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
-                            <flag>wxALL</flag>
+                            <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
                             <object class="wxButton" name="HistoryButton">
                                 <label>History</label>
@@ -3432,7 +3432,7 @@
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
-                            <flag>wxALL|wxALIGN_RIGHT</flag>
+                            <flag>wxALL|wxALIGN_RIGHT|wxEXPAND</flag>
                             <border>5</border>
                             <object class="wxButton" name="DeleteButton">
                                 <font>
@@ -3659,7 +3659,7 @@
                                                     <flag>wxALL|wxEXPAND</flag>
                                                     <border>3</border>
                                                     <object class="wxButton" name="SaveButton">
-                                                        <label>Save</label>
+                                                        <label>&amp;Save</label>
                                                         <default>0</default>
                                                     </object>
                                                 </object>
@@ -4350,7 +4350,7 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL</flag>
-                            <border>10</border>
+                            <border>5</border>
                             <object class="wxStaticText" name="createdSt">
                                 <font>
                                     <family>default</family>
@@ -4364,15 +4364,15 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="CreatedText">
-                                <label>1 Jan 2011</label>
+                                <label>01 May 2011</label>
                             </object>
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
-                            <border>10</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="lastSeenSt">
                                 <font>
                                     <family>default</family>
@@ -4386,15 +4386,15 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="LastSeenText">
-                                <label>1 Jan 2011</label>
+                                <label>01 May 2011</label>
                             </object>
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxRIGHT|wxLEFT|wxALIGN_CENTER_VERTICAL</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="modifiedSt">
                                 <font>
                                     <family>default</family>
@@ -4408,7 +4408,7 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="ModifiedText">
                                 <label>Never</label>
                             </object>
@@ -4416,7 +4416,7 @@
                         <object class="sizeritem">
                             <option>1</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>10</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="countSt">
                                 <font>
                                     <family>default</family>
@@ -4430,15 +4430,15 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="CountText">
                                 <label>0</label>
                             </object>
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
-                            <flag>wxALL</flag>
-                            <border>5</border>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>3</border>
                             <object class="wxButton" name="EmergencyContactButton">
                                 <label>Emergency Contact Information</label>
                                 <default>0</default>
@@ -4539,7 +4539,7 @@
                                                     <flag>wxALL|wxEXPAND</flag>
                                                     <border>3</border>
                                                     <object class="wxButton" name="SaveButton">
-                                                        <label>Save</label>
+                                                        <label>&amp;Save</label>
                                                         <default>0</default>
                                                     </object>
                                                 </object>
@@ -5333,7 +5333,7 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL</flag>
-                            <border>10</border>
+                            <border>5</border>
                             <object class="wxStaticText" name="createdSt">
                                 <font>
                                     <size>11</size>
@@ -5348,15 +5348,15 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="CreatedText">
-                                <label>1 Jan 2011</label>
+                                <label>01 May 2011</label>
                             </object>
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
-                            <border>10</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="lastSeenSt">
                                 <font>
                                     <size>11</size>
@@ -5371,15 +5371,15 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="LastSeenText">
-                                <label>1 Jan 2011</label>
+                                <label>01 May 2011</label>
                             </object>
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxRIGHT|wxLEFT|wxALIGN_CENTER_VERTICAL</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="modifiedSt">
                                 <font>
                                     <size>11</size>
@@ -5394,7 +5394,7 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="ModifiedText">
                                 <label>Never</label>
                             </object>
@@ -5402,7 +5402,7 @@
                         <object class="sizeritem">
                             <option>1</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>10</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="countSt">
                                 <font>
                                     <size>11</size>
@@ -5417,14 +5417,14 @@
                         <object class="sizeritem">
                             <option>0</option>
                             <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
-                            <border>5</border>
+                            <border>3</border>
                             <object class="wxStaticText" name="CountText">
                                 <label>0</label>
                             </object>
                         </object>
                         <object class="sizeritem">
                             <option>0</option>
-                            <flag>wxALL</flag>
+                            <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
                             <object class="wxButton" name="EmergencyContactButton">
                                 <label>Emergency Contact Information</label>
@@ -5691,7 +5691,7 @@
                             <option>1</option>
                             <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
-                            <object class="wxTextCtrl" name="FirstName">
+                            <object class="wxTextCtrl" name="Name">
                                 <font>
                                     <size>18</size>
                                     <family>default</family>
@@ -6606,7 +6606,7 @@
                             <option>1</option>
                             <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
-                            <object class="wxTextCtrl" name="FirstName">
+                            <object class="wxTextCtrl" name="Name">
                                 <font>
                                     <size>18</size>
                                     <family>default</family>

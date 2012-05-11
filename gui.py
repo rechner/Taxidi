@@ -129,7 +129,7 @@ class MyApp(wx.App):
         self.bitmap.SetPosition( ( ((size[0]-1020)/2) , 0) ) #Centre the banner
         #Custom positions:
         if conf.as_bool(conf.config['webcam']['enable']):
-            self.WebcamPanel.CentreOnParent(dir=wx.HORIZONTAL)
+            self.WebcamPanel.CentreOnParent(dir=wx.BOTH)
 
 
     def setupDatabase(self):
@@ -445,6 +445,19 @@ class MyApp(wx.App):
             #~ validator = ObjectAttrValidator2.ObjectAttrTextValidator( pane, 'DOB',
                 #~ DateFormatter(), False, self._validationCB )
             #~ pane.DOB.Validator = validator
+            pane.Phone = xrc.XRCCTRL(pane, 'Phone')
+            pane.FirstName = xrc.XRCCTRL(pane, 'Name')
+            pane.Surname = xrc.XRCCTRL(pane, 'Surname')
+            pane.Grade = xrc.XRCCTRL(pane, 'Grade')
+            pane.PhoneCarrier = xrc.XRCCTRL(pane, 'PhoneCarrier')
+            pane.Paging = xrc.XRCCTRL(pane, 'Paging')
+            pane.Activity = xrc.XRCCTRL(pane, 'Activity')
+            pane.Room = xrc.XRCCTRL(pane, 'Room')
+            pane.Medical = xrc.XRCCTRL(pane, 'Medical')
+            pane.Parent1 = xrc.XRCCTRL(pane, 'Parent1')
+            pane.Parent2 = xrc.XRCCTRL(pane, 'Parent2')
+            pane.Email = xrc.XRCCTRL(pane, 'Email')
+            pane.Notes = xrc.XRCCTRL(pane, 'Notes')
             pane.DOB.Bind(wx.EVT_TEXT, self.FormatDateLive)
             pane.DOB.Bind(wx.EVT_SET_FOCUS, self.FormatDate)
             pane.DOB.Bind(wx.EVT_KILL_FOCUS, self.FormatDatePost)
@@ -468,21 +481,42 @@ class MyApp(wx.App):
             pane.DenyPickupButton = xrc.XRCCTRL(pane, 'DenyPickupButton')
             pane.EmergencyContactButton = xrc.XRCCTRL(pane,
                 'EmergencyContactButton')
+            pane.HistoryButton = xrc.XRCCTRL(pane, 'HistoryButton')
+            pane.DeleteButton = xrc.XRCCTRL(pane, 'DeleteButton')
 
             pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseRecordPanel)
+            pane.NametagToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
+            pane.ParentToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
+            pane.Activity.Bind(wx.EVT_CHOICE, self.OnSelectActivity)
+            pane.Email.Bind(wx.EVT_TEXT, self.FormatEmailLive)
+            pane.Phone.Bind(wx.EVT_KILL_FOCUS, self.FormatPhone)
+            pane.Phone.Bind(wx.EVT_TEXT, self.FormatPhoneLive)
+            pane.FirstName.Bind(wx.EVT_TEXT, self.ResetBackgroundColour)
+            pane.Surname.Bind(wx.EVT_TEXT, self.ResetBackgroundColour)
+            pane.DeleteButton.Bind(wx.EVT_BUTTON, self.OnDeleteRecord)
 
-        #Set initial geometry:
-        for pane in panels:
-            pane.SetPosition((0, 160))
-            pane.SetClientSize((self.frame.GetSize()[0]-20, -1))
 
     def CloseRecordPanel(self, event):
+        self.RecordPanel.ProfilePicture.SetBitmapLabel(self.NoPhoto128)
         self.RecordPanelLeft.Hide()
         self.RecordPanelRight.Hide()
         if self.ResultsPanel.opened:
             self.ShowResultsPanel()
         else:
             self.ShowSearchPanel()
+
+    def OnDeleteRecord(self, event):
+        data = self.RecordPanel.data
+        dlg = wx.MessageBox('Are you sure you want to delete this record?\n' \
+            '(Name: {0} {1})'.format(data['name'], data['lastname']),
+            'Please Confirm', wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+        if dlg == wx.YES:
+            try:
+                self.db.Delete(data['id']) #Delete the record
+            except:
+                wx.MessageBox('Error while deleting record.', 'Error',
+                               wx.ICON_ERROR | wx.OK)
+            self.CloseRecordPanel(None)
 
     def ShowRegisterPanel(self, event=None):
         if self.user['leftHanded']:
@@ -672,13 +706,25 @@ class MyApp(wx.App):
             invalid = True
         if invalid:
             return 0 #Cancel saving, mark the missing required fields in red.
-        paging = panel.Paging.GetValue()   #(automatically generated)
+        pagingValue = panel.Paging.GetValue()   #(automatically generated)
         activity = self.activities[panel.Activity.GetSelection()]
         medical = panel.Medical.GetValue()
         parent1 = panel.Parent1.GetValue()  #TODO: Add parent linking
         parent2 = panel.Parent2.GetValue()
         email = panel.Email.GetValue()
         notes = panel.Notes.GetValue()
+        DOB = panel.DOB.GetValue()
+        grade = panel.Grade.GetValue()
+
+        #Check if there's a DOB entered (blank allowed)
+        if DOB.lower().encode('ascii') == 'yyyy-mm-dd' or DOB == '':
+            DOB = ''               #(true when has focus)——————^
+        else: #Validate the entered date.
+            a = validate.DateFormat(panel.DOB)
+            print a
+            if not a:  #date was not validated
+                panel.DOB.SetBackgroundColour('orange')
+                return 0
 
         room = panel.Room.GetStringSelection()
         if room == '':  #No room assigned.
@@ -692,20 +738,23 @@ class MyApp(wx.App):
         else:
             noParentTag = not(parentEnable)
 
-        print panel.photo
-        print nametagEnable
-        print parentEnable
-        print name
-        print surname
-        print phone
-        print paging
-        print activity['name']
-        print room
-        print medical
-        print parent1
-        print parent2
-        print email
-        print notes
+        #TODO: Reading and setting of mobile carrier setting.
+        #TODO: Parent linking
+
+        try:
+            self.db.Register(name, surname, phone, parent1, paging=pagingValue,
+                mobileCarrier=0, activity=activity['id'], room=room, grade=grade,
+                parent2=parent2, parentEmail=email, dob=DOB, medical=medical,
+                count=0, noParentTag=noParentTag, barcode=None,
+                picture=panel.photo, notes=notes)
+            self.db.commit()
+        except self.database.DatabaseError as e:
+            wx.MessageBox('The database was unable to commit this record.\n'
+                          'The error was: {0}'.format(e), 'Database Error',
+                          wx.OK | wx.ICON_ERROR)
+
+        panel.photo = None #Prevent the saved photo from being deleted in CloseRegisterPanel
+        self.CloseRegisterPanel(None)
 
 
     def setupResultsList(self):
@@ -805,9 +854,10 @@ class MyApp(wx.App):
     def ShowRecordPanel(self):
         self.HideAll()
         if self.user['leftHanded']:
-            self.RecordPanelLeft.Show()
+            self.RecordPanel = self.RecordPanelLeft
         else:
-            self.RecordPanelRight.Show()
+            self.RecordPanel = self.RecordPanelRight
+        self.RecordPanel.Show()
 
     def CloseResults(self, event):
         #Clear the list:
@@ -917,7 +967,7 @@ class MyApp(wx.App):
         #Add inputs:
         for pane in panels:
             pane.Phone = xrc.XRCCTRL(pane, 'Phone')
-            pane.FirstName = xrc.XRCCTRL(pane, 'FirstName')
+            pane.FirstName = xrc.XRCCTRL(pane, 'Name')
             pane.Surname = xrc.XRCCTRL(pane, 'Surname')
             pane.PhoneCarrier = xrc.XRCCTRL(pane, 'PhoneCarrier')
             pane.Paging = xrc.XRCCTRL(pane, 'Paging')
@@ -1235,7 +1285,13 @@ class MyApp(wx.App):
     def FormatDateLive(self, event):
         dob = event.GetEventObject()
         if dob.IsModified():
-            validate.DateFormat(dob)
+             if validate.DateFormat(dob):
+                 self.RecordPanel.AgeText.SetLabel(str(
+                    calculate_age(
+                    date(*(
+                    time.strptime(dob.GetValue(), '%Y-%m-%d')[0:3]
+                    )))))
+
 
     def FormatDate(self, event):
         dob = event.GetEventObject()
@@ -1341,6 +1397,8 @@ class MyApp(wx.App):
         items.insert(0, '') #Allow blank selection
         self.RegisterPanel.Room.SetItems(items)
         self.RegisterPanel.Room.SetStringSelection('')
+        #Set focus to the first field:
+        self.RegisterPanel.FirstName.SetFocus()
 
     def OnSelectActivity(self, event):
         choice = event.GetEventObject()
@@ -1445,19 +1503,109 @@ class MyApp(wx.App):
     def OnSearch(self, event):
         #Get what was typed in:
         query = self.Search.GetValue()
-        if query == '2244':
-            #Throw up some test data:
-            self.ShowResultsPanel()
-            results = [ {'name':'Johnathan Churchgoer', 'activity':'Explorers',  'room':'Jungle Room', 'status':taxidi.STATUS_NONE},
-                    {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_CHECKED_IN},
-                    {'name':'Joseph Flint',         'activity':'Outfitters', 'room':u'—',          'status':taxidi.STATUS_CHECKED_OUT, 'checkout-time':'11:46:34'} ]
-            self.ResultsList.ShowResults(results)
-        elif query == '9989':
-            #Show single result:
-            self.ShowRecordPanel()
-        else:  #Bad query
+        if query == '':
             self.Search.SetBackgroundColour('red')
             self.Search.SetFocus()
+        #TODO: Respect advanced search selection
+        results = self.db.Search(query)
+        if len(results) == 1:
+            #Show single record
+            self.ShowRecordPanel()
+            self.SetRecordData(results[0])
+        elif len(results) > 1:
+            #TODO: Show multiple results panel
+            pass
+        else: #No results
+            self.Search.SetBackgroundColour('red')
+            self.Search.SetFocus()
+
+        #~ if query == '2244':
+            #~ #Throw up some test data:
+            #~ self.ShowResultsPanel()
+            #~ results = [ {'name':'Johnathan Churchgoer', 'activity':'Explorers',  'room':'Jungle Room', 'status':taxidi.STATUS_NONE},
+                    #~ {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_CHECKED_IN},
+                    #~ {'name':'Joseph Flint',         'activity':'Outfitters', 'room':u'—',          'status':taxidi.STATUS_CHECKED_OUT, 'checkout-time':'11:46:34'} ]
+            #~ self.ResultsList.ShowResults(results)
+        #~ elif query == '9989':
+            #~ #Show single result:
+            #~ self.ShowRecordPanel()
+        #~ else:  #Bad query
+            #~ self.Search.SetBackgroundColour('red')
+            #~ self.Search.SetFocus()
+
+
+    def SetRecordData(self, data):
+        """
+        Sets the data for RecordPanel from a search result dictionary.
+        Also sets the available Activity and Room selections.
+        Be sure to call ShowRecordPanel() first.
+        """
+        #Remember what was loaded:
+        self.RecordPanel.data = data
+        #Setup the inputs, etc.
+        self.activities = self.db.GetActivities() #Load activities from database
+        #Set activity options:
+        self.RecordPanel.Activity.SetItems([ i['name'] for i in self.activities ])
+        self.RecordPanel.Activity.SetStringSelection(
+            conf.config['config']['defaultActivity']) #Set default activity
+        self.rooms = self.db.GetRooms()
+        items = [ i['name'] for i in self.db.GetRoom(
+            conf.config['config']['defaultActivity']) ]
+        items.insert(0, '') #Allow blank selection
+        self.RecordPanel.Room.SetItems(items)
+        panel = self.RecordPanel
+        panel.NameText.SetLabel(data['name'])
+        panel.FirstName.SetValue(data['name'])
+        panel.SurnameText.SetLabel(data['lastname'])
+        panel.Surname.SetValue(data['lastname'])
+        if data['visitor']:
+            panel.StatusText.SetLabel('Visitor')
+        else:
+            panel.StatusText.SetLabel('Member')
+        panel.Grade.SetValue(str(data['grade']))
+        panel.Phone.SetValue(data['phone'])
+        panel.Paging.SetValue(str(data['paging']))
+        if data['dob'] == '' or data['dob'] == None:
+            pass
+        else:
+            panel.DOB.SetValue(data['dob'])
+            foreground = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT)
+            panel.DOB.SetForegroundColour(foreground)
+            #calculate age:
+            dob = date(*(time.strptime(data['dob'].encode('ascii'), '%Y-%m-%d')[0:3]))
+            panel.AgeText.SetLabel(str(calculate_age(dob)))
+        panel.Activity.SetStringSelection(self.db.GetActivity(data['activity']))
+        if data['activity'] != 0:
+            #ID starts at 1 in database, but activity list starts at 0:
+            if self.activities[data['activity']-1]['nametagEnable']:
+                self.ToggleStateOn(panel.NametagToggle)
+            else:
+                self.ToggleStateOff(panel.NametagToggle)
+            if self.activities[data['activity']-1]['parentTagEnable']:
+                self.ToggleStateOn(panel.ParentToggle)
+            else:
+                self.ToggleStateOff(panel.ParentToggle)
+        if data['room'] == None or data['room'] == 0:
+            pass
+        else:
+            panel.Room.SetStringSelection(self.db.GetRoomByID(data['room']))
+        panel.Parent1.SetValue(str(data['parent1']))
+        panel.Parent2.SetValue(str(data['parent2']))
+        panel.Email.SetValue(str(data['parentEmail']))
+        panel.Medical.SetValue(str(data['medical']))
+        panel.Notes.SetValue(str(data['notes']))
+        if data['picture'] != '' or data['picture'] != None:
+            #Load and set the profile picture:
+            path = self.PhotoStorage.getThumbnailPath(data['picture'])
+            bmp = wx.Image(path).ConvertToBitmap()
+            panel.ProfilePicture.SetBitmapLabel(bmp)
+        #~ panel.CreatedText()
+        #For some reason trying to use '%c' as the format fails.
+        panel.ModifiedText.SetLabel(time.strftime('%d %b %Y', time.strptime(data['lastModified'])))
+        #~ if data['noParentTag']: self.ToggleStateOff(panel.ParentToggle)
+        panel.Email.SetBackgroundColour(wx.NullColour)
+        panel.Phone.SetBackgroundColour(wx.NullColour)
+        panel.DOB.SetBackgroundColour(wx.NullColour)
 
 
     def ResetSearchColour(self, event):
@@ -1637,6 +1785,17 @@ def _wxdate2pydate(date):
      else:
          return None
 
+def calculate_age(born):
+    today = date.today()
+    try: # raised when birth date is February 29 and the current year is not a leap year
+        birthday = born.replace(year=today.year)
+    except ValueError:
+        birthday = born.replace(year=today.year, day=born.day-1)
+    if birthday > today:
+        return today.year - born.year - 1
+    else:
+        return today.year - born.year
+
 if __name__ == '__main__':
     #Fork the process to open the splash screen.
     #TODO:  Make this work in WIN32... maybe.  Pref. make it use threading instead.
@@ -1656,7 +1815,8 @@ if __name__ == '__main__':
         import dialogues
         import hashlib
         import validate
-        from datetime import date
+        import time
+        from datetime import date, datetime
         from dateutil.relativedelta import relativedelta
 
         if conf.as_bool(conf.config['webcam']['enable']) == True:

@@ -70,7 +70,7 @@ class Database:
 
         self.debug = True
         #what columns will be returned when SELECT * is issued. Keeps things from breaking.
-        self.columns = """data.id, name, lastname, dob, activity room, grade, phone,
+        self.columns = """data.id, name, lastname, dob, activity, room, grade, phone,
                           mobileCarrier, paging, parent1, parent1Link, parent2,
                           parent2Link, parentEmail, medical, joinDate, lastSeen,
                           lastModified, count, visitor, noParentTag, barcode,
@@ -272,7 +272,7 @@ class Database:
 
     def Delete(self, index):
         """Delete a row in the data table by index."""
-        self.execute("DELETE FROM data WHERE id = ?;", (index))
+        self.execute("DELETE FROM data WHERE id = ?;", (index,))
 
     def Update(self, index, name, lastname, dob, phone, paging,
             parent1, mobileCarrier=0, activity=0, room=0, grade='',
@@ -332,10 +332,14 @@ class Database:
             a = self.SearchPhone(query)
         if not query.isdigit():  #Search in names.
             a = self.SearchName(query)
+            if len(a) == 0:
+                #Search partial names:
+                a = self.SearchName(query+'%')
         if len(a) == 0: #Catch barcodes
             a = self.SearchBarcode(query)
 
         #TODO: Search volunteers:
+        return a
 
 
     def SearchName(self, query):
@@ -492,6 +496,13 @@ class Database:
     def GetActivities(self):
         return self.to_dict(self.execute("SELECT * FROM activities;"))
 
+    def GetActivity(self, ref):
+        """
+        Converts a reference to the activity table to an explicit string value
+        (for reading a record's assigned activity with no forgein key support).
+        """
+        return self.execute("SELECT name FROM activities WHERE id = ?;", (ref,)).fetchone()[0]
+
     def AddActivity(self, name, prefix='', securityTag=False, securityMode='simple',
                     nametag='default', nametagEnable=True,
                     parentTag='default', parentTagEnable=True, admin=None,
@@ -553,6 +564,12 @@ class Database:
 
     def GetRooms(self):
         return self.to_dict(self.execute('SELECT * FROM rooms;'))
+
+    def GetRoomByID(self, ref):
+        """
+        Returns a room name specified from a reference (for displaying results).
+        """
+        return self.execute('SELECT name FROM rooms WHERE id = ?;', (ref,)).fetchone()[0]
 
     def GetRoom(self, activity):
         """
@@ -788,7 +805,8 @@ if __name__ == '__main__':
     #Searching
     #~ print db.SearchName('Gal*')
     #~ print db.SearchBarcode('1234')
-    #~ print db.SearchPhone('7916')
+    #~ print db.SearchPhone('1212')
+    print db.Search('wolf') #Full system search (default)
 
     #Barcodes
     #~ print db.GetBarcodes(300)
@@ -840,4 +858,5 @@ if __name__ == '__main__':
     #~ db.RemoveRoom(3)
 
     #~ db.commit()
+
     db.close()
