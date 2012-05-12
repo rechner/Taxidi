@@ -472,9 +472,9 @@ class TestFrame(wx.Frame):
         #~ panel.ShowResults(results)
         panel = MultiServicePanel(self)
         self.Show()
-        panel.SetServices([ {'id': 1,  'name': 'First Service', 'day': 2, 'time': '00:00:00', 'endTime': '00:09:00'},
-                             {'id': 2, 'name': 'Second Service', 'day': 2, 'time': '00:30:00', 'endTime': '00:45:00'},
-                             {'id': 3, 'name': 'Third Service', 'day': 2, 'time': '00:30:00', 'endTime': '01:59:59'},
+        panel.SetServices([ {'id': 1,  'name': 'First Service', 'day': 0, 'time': '00:00:00', 'endTime': '00:09:00'},
+                             {'id': 2, 'name': 'Second Service', 'day': 0, 'time': '00:30:00', 'endTime': '00:45:00'},
+                             {'id': 3, 'name': 'Third Service', 'day': 0, 'time': '00:30:00', 'endTime': '01:59:59'},
                              {'id': 4, 'name': 'Every day', 'day': 0, 'time': '00:00:00', 'endTime': '17:53:59'} ], True)
         print panel.GetSelected()
 

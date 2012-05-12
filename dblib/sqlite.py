@@ -311,6 +311,13 @@ class Database:
         """Returns all rows. (useful for browsing)"""
         return self.execute("SELECT * FROM data;").fetchall()
 
+    def GetRecordByID(self, ref):
+        """
+        Returns a single row specified by id.
+        """
+        a = self.dict_factory(self.execute("SELECT * FROM data WHERE id = ?", (ref,)).fetchone())
+        return a
+
     # === begin search functions ===
     def Search(self, query):
         """
@@ -569,7 +576,11 @@ class Database:
         """
         Returns a room name specified from a reference (for displaying results).
         """
-        return self.execute('SELECT name FROM rooms WHERE id = ?;', (ref,)).fetchone()[0]
+        a = self.execute('SELECT name FROM rooms WHERE id = ?;', (ref,)).fetchone()
+        if a != None:
+            return a[0]
+        else:
+            return ''
 
     def GetRoom(self, activity):
         """

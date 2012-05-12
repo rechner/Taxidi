@@ -247,6 +247,16 @@ class Storage:
 
         return record
 
+    def getThumbnail100(self, record):
+        """
+        Returns a 100x100 wxBitmap given a record number.
+        """
+        pil = Image.open(self.getThumbnailPath(record))
+        pil.thumbnail((100, 100))
+        image = wx.EmptyImage(*pil.size)
+        image.SetData(pil.convert("RGB").tostring())
+        return wx.BitmapFromImage(image)
+
     def saveImage(self, filename, record=-1):
         """
         Like savePIL(), but accepts local filename as argument instead.

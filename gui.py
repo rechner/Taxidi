@@ -80,6 +80,7 @@ class MyApp(wx.App):
 
         #Load generic icons
         self.NoPhoto128 = wx.Image(os.path.join(themeIconPath, 'no-photo-128.png')).ConvertToBitmap()
+        self.NoPhoto100 = wx.Image(os.path.join(themeIconPath, 'no-photo-100.png')).ConvertToBitmap()
 
         #Bind events
         self.frame.Bind(wx.EVT_SIZE, self.on_size)
@@ -473,7 +474,7 @@ class MyApp(wx.App):
             pane.SaveButton = xrc.XRCCTRL(pane, 'SaveButton')
             pane.BarcodeButton = xrc.XRCCTRL(pane, 'BarcodeButton')
             pane.PhoneButton = xrc.XRCCTRL(pane, 'PhoneButton')
-            pane.CustomIDButton = xrc.XRCCTRL(pane, 'CustomIDButton')
+            pane.PagingButton = xrc.XRCCTRL(pane, 'PagingButton')
             pane.Parent1Find = xrc.XRCCTRL(pane, 'Parent1Find')
             pane.Parent2Find = xrc.XRCCTRL(pane, 'Parent2Find')
             pane.AuthorizePickupButton = xrc.XRCCTRL(pane,
@@ -487,6 +488,7 @@ class MyApp(wx.App):
             pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseRecordPanel)
             pane.NametagToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
             pane.ParentToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
+            pane.PagingButton.Bind(wx.EVT_BUTTON, self.SetPagingCode)
             pane.Activity.Bind(wx.EVT_CHOICE, self.OnSelectActivity)
             pane.Email.Bind(wx.EVT_TEXT, self.FormatEmailLive)
             pane.Phone.Bind(wx.EVT_KILL_FOCUS, self.FormatPhone)
@@ -505,6 +507,14 @@ class MyApp(wx.App):
         else:
             self.ShowSearchPanel()
 
+    def SetPagingCode(self, event):
+        btn = event.GetEventObject()
+        panel = btn.GetParent()
+        if len(panel.Phone.GetValue()) > 4:
+            panel.Paging.SetValue('{0}-{1}'.format(
+                self.activities[event.GetSelection()]['prefix'],
+                panel.Phone.GetValue()[-4:]))
+
     def OnDeleteRecord(self, event):
         data = self.RecordPanel.data
         dlg = wx.MessageBox('Are you sure you want to delete this record?\n' \
@@ -513,7 +523,7 @@ class MyApp(wx.App):
         if dlg == wx.YES:
             try:
                 self.db.Delete(data['id']) #Delete the record
-            except:
+            except:  #TODO: Catch the proper errors
                 wx.MessageBox('Error while deleting record.', 'Error',
                                wx.ICON_ERROR | wx.OK)
             self.CloseRecordPanel(None)
@@ -768,10 +778,12 @@ class MyApp(wx.App):
         self.ResultsPanel = wx.Panel(self.frame) #Master panel
         self.ResultsList = SearchResultsList.SearchResultsPanel(self.ResultsPanel) #Display list
 
+        #Bind list clicking:
+        self.ResultsList.ultimateList.Bind(wx.EVT_LIST_ITEM_SELECTED, self.SelectResultItem)
+
         #Perform initial resizes.
-        #TODO: Make resizing happen in a sensible way to use all the frame
         self.ResultsList.SetSize((1024, 407))
-        self.ResultsPanel.SetSize((1024, 580))
+        self.ResultsPanel.SetSize((1024, 540))
         self.ResultsPanel.SetPosition((0, 160))
         self.ResultsPanel.CentreOnParent(dir=wx.HORIZONTAL)
 
@@ -779,41 +791,46 @@ class MyApp(wx.App):
         self.ResultsControls.SetBackgroundColour(themeBackgroundColour)
 
         #Create buttons for the top control panel
-        self.resultsPanelPhoto = wx.BitmapButton(self.ResultsControls, -1,
+        self.ResultsControls.Photo = wx.BitmapButton(self.ResultsControls, -1,
             wx.Bitmap('resources/icons/no-photo-100.png'), size=(100, 100))
-        self.resultsPanelClose = wx.BitmapButton(self.ResultsControls, -1,
+        self.ResultsControls.Close = wx.BitmapButton(self.ResultsControls, -1,
             wx.Bitmap('resources/icons/window-close.png'), size=(150, 50))
-        self.resultsPanelCheckIn = wx.Button(self.ResultsControls, -1,
+        self.ResultsControls.CheckIn = wx.Button(self.ResultsControls, -1,
             'Check-in', size=(150, 50))
-        self.resultsPanelCheckIn.SetDefault()
-        self.resultsPanelDisplay = wx.Button(self.ResultsControls, -1,
+        self.ResultsControls.CheckIn.SetDefault()
+        self.ResultsControls.Display = wx.Button(self.ResultsControls, -1,
             'Display', size=(150, 50))
-        self.resultsPanelMultiService = wx.Button(self.ResultsControls, -1,
+        self.ResultsControls.MultiService = wx.Button(self.ResultsControls, -1,
             'Multi-Service', size=(150, 50))
         #Group some of the buttons together:
         buttonSizer = wx.FlexGridSizer(rows=2, cols=2, vgap=5, hgap=5)
-        buttonSizer.Add(self.resultsPanelCheckIn, -1)
-        buttonSizer.Add(self.resultsPanelClose, -1)
-        buttonSizer.Add(self.resultsPanelMultiService, -1)
-        buttonSizer.Add(self.resultsPanelDisplay, -1, wx.RIGHT, border=10)
+        buttonSizer.Add(self.ResultsControls.CheckIn, -1)
+        buttonSizer.Add(self.ResultsControls.Close, -1)
+        buttonSizer.Add(self.ResultsControls.MultiService, -1)
+        buttonSizer.Add(self.ResultsControls.Display, -1, wx.RIGHT, border=10)
+
+        #Disable actions when nothing's selected
+        self.ResultsControls.CheckIn.Disable()
+        self.ResultsControls.Display.Disable()
+        self.ResultsControls.MultiService.Disable()
 
         #Bind some buttons:
-        self.ResultsPanel.Bind(wx.EVT_BUTTON, self.CloseResults, self.resultsPanelClose)
-        self.ResultsPanel.Bind(wx.EVT_BUTTON, self.DisplaySelectedRecord, self.resultsPanelDisplay)
+        self.ResultsControls.Close.Bind(wx.EVT_BUTTON, self.CloseResults)
+        self.ResultsControls.Display.Bind(wx.EVT_BUTTON, self.DisplaySelectedRecord)
 
         #Create statictexts:
-        self.SearchResultText = wx.StaticText(self.ResultsControls,
-            label='Results for 9989')
-        self.SearchResultText.SetForegroundColour(themeTextColour)
+        self.ResultsControls.Text = wx.StaticText(self.ResultsControls,
+            label='Results for ????')
+        self.ResultsControls.Text.SetForegroundColour(themeTextColour)
         font = wx.Font(22, wx.DEFAULT, wx.NORMAL, wx.BOLD)
-        self.SearchResultText.SetFont(font)
+        self.ResultsControls.Text.SetFont(font)
         searchInstructions = wx.StaticText(self.ResultsControls,
             label = 'Check one or more records and select an action.\n'
             'To edit or view detals, highlight a record and click "Display".')
         searchInstructions.SetForegroundColour(themeTextColour)
         #And put them in a sizer.
         textBox = wx.FlexGridSizer(rows=2, cols=1, vgap=10, hgap=10)
-        textBox.Add(self.SearchResultText, -1)
+        textBox.Add(self.ResultsControls.Text, -1)
         textBox.Add(searchInstructions, -1)
 
         #The master sizer for the whole shebang:
@@ -823,7 +840,7 @@ class MyApp(wx.App):
 
         #Top-level sizer for ResultsControls panel
         controlsSizer = wx.FlexGridSizer(rows=1, cols=4, vgap=10, hgap=10)
-        controlsSizer.Add(self.resultsPanelPhoto, -1,
+        controlsSizer.Add(self.ResultsControls.Photo, -1,
             wx.LEFT | wx.BOTTOM | wx.RIGHT, border=10)
         controlsSizer.Add(textBox, wx.ALL, border=10)
         controlsSizer.AddStretchSpacer()
@@ -846,10 +863,27 @@ class MyApp(wx.App):
 
         #A few variables:
         self.ResultsPanel.opened = None
+        self.ResultsPanel.Text = self.ResultsControls.Text
+        self.ResultsList.selected = None
+
+    def SelectResultItem(self, event):
+        selected = event.m_itemIndex
+        self.ResultsList.selected = event.m_itemIndex #Remember the selection
+        self.ResultsControls.Display.Enable()
+        try: #Display the record's picture:
+            self.ResultsControls.Photo.SetBitmapLabel(
+                self.PhotoStorage.getThumbnail100(
+                self.ResultsList.results[selected]['picture']))
+        except:
+            self.ResultsControls.Photo.SetBitmapLabel(self.NoPhoto100)
+
+
 
     def DisplaySelectedRecord(self, event):
+        ref = self.ResultsList.results[self.ResultsList.selected]['id']
+        details = self.db.GetRecordByID(ref)
         self.ShowRecordPanel()
-        pass
+        self.SetRecordData(details)
 
     def ShowRecordPanel(self):
         self.HideAll()
@@ -1504,8 +1538,9 @@ class MyApp(wx.App):
         #Get what was typed in:
         query = self.Search.GetValue()
         if query == '':
-            self.Search.SetBackgroundColour('red')
+            self.Search.SetBackgroundColour('pink')
             self.Search.SetFocus()
+            return 0
         #TODO: Respect advanced search selection
         results = self.db.Search(query)
         if len(results) == 1:
@@ -1513,11 +1548,26 @@ class MyApp(wx.App):
             self.ShowRecordPanel()
             self.SetRecordData(results[0])
         elif len(results) > 1:
-            #TODO: Show multiple results panel
-            pass
+            #Multiple results:
+            self.ShowResultsPanel()
+            self.ResultsControls.Text.SetLabel('Results for “{0}”'.format(query))
+            self.ResultsControls.CheckIn.Disable()  #Disable actions (nothing's selected)
+            self.ResultsControls.Display.Disable()
+            self.ResultsControls.MultiService.Disable()
+            self.ResultsList.results = self.FormatResults(results)
+            self.ResultsList.ShowResults(self.ResultsList.results)
+            #Display picture of first record
+            try:
+                self.ResultsControls.Photo.SetBitmapLabel(
+                    self.PhotoStorage.getThumbnail100(
+                    self.ResultsList.results[0]['picture']))
+            except:
+                self.ResultsControls.Photo.SetBitmapLabel(self.NoPhoto100)
         else: #No results
-            self.Search.SetBackgroundColour('red')
+            self.Search.SetBackgroundColour('pink')
             self.Search.SetFocus()
+            return 0
+        self.SearchPanel.SearchAny.SetValue(True) #Reset advanced search choice
 
         #~ if query == '2244':
             #~ #Throw up some test data:
@@ -1533,6 +1583,29 @@ class MyApp(wx.App):
             #~ self.Search.SetBackgroundColour('red')
             #~ self.Search.SetFocus()
 
+    def FormatResults(self, results):
+        """
+        Formats a results dictionary for displaying on the results panel.
+        Joins with activity name, room name, and check-in status.
+        """
+        ret = []
+        activities = [ i['name'] for i in self.db.GetActivities() ]
+        rooms = { i['id'] : i['name'] for i in self.db.GetRooms() }
+        for i in results:
+            room = ''
+            if int(i['room']) > len(rooms): #Room reference is invalid:
+                i['room'] = 0
+            if i['room'] == None or i['room'] == 0:
+                room = u'—'
+            else:
+                room = rooms[int(i['room'])]
+            if int(i['activity'])-1 > len(activities): #activity/room index starts at 0
+                i['activity'] = 0
+            ret.append({ 'id': i['id'], 'name': ('%s %s' % (i['name'], i['lastname'])),
+                         'activity': activities[int(i['activity'])-1],
+                         'room': room, 'status': taxidi.STATUS_NONE,
+                         'picture': str(i['picture']) })
+        return ret
 
     def SetRecordData(self, data):
         """
@@ -1562,8 +1635,10 @@ class MyApp(wx.App):
             panel.StatusText.SetLabel('Visitor')
         else:
             panel.StatusText.SetLabel('Member')
+        if data['grade'] == None: data['grade'] = ''
         panel.Grade.SetValue(str(data['grade']))
-        panel.Phone.SetValue(data['phone'])
+        panel.Phone.SetValue(str(data['phone']))
+        validate.PhoneFormat(panel.Phone) #Format the number if needed.
         panel.Paging.SetValue(str(data['paging']))
         if data['dob'] == '' or data['dob'] == None:
             pass
@@ -1589,10 +1664,14 @@ class MyApp(wx.App):
             pass
         else:
             panel.Room.SetStringSelection(self.db.GetRoomByID(data['room']))
+        if data['parent1'] == None: data['parent1'] = ''
         panel.Parent1.SetValue(str(data['parent1']))
+        if data['parent2'] == None: data['parent2'] = ''
         panel.Parent2.SetValue(str(data['parent2']))
         panel.Email.SetValue(str(data['parentEmail']))
+        if data['medical'] == None: data['medical'] = ''
         panel.Medical.SetValue(str(data['medical']))
+        if data['notes'] == None: data['notes'] = ''
         panel.Notes.SetValue(str(data['notes']))
         if data['picture'] != '' or data['picture'] != None:
             #Load and set the profile picture:
@@ -1601,7 +1680,10 @@ class MyApp(wx.App):
             panel.ProfilePicture.SetBitmapLabel(bmp)
         #~ panel.CreatedText()
         #For some reason trying to use '%c' as the format fails.
-        panel.ModifiedText.SetLabel(time.strftime('%d %b %Y', time.strptime(data['lastModified'])))
+        try:
+            panel.ModifiedText.SetLabel(time.strftime('%d %b %Y', time.strptime(data['lastModified'])))
+        except ValueError: #Format of test data was wrong:
+            panel.ModifiedText.SetLabel(str(data['lastModified'][0:10]))
         #~ if data['noParentTag']: self.ToggleStateOff(panel.ParentToggle)
         panel.Email.SetBackgroundColour(wx.NullColour)
         panel.Phone.SetBackgroundColour(wx.NullColour)
