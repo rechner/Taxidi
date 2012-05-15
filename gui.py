@@ -63,6 +63,8 @@ class MyApp(wx.App):
         self.VisitorPanelLeft = xrc.XRCCTRL(self.frame, 'VisitorLeft')
         self.RegisterRight = xrc.XRCCTRL(self.frame, 'RegisterRight')
         self.RegisterLeft = xrc.XRCCTRL(self.frame, 'RegisterLeft')
+        self.BarcodePanel = xrc.XRCCTRL(self.frame, 'BarcodePanel')
+        self.DisplayPhotoPanel = xrc.XRCCTRL(self.frame, 'DisplayPhoto')
         if conf.as_bool(conf.config['webcam']['enable']):
             self.WebcamPanel = webcam.Panel(self.frame)
             self.setupWebcamPanel()
@@ -74,11 +76,14 @@ class MyApp(wx.App):
         self.setupResultsList()
         self.setupVisitorPanel()
         self.setupRegisterPanel()
+        self.setupBarcodePanel()
+        self.setupDisplayPhotoPanel()
 
         #Setup programme menus:
         self.InitMenus()
 
         #Load generic icons
+        self.NoPhoto480 = wx.Image(os.path.join(themeIconPath, 'no-photo-480.png')).ConvertToBitmap()
         self.NoPhoto128 = wx.Image(os.path.join(themeIconPath, 'no-photo-128.png')).ConvertToBitmap()
         self.NoPhoto100 = wx.Image(os.path.join(themeIconPath, 'no-photo-100.png')).ConvertToBitmap()
 
@@ -98,7 +103,9 @@ class MyApp(wx.App):
                              self.RecordPanelLeft,  self.RecordPanelRight,
                              self.ResultsPanel,
                              self.VisitorPanelLeft, self.VisitorPanelRight,
-                             self.RegisterLeft, self.RegisterRight )
+                             self.RegisterLeft, self.RegisterRight,
+                             self.BarcodePanel,
+                             self.DisplayPhotoPanel )
         self.panelsLeft =  ( self.LeftHandSearch,  self.RecordPanelLeft,
                              self.VisitorPanelLeft, self.RegisterLeft )
         self.panelsRight = ( self.RightHandSearch, self.RecordPanelRight,
@@ -113,7 +120,7 @@ class MyApp(wx.App):
         self.MainMenu.Show()
 
         self.frame.Centre()
-        #self.frame.ShowFullScreen(True)
+        #~ self.frame.ShowFullScreen(True)
         self.MainMenu.begin.SetFocus()
         self.frame.Show()
 
@@ -131,6 +138,7 @@ class MyApp(wx.App):
         #Custom positions:
         if conf.as_bool(conf.config['webcam']['enable']):
             self.WebcamPanel.CentreOnParent(dir=wx.BOTH)
+        self.DisplayPhotoPanel.CentreOnParent(dir=wx.BOTH)
 
 
     def setupDatabase(self):
@@ -374,9 +382,73 @@ class MyApp(wx.App):
 
         return False
 
+    def setupBarcodePanel(self):
+        pane = self.BarcodePanel
+        #Inputs:
+        pane.code1 = xrc.XRCCTRL(pane, 'code1')
+        pane.code2 = xrc.XRCCTRL(pane, 'code2')
+        pane.code3 = xrc.XRCCTRL(pane, 'code3')
+        pane.code4 = xrc.XRCCTRL(pane, 'code4')
+        pane.code5 = xrc.XRCCTRL(pane, 'code5')
+        pane.code6 = xrc.XRCCTRL(pane, 'code6')
+        pane.codes = ( pane.code1, pane.code2, pane.code3, pane.code4, pane.code5, pane.code6 )
+        #Clear buttons:
+        pane.clear1 = xrc.XRCCTRL(pane, 'clear1')
+        pane.clear2 = xrc.XRCCTRL(pane, 'clear2')
+        pane.clear3 = xrc.XRCCTRL(pane, 'clear3')
+        pane.clear4 = xrc.XRCCTRL(pane, 'clear4')
+        pane.clear5 = xrc.XRCCTRL(pane, 'clear5')
+        pane.clear6 = xrc.XRCCTRL(pane, 'clear6')
+        pane.buttons = ( pane.clear1, pane.clear2, pane.clear3, pane.clear4, pane.clear5, pane.clear6 )
+        for i in pane.buttons:
+            i.Bind(wx.EVT_BUTTON, self.clearBarcode)
+        #Command buttons:
+        pane.save = xrc.XRCCTRL(pane, 'BarcodeSave')
+        pane.save.Bind(wx.EVT_BUTTON, self.saveBarcodes)
+        pane.cancel = xrc.XRCCTRL(pane, 'BarcodeCancel')
+        pane.cancel.Bind(wx.EVT_BUTTON, self.hideBarcodePanel)
+        #Variables:
+        pane.barcodes = []
+        #Set size:
+        pane.SetSize((1024, 540))
+
+    def clearBarcode(self, event):
+        #Clear the value in the corresponding text entry
+        button = event.GetEventObject()
+        pane = button.GetParent()
+        index = pane.buttons.index(button)
+        pane.codes[index].SetValue('')
+        pane.codes[index].SetFocus()
+
+    def saveBarcodes(self, event):
+        pane = event.GetEventObject().GetParent()
+        pane.barcodes = []
+        for inp in pane.codes:
+            pane.barcodes.append(inp.GetValue())
+        print pane.barcodes
+        pane.Hide()
+
+    def showBarcodePanel(self, event=None):
+        self.BarcodePanel.Show()
+        #TODO: Populate inputs with saved values
+        self.BarcodePanel.code1.SetFocus()
+
+    def hideBarcodePanel(self, event=None):
+        self.BarcodePanel.Hide()
+
+    def setupDisplayPhotoPanel(self):
+        pane = self.DisplayPhotoPanel
+        pane.CentreOnParent(dir=wx.BOTH)
+        pane.photo = xrc.XRCCTRL(pane, 'photo')
+        pane.cancel = xrc.XRCCTRL(pane, 'PhotoCancel')
+        pane.cancel.Bind(wx.EVT_BUTTON, self.ClosePhotoPanel)
+        pane.retake = xrc.XRCCTRL(pane, 'PhotoRetake')
+        pane.retake.Bind(wx.EVT_BUTTON, self.RecordPhoto)
+
     #TODO: (URGENT DEADLINE 04.05) Add basic record panel UI functionality.
     def setupRecordPanel(self):
         panels = (self.RecordPanelLeft, self.RecordPanelRight)
+        self.RecordPanel = self.RecordPanelRight
 
         #Add static text controls and set font colour:
         for pane in panels:
@@ -485,9 +557,12 @@ class MyApp(wx.App):
             pane.HistoryButton = xrc.XRCCTRL(pane, 'HistoryButton')
             pane.DeleteButton = xrc.XRCCTRL(pane, 'DeleteButton')
 
+            pane.ProfilePicture.Bind(wx.EVT_BUTTON, self.ShowPhotoPanel)
             pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseRecordPanel)
             pane.NametagToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
             pane.ParentToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
+            pane.SaveButton.Bind(wx.EVT_BUTTON, self.SaveRecord)
+            pane.BarcodeButton.Bind(wx.EVT_BUTTON, self.showBarcodePanel)
             pane.PagingButton.Bind(wx.EVT_BUTTON, self.SetPagingCode)
             pane.Activity.Bind(wx.EVT_CHOICE, self.OnSelectActivity)
             pane.Email.Bind(wx.EVT_TEXT, self.FormatEmailLive)
@@ -497,6 +572,52 @@ class MyApp(wx.App):
             pane.Surname.Bind(wx.EVT_TEXT, self.ResetBackgroundColour)
             pane.DeleteButton.Bind(wx.EVT_BUTTON, self.OnDeleteRecord)
 
+    def ShowPhotoPanel(self, event):
+        self.DisplayPhotoPanel.ParentObject = event.GetEventObject().GetParent()
+        if self.DisplayPhotoPanel.ParentObject == self.RecordPanel:
+            self.HideAll()
+            if self.RecordPanel.data['picture'] != None and \
+              str(self.RecordPanel.data['picture']) != 'None':
+                try:
+                #Load and set the profile picture:
+                    path = self.PhotoStorage.getImagePath(self.RecordPanel.data['picture'])
+                    bmp = wx.Image(path).ConvertToBitmap()
+                    self.DisplayPhotoPanel.photo.SetBitmap(bmp)
+                except:
+                    wx.MessageBox('Unable to load photo for this record.',
+                                  'Taxidi Error', wx.OK | wx.ICON_ERROR)
+                    self.DisplayPhotoPanel.photo.SetBitmap(self.NoPhoto480)
+            else:
+                self.DisplayPhotoPanel.photo.SetBitmap(self.NoPhoto480)
+        elif self.DisplayPhotoPanel.ParentObject == self.ResultsControls:
+            self.HideAll()
+            self.DisplayPhotoPanel.retake.Hide()
+            selected = self.ResultsList.selected
+            if selected == None: selected = 0
+            print self.ResultsList.results[selected]
+            if self.ResultsList.results[selected]['picture'] != None and \
+              self.ResultsList.results[selected]['picture'] != 'None':
+                #Load and set the profile picture:
+                try:
+                    f = open(self.PhotoStorage.getImagePath(self.ResultsList.results[selected]['picture']))
+                    f.close()
+                    path = self.PhotoStorage.getImagePath(self.ResultsList.results[selected]['picture'])
+                    bmp = wx.Image(path).ConvertToBitmap()
+                    self.DisplayPhotoPanel.photo.SetBitmap(bmp)
+                except IOError:
+                    print "Not found: ", self.ResultsList.results[selected]['picture']
+                    self.DisplayPhotoPanel.photo.SetBitmap(self.NoPhoto480)
+            else:
+                self.DisplayPhotoPanel.photo.SetBitmap(self.NoPhoto480)
+        self.DisplayPhotoPanel.Show()
+
+    def ClosePhotoPanel(self, event):
+        self.DisplayPhotoPanel.Hide()
+        if self.DisplayPhotoPanel.ParentObject == self.RecordPanel:
+            self.ShowRecordPanel()
+        elif self.DisplayPhotoPanel.ParentObject == self.ResultsControls:
+            self.DisplayPhotoPanel.retake.Show()
+            self.ShowResultsPanel()
 
     def CloseRecordPanel(self, event):
         self.RecordPanel.ProfilePicture.SetBitmapLabel(self.NoPhoto128)
@@ -523,10 +644,36 @@ class MyApp(wx.App):
         if dlg == wx.YES:
             try:
                 self.db.Delete(data['id']) #Delete the record
+                self.db.commit() #commit to the database
             except:  #TODO: Catch the proper errors
-                wx.MessageBox('Error while deleting record.', 'Error',
+                wx.MessageBox('Error while deleting record.', 'Database Error',
                                wx.ICON_ERROR | wx.OK)
+                return 1
+            #Remove their photo if needed:
+            if data['picture'] != None:
+                self.PhotoStorage.delete(data['picture'])
+            #Remove their barcodes, if any:
+            try:
+                self.db.RemoveAllBarcodes(data['id'])
+                self.db.commit()
+            except self.database.DatabaseError as e:
+                wx.MessageBox('Error while removing barcodes for record {0}.\n'
+                              'The error was: {1}'.format(data['id'], e),
+                              'Database Error', wx.ICON_ERROR | wx.OK)
+
             self.CloseRecordPanel(None)
+            #If the results list was open, remove the deleted record:
+            if self.ResultsPanel.opened:
+                #Remove from the results vector:
+                self.ResultsList.results.pop(self.ResultsList.selected)
+                #If there's nothing left in the list, close the search results:
+                if len(self.ResultsList.results) == 0:
+                    self.CloseResults(None)
+                else:
+                    #Refresh the list:
+                    self.ResultsList.DeleteAllItems()
+                    self.ResultsList.ShowResults(self.ResultsList.results)
+
 
     def ShowRegisterPanel(self, event=None):
         if self.user['leftHanded']:
@@ -643,6 +790,7 @@ class MyApp(wx.App):
                 'EmergencyContactButton')
 
             pane.ProfilePicture.Bind(wx.EVT_BUTTON, self.RegisterPhoto)
+            pane.BarcodeButton.Bind(wx.EVT_BUTTON, self.showBarcodePanel)
             pane.Activity.Bind(wx.EVT_CHOICE, self.OnSelectActivity)
             pane.Email.Bind(wx.EVT_TEXT, self.FormatEmailLive)
             pane.Phone.Bind(wx.EVT_KILL_FOCUS, self.FormatPhone)
@@ -752,7 +900,7 @@ class MyApp(wx.App):
         #TODO: Parent linking
 
         try:
-            self.db.Register(name, surname, phone, parent1, paging=pagingValue,
+            ref = self.db.Register(name, surname, phone, parent1, paging=pagingValue,
                 mobileCarrier=0, activity=activity['id'], room=room, grade=grade,
                 parent2=parent2, parentEmail=email, dob=DOB, medical=medical,
                 count=0, noParentTag=noParentTag, barcode=None,
@@ -763,8 +911,113 @@ class MyApp(wx.App):
                           'The error was: {0}'.format(e), 'Database Error',
                           wx.OK | wx.ICON_ERROR)
 
+        #Save any added barcode values:
+        for code in self.BarcodePanel.barcodes:
+            if code != '':
+                try:
+                    self.db.AddBarcode(ref, code)
+                    self.db.commit()
+                except self.database.DatabaseError as e:
+                    wx.MessageBox('Unable to add barcode value for record {0}.\n'
+                                  'The error was: {1}'.format(ref, e),
+                                  'Database Error', wx.OK | wx.ICON_ERROR)
+
+        self.BarcodePanel.barcodes = []
         panel.photo = None #Prevent the saved photo from being deleted in CloseRegisterPanel
+
         self.CloseRegisterPanel(None)
+
+    def SaveRecord(self, event):
+        button = event.GetEventObject()
+        panel = button.GetParent()
+        nametagEnable = panel.NametagToggle.GetValue()
+        parentEnable = panel.ParentToggle.GetValue()
+        name = panel.FirstName.GetValue()  #Required
+        surname = panel.Surname.GetValue() #Required
+        phone = panel.Phone.GetValue()     #Required
+        invalid = False
+        if name == '':
+            panel.FirstName.SetBackgroundColour('red')
+            invalid = True
+        if surname == '':
+            panel.Surname.SetBackgroundColour('red')
+            invalid = True
+        if phone == '':
+            panel.Phone.SetBackgroundColour('red')
+            invalid = True
+        if invalid:
+            return 0 #Cancel saving, mark the missing required fields in red.
+        pagingValue = panel.Paging.GetValue()   #(automatically generated)
+        activity = self.activities[panel.Activity.GetSelection()]
+        medical = panel.Medical.GetValue()
+        parent1 = panel.Parent1.GetValue()  #TODO: Add parent linking
+        parent2 = panel.Parent2.GetValue()
+        email = panel.Email.GetValue()
+        notes = panel.Notes.GetValue()
+        DOB = panel.DOB.GetValue()
+        grade = panel.Grade.GetValue()
+
+        #Check if there's a DOB entered (blank allowed)
+        if DOB.lower().encode('ascii') == 'yyyy-mm-dd' or DOB == '':
+            DOB = ''               #(true when has focus)——————^
+        else: #Validate the entered date.
+            a = validate.DateFormat(panel.DOB)
+            print a
+            if not a:  #date was not validated
+                panel.DOB.SetBackgroundColour('orange')
+                return 0
+
+        room = panel.Room.GetStringSelection()
+        if room == '':  #No room assigned.
+            room = None
+        if room != None:
+            #Convert it to an explicit id reference (I'd use GetSelection(), but the order might be wrong).
+            room = self.db.GetRoomID(room)[0]
+
+        if activity['parentTag'] == parentEnable: #Check if the nametag settings have been overridden.
+            noParentTag = not(activity['parentTag']) # and set the appropriate value.
+        else:
+            noParentTag = not(parentEnable)
+
+        #TODO: Reading and setting of mobile carrier setting.
+        #TODO: Parent linking
+        index = self.RecordPanel.data['id']
+        try:
+            self.db.Update(index, name, surname, phone, parent1, paging=pagingValue,
+                mobileCarrier=0, activity=activity['id'], room=room, grade=grade,
+                parent2=parent2, parentEmail=email, dob=DOB, medical=medical,
+                count=0, noParentTag=noParentTag, barcode=None,
+                picture=panel.photo, notes=notes)
+            self.db.commit()
+        except self.database.DatabaseError as e:
+            wx.MessageBox('The database was unable to commit this record.\n'
+                          'The error was: {0}'.format(e), 'Database Error',
+                          wx.OK | wx.ICON_ERROR)
+
+        #Reset and save any barcode values:
+        try:
+            self.db.RemoveAllBarcodes(self.RecordPanel.data['id'])
+            self.db.commit()
+        except self.database.DatabaseError:
+            pass
+        for code in self.BarcodePanel.barcodes:
+            if code != '':
+                try:
+                    self.db.AddBarcode(index, code)
+                    self.db.commit()
+                except self.database.DatabaseError as e:
+                    wx.MessageBox('Unable to add barcode value for record {0}.\n'
+                                  'The error was: {1}'.format(ref, e),
+                                  'Database Error', wx.OK | wx.ICON_ERROR)
+
+        self.BarcodePanel.barcodes = []
+        panel.photo = None #Prevent the saved photo from being deleted later
+
+        self.CloseRecordPanel(None)
+        if self.ResultsPanel.opened:
+            #Reload the query:
+            self.OnSearch(None)
+
 
 
     def setupResultsList(self):
@@ -780,6 +1033,8 @@ class MyApp(wx.App):
 
         #Bind list clicking:
         self.ResultsList.ultimateList.Bind(wx.EVT_LIST_ITEM_SELECTED, self.SelectResultItem)
+        #Bind check-box clicking:
+        self.ResultsList.Bind(SearchResultsList.RESULT_LIST_CHECK, self.CheckResultItem)
 
         #Perform initial resizes.
         self.ResultsList.SetSize((1024, 407))
@@ -815,6 +1070,7 @@ class MyApp(wx.App):
         self.ResultsControls.MultiService.Disable()
 
         #Bind some buttons:
+        self.ResultsControls.Photo.Bind(wx.EVT_BUTTON, self.ShowPhotoPanel)
         self.ResultsControls.Close.Bind(wx.EVT_BUTTON, self.CloseResults)
         self.ResultsControls.Display.Bind(wx.EVT_BUTTON, self.DisplaySelectedRecord)
 
@@ -862,7 +1118,7 @@ class MyApp(wx.App):
         self.ResultsPanel.Hide()
 
         #A few variables:
-        self.ResultsPanel.opened = None
+        self.ResultsPanel.opened = False
         self.ResultsPanel.Text = self.ResultsControls.Text
         self.ResultsList.selected = None
 
@@ -877,7 +1133,11 @@ class MyApp(wx.App):
         except:
             self.ResultsControls.Photo.SetBitmapLabel(self.NoPhoto100)
 
-
+    def CheckResultItem(self, event):
+        if len(self.ResultsList.GetSelected()) == 0:
+            self.ResultsControls.CheckIn.Disable()
+        else:
+            self.ResultsControls.CheckIn.Enable()
 
     def DisplaySelectedRecord(self, event):
         ref = self.ResultsList.results[self.ResultsList.selected]['id']
@@ -1103,7 +1363,7 @@ class MyApp(wx.App):
                 expiry=expiration, noParentTag=noParentTag, barcode=None,
                 picture=self.VisitorPanel.photo,
                 authorized=None, unauthorized=None, notes='')
-            self.db.commit()
+            self.db.commit() #Commit the change
         except self.database.DatabaseError as e:
             if e.code == self.database.EMPTY_RESULT:
                 wx.MessageBox('The record was unable to be added to the database.',
@@ -1205,6 +1465,60 @@ class MyApp(wx.App):
 
             dlg.Destroy()
 
+    def RecordPhoto(self, event):
+        """
+        Takes a picture from webcam or file selection and updates the record's
+        photo.  Works on calling panel's `data` dictionary attribute
+        (self.RecordPanel.data['picture'], usw.)
+
+        Sets the panel's BitmapButton `ProfilePicture` attribute to the new picture.
+        """
+        event.GetEventObject().GetParent().Hide() #Hide the calling panel
+        panel = event.GetEventObject().GetParent().ParentObject
+        if conf.as_bool(conf.config['webcam']['enable']): #Webcam enabled?
+            #Save the original calling panel:
+            self.WebcamPanel.ParentObject = panel
+            panel.Hide() #Hide it for now
+            if panel.data['picture'] != None:
+                #re-take; overwrite the old photo.
+                try:
+                    f = open(self.PhotoStorage.getImagePath(panel.data['picture']))
+                    f.close()
+                    self.WebcamPanel.SetOverwrite(panel.data['picture'])
+                except IOError:
+                    self.WebcamPanel.SetOverwrite(None)
+            #Show the webcam input panel, setting call-back functions:
+            self.ShowWebcamPanel(self.PanelPhotoCancel, \
+                self.PanelPhotoSave, self.PanelPhotoFile)
+            self.WebcamPanel.ParentObject = panel
+        else:
+            #Just open a file selection dialog.
+            path = os.path.abspath(os.path.expanduser(
+                conf.config['webcam']['target']))
+            dlg = ib.ImageDialog(self.frame, path)
+            dlg.Centre()
+            if dlg.ShowModal() == wx.ID_OK:
+                if panel.data['picture'] != None:
+                    panel.data['picture'] = \
+                        self.PhotoStorage.saveImage(dlg.GetFile(),
+                        int(panel.data['picture']))
+                else:
+                    panel.data['picture'] = self.PhotoStorage.saveImage(dlg.GetFile())
+
+                photoPath = self.PhotoStorage.getThumbnailPath(self.RegisterPanel.photo)
+                #~ print "Resolves to file: {0}".format(photoPath)
+                #Load and display new photo
+                wximg = wx.Image(photoPath)
+                wxbmp = wximg.ConvertToBitmap()
+                panel.ProfilePicture.SetBitmapLabel(wxbmp)
+                panel.Show()
+
+            else:
+                #~ self.log.debug("> Dialogue cancelled.")
+                pass
+
+            dlg.Destroy()
+
     def VisitorPhotoFile(self, event):
         self.ShowVisitorPanel()
         self.CloseWebcamPanel()
@@ -1239,6 +1553,23 @@ class MyApp(wx.App):
         wxbmp = wximg.ConvertToBitmap()
         self.RegisterPanel.ProfilePicture.SetBitmapLabel(wxbmp)
 
+    def PanelPhotoFile(self, event):
+        self.WebcamPanel.ParentObject.Show()
+        self.CloseWebcamPanel()
+        photo = self.WebcamPanel.GetFile()
+        if self.WebcamPanel.ParentObject.data['picture'] != None:
+            self.WebcamPanel.ParentObject.data['picture'] = self.PhotoStorage.saveImage(photo, \
+                int(self.WebcamPanel.ParentObject.data['picture']))
+        else:
+            self.WebcamPanel.ParentObject.data['picture'] = self.PhotoStorage.saveImage(photo)
+
+        photoPath = self.PhotoStorage.getThumbnailPath(self.WebcamPanel.ParentObject.data['picture'])
+        print "Resolves to file: {0}".format(photoPath)
+        #Load and display new photo
+        wximg = wx.Image(photoPath)
+        wxbmp = wximg.ConvertToBitmap()
+        self.WebcamPanel.ParentObject.ProfilePicture.SetBitmapLabel(wxbmp)
+
     def VisitorPhotoSave(self, evt):
         photo = self.WebcamPanel.GetFile()
         print "Got photo ID: {0}".format(photo)
@@ -1265,12 +1596,33 @@ class MyApp(wx.App):
         self.RegisterPanel.ProfilePicture.SetBitmapLabel(wxbmp)
         self.CloseWebcamPanel()
 
+    def PanelPhotoSave(self, evt):
+        photo = self.WebcamPanel.GetFile()
+        print "Panel Photo Save function"
+        print "Got photo ID: {0}".format(photo)
+        self.WebcamPanel.ParentObject.data['picture'] = photo
+        photoPath = self.PhotoStorage.getThumbnailPath(photo)
+        print "Resolves to file: {0}".format(photoPath)
+        #Show the original panel:
+        self.WebcamPanel.ParentObject.Show()
+        #Load and display new photo
+        wximg = wx.Image(photoPath)
+        wxbmp = wximg.ConvertToBitmap()
+        self.WebcamPanel.ParentObject.ProfilePicture.SetBitmapLabel(wxbmp)
+        self.WebcamPanel.ParentObject.data['picture'] = photo
+        self.WebcamPanel.ParentObject.photo = photo
+        self.CloseWebcamPanel()
+
     def VisitorPhotoCancel(self, evt):
         self.ShowVisitorPanel()
         self.CloseWebcamPanel()
 
+    def PanelPhotoCancel(self, evt):
+        self.WebcamPanel.ParentObject.Show()
+        self.CloseWebcamPanel()
+
     def RegisterPhotoCancel(self, evt):
-        self.ShowRegisterPanel()
+        self.ShowRecordPanel()
         self.CloseWebcamPanel()
 
     def VisitorDateChanged(self, evt):
@@ -1556,6 +1908,7 @@ class MyApp(wx.App):
             self.ResultsControls.MultiService.Disable()
             self.ResultsList.results = self.FormatResults(results)
             self.ResultsList.ShowResults(self.ResultsList.results)
+
             #Display picture of first record
             try:
                 self.ResultsControls.Photo.SetBitmapLabel(
@@ -1593,8 +1946,9 @@ class MyApp(wx.App):
         rooms = { i['id'] : i['name'] for i in self.db.GetRooms() }
         for i in results:
             room = ''
-            if int(i['room']) > len(rooms): #Room reference is invalid:
-                i['room'] = 0
+            if i['room'] != None:
+                if int(i['room']) > len(rooms): #Room reference is invalid:
+                    i['room'] = 0
             if i['room'] == None or i['room'] == 0:
                 room = u'—'
             else:
@@ -1673,18 +2027,29 @@ class MyApp(wx.App):
         panel.Medical.SetValue(str(data['medical']))
         if data['notes'] == None: data['notes'] = ''
         panel.Notes.SetValue(str(data['notes']))
-        if data['picture'] != '' or data['picture'] != None:
-            #Load and set the profile picture:
-            path = self.PhotoStorage.getThumbnailPath(data['picture'])
-            bmp = wx.Image(path).ConvertToBitmap()
-            panel.ProfilePicture.SetBitmapLabel(bmp)
+        if data['picture'] != '' and data['picture'] != None:
+            try:
+                #Load and set the profile picture:
+                path = self.PhotoStorage.getThumbnailPath(data['picture'])
+                f = open(path)  #Check if file exists
+                f.close()
+                bmp = wx.Image(path).ConvertToBitmap()
+                panel.ProfilePicture.SetBitmapLabel(bmp)
+            except IOError:
+                panel.ProfilePicture.SetBitmapLabel(self.NoPhoto128)
         #~ panel.CreatedText()
+        self.RecordPanel.photo = data['picture']
         #For some reason trying to use '%c' as the format fails.
         try:
             panel.ModifiedText.SetLabel(time.strftime('%d %b %Y', time.strptime(data['lastModified'])))
         except ValueError: #Format of test data was wrong:
             panel.ModifiedText.SetLabel(str(data['lastModified'][0:10]))
         #~ if data['noParentTag']: self.ToggleStateOff(panel.ParentToggle)
+        #Set barcode values:
+        self.BarcodePanel.barcodes = [ j['value'] for i, j in enumerate(self.db.GetBarcodes(data['id'])) ]
+
+        for i in range(len(self.BarcodePanel.barcodes)):
+            self.BarcodePanel.codes[i].SetValue(str(self.BarcodePanel.barcodes[i]))
         panel.Email.SetBackgroundColour(wx.NullColour)
         panel.Phone.SetBackgroundColour(wx.NullColour)
         panel.DOB.SetBackgroundColour(wx.NullColour)

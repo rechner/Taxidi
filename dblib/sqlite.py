@@ -274,14 +274,15 @@ class Database:
         """Delete a row in the data table by index."""
         self.execute("DELETE FROM data WHERE id = ?;", (index,))
 
-    def Update(self, index, name, lastname, dob, phone, paging,
-            parent1, mobileCarrier=0, activity=0, room=0, grade='',
-            parent2='', parent1Link='', parent2Link='', parentEmail='',
-            medical='', joinDate='', lastSeen='', visitor=False, expiry=None,
-            noParentTag=False, barcode='', picture='', notes=''):
+    def Update(self, index, name, lastname, phone, parent1, paging='',
+            mobileCarrier=0, activity=0, room=0, grade='', parent2='',
+            parent1Link='', parent2Link='', parentEmail='', dob='',
+            medical='', joinDate='', lastSeen='', count=0,
+            visitor=False, expiry=None, noParentTag=None, barcode=None,
+            picture='',  authorized=None, unauthorized=None, notes=''):
         """Update a record.  Pass index as first argument.  lastModified automatically set.
 
-        name, lastname, dob, phone, paging, and parent1 are mandatory.
+        index, name, lastname, dob, phone, paging, and parent1 are mandatory.
         Defaults are as follows: mobileCarrier=0, activity=0, room=0, grade='',
         parent2='', parent1Link='', parent2Link='', parentEmail='', medical='',
         joinDate='', lastSeen='', visitor=False,
@@ -369,7 +370,8 @@ class Database:
                                 name = ? COLLATE NOCASE
                                 OR lastname = ? COLLATE NOCASE
                                 OR parent1 = ? COLLATE NOCASE
-                                OR parent2 = ? COLLATE NOCASE;
+                                OR parent2 = ? COLLATE NOCASE
+                                ORDER BY lastname;
                                 """.format(self.columns), (query,)*4)
         ret = []
         for i in a.fetchall():
@@ -477,6 +479,12 @@ class Database:
 
     def RemoveBarcode(self, ref):
         self.execute("DELETE FROM barcode WHERE id = ?;", (ref,))
+
+    def RemoveAllBarcodes(self, ref):
+        """
+        Deletes all barcodes for a given record (nuke)
+        """
+        self.execute("DELETE FROM barcode WHERE ref = ?;", (ref,))
 
     def UpdateBarcode(self, ref, value):
         self.execute("UPDATE barcode SET value = ? WHERE id = ?", (value, ref))

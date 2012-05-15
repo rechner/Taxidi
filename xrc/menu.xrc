@@ -7259,5 +7259,404 @@
             </object>
         </object>
 
+        <!-- Barcode entry panel: -->
+        <object class="wxPanel" name="BarcodePanel">
+            <style>wxTAB_TRAVERSAL</style>
+            <size>800,600</size>
+            <object class="wxFlexGridSizer">
+                <rows>3</rows>
+                <cols>3</cols>
+                <vgap>0</vgap>
+                <hgap>0</hgap>
+                <growablecols>0,2</growablecols>
+                <growablerows></growablerows>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="sizeritem">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxTextCtrl" name="code1">
+                                <size>250,36</size>
+                                <font>
+                                    <size>16</size>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>normal</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <value></value>
+                                <maxlength>0</maxlength>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxRIGHT</flag>
+                            <border>5</border>
+                            <object class="wxBitmapButton" name="clear1">
+                                <style>wxBU_AUTODRAW</style>
+                                <bitmap>../resources/icons/edit-clear.png</bitmap>
+                                <default>0</default>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="sizeritem">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxTextCtrl" name="code2">
+                                <size>250,36</size>
+                                <font>
+                                    <size>16</size>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>normal</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <value></value>
+                                <maxlength>0</maxlength>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxRIGHT</flag>
+                            <border>5</border>
+                            <object class="wxBitmapButton" name="clear2">
+                                <style>wxBU_AUTODRAW</style>
+                                <bitmap>../resources/icons/edit-clear.png</bitmap>
+                                <default>0</default>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="sizeritem">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxTextCtrl" name="code3">
+                                <size>250,36</size>
+                                <font>
+                                    <size>16</size>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>normal</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <value></value>
+                                <maxlength>0</maxlength>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxRIGHT</flag>
+                            <border>5</border>
+                            <object class="wxBitmapButton" name="clear3">
+                                <style>wxBU_AUTODRAW</style>
+                                <bitmap>../resources/icons/edit-clear.png</bitmap>
+                                <default>0</default>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="sizeritem">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxTextCtrl" name="code4">
+                                <size>250,36</size>
+                                <font>
+                                    <size>16</size>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>normal</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <value></value>
+                                <maxlength>0</maxlength>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxRIGHT</flag>
+                            <border>5</border>
+                            <object class="wxBitmapButton" name="clear4">
+                                <style>wxBU_AUTODRAW</style>
+                                <bitmap>../resources/icons/edit-clear.png</bitmap>
+                                <default>0</default>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="sizeritem">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxTextCtrl" name="code5">
+                                <size>250,36</size>
+                                <font>
+                                    <size>16</size>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>normal</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <value></value>
+                                <maxlength>0</maxlength>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxRIGHT</flag>
+                            <border>5</border>
+                            <object class="wxBitmapButton" name="clear5">
+                                <style>wxBU_AUTODRAW</style>
+                                <bitmap>../resources/icons/edit-clear.png</bitmap>
+                                <default>0</default>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="sizeritem">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <object class="wxTextCtrl" name="code6">
+                                <size>250,36</size>
+                                <font>
+                                    <size>16</size>
+                                    <family>default</family>
+                                    <style>normal</style>
+                                    <weight>normal</weight>
+                                    <underlined>0</underlined>
+                                </font>
+                                <value></value>
+                                <maxlength>0</maxlength>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>0</option>
+                            <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxRIGHT</flag>
+                            <border>5</border>
+                            <object class="wxBitmapButton" name="clear6">
+                                <style>wxBU_AUTODRAW</style>
+                                <bitmap>../resources/icons/edit-clear.png</bitmap>
+                                <default>0</default>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="sizeritem">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                            <option>1</option>
+                            <flag>wxALL</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="BarcodeCancel">
+                                <size>-1,50</size>
+                                <label>Cancel</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>1</option>
+                            <flag>wxALL</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="BarcodeSave">
+                                <size>-1,50</size>
+                                <label>Save</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+
+        <!-- Photo review panel: -->
+        <object class="wxPanel" name="DisplayPhoto">
+            <style>wxTAB_TRAVERSAL</style>
+            <size>490,600</size>
+            <object class="wxFlexGridSizer">
+                <rows>3</rows>
+                <cols>3</cols>
+                <vgap>0</vgap>
+                <hgap>0</hgap>
+                <growablecols>0,2</growablecols>
+                <growablerows></growablerows>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="sizeritem">
+                    <option>0</option>
+                    <flag>wxALL</flag>
+                    <border>5</border>
+                    <object class="wxStaticBitmap" name="photo">
+
+                        <bitmap>../resources/icons/no-photo-480.png</bitmap>
+                    </object>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="spacer">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <size>0,0</size>
+                </object>
+                <object class="sizeritem">
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                    <border>5</border>
+                    <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                            <option>1</option>
+                            <flag>wxALL</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="PhotoCancel">
+                                <size>-1,50</size>
+                                <label>Close</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <option>1</option>
+                            <flag>wxALL</flag>
+                            <border>5</border>
+                            <object class="wxButton" name="PhotoRetake">
+                                <size>-1,50</size>
+                                <label>Retake Picture</label>
+                                <default>0</default>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+
     </object>
 </resource>
