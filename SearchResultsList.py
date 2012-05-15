@@ -19,6 +19,10 @@ import taxidi
 
 LIST_AUTOSIZE_FILL = -3
 
+#Some events for internal handling:
+t_RESULT_LIST_CHECK = wx.NewEventType()
+RESULT_LIST_CHECK = wx.PyEventBinder(t_RESULT_LIST_CHECK, 1)
+
 ########################################################################
 class SearchResultsPanel(wx.Panel):
     """
@@ -90,8 +94,8 @@ class SearchResultsPanel(wx.Panel):
         self.ultimateList.SetColumnWidth(0, 60)
         #~ self.ultimateList.SetColumnWidth(1, 350)
         self.ultimateList.SetColumnWidth(1, LIST_AUTOSIZE_FILL)
-        self.ultimateList.SetColumnWidth(2, 160)
-        self.ultimateList.SetColumnWidth(3, 160)
+        self.ultimateList.SetColumnWidth(2, 180)
+        self.ultimateList.SetColumnWidth(3, 180)
         self.ultimateList.SetColumnWidth(4, 160)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -129,6 +133,10 @@ class SearchResultsPanel(wx.Panel):
             else:
                 #Just unset the label:
                 self.checkboxes[i].SetLabel('')
+        #Send event:
+        evt2 = wx.PyCommandEvent(t_RESULT_LIST_CHECK, self.GetId())
+        self.GetEventHandler().ProcessEvent(evt2)
+        event.Skip()
 
     def SetToggle(self, id, value):
         self.checkboxes[id].SetValue(value)
@@ -195,7 +203,7 @@ class SearchResultsPanel(wx.Panel):
 
             self.checkboxes.append(wx.ToggleButton(self.ultimateList, id=i,
                 label="", size=(50, 50)))
-            self.Bind(wx.wx.EVT_TOGGLEBUTTON, self.ButtonPress,
+            self.Bind(wx.EVT_TOGGLEBUTTON, self.ButtonPress,
                 self.checkboxes[i])
             self.checkboxes[i].id = i
             self.checkboxes[i].SetFont(self.checkfont)
@@ -321,6 +329,7 @@ class MultiServicePanel(wx.Panel):
             self.checkboxes[i].SetForegroundColour('#61BD36')
         else: #Toggled off
             self.checkboxes[i].SetLabel('')
+
 
     def SetToggle(self, id, value):
         self.checkboxes[id].SetValue(value)
@@ -466,17 +475,17 @@ class TestFrame(wx.Frame):
     #----------------------------------------------------------------------
     def __init__(self):
         """Constructor"""
-        #~ wx.Frame.__init__(self, None, title="UltimateListCtrl test", size=(1024, 558))
-        wx.Frame.__init__(self, None, title="UltimateListCtrl test", size=(500, 400))
-        #~ panel = SearchResultsPanel(self)
-        #~ panel.ShowResults(results)
-        panel = MultiServicePanel(self)
+        wx.Frame.__init__(self, None, title="UltimateListCtrl test", size=(1024, 558))
+        #~ wx.Frame.__init__(self, None, title="UltimateListCtrl test", size=(500, 400))
+        panel = SearchResultsPanel(self)
+        panel.ShowResults(results)
+        #~ panel = MultiServicePanel(self)
         self.Show()
-        panel.SetServices([ {'id': 1,  'name': 'First Service', 'day': 0, 'time': '00:00:00', 'endTime': '00:09:00'},
-                             {'id': 2, 'name': 'Second Service', 'day': 0, 'time': '00:30:00', 'endTime': '00:45:00'},
-                             {'id': 3, 'name': 'Third Service', 'day': 0, 'time': '00:30:00', 'endTime': '01:59:59'},
-                             {'id': 4, 'name': 'Every day', 'day': 0, 'time': '00:00:00', 'endTime': '17:53:59'} ], True)
-        print panel.GetSelected()
+        #~ panel.SetServices([ {'id': 1,  'name': 'First Service', 'day': 2, 'time': '00:00:00', 'endTime': '00:09:00'},
+                             #~ {'id': 2, 'name': 'Second Service', 'day': 2, 'time': '00:30:00', 'endTime': '00:45:00'},
+                             #~ {'id': 3, 'name': 'Third Service', 'day': 0, 'time': '00:30:00', 'endTime': '01:59:59'},
+                             #~ {'id': 4, 'name': 'Every day', 'day': 0, 'time': '00:00:00', 'endTime': '17:53:59'} ], True)
+        #~ print panel.GetSelected()
 
 
 #----------------------------------------------------------------------
