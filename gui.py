@@ -544,6 +544,7 @@ class MyApp(wx.App):
             pane.NametagToggle = xrc.XRCCTRL(pane, 'NametagToggle')
             pane.ParentToggle = xrc.XRCCTRL(pane, 'ParentToggle')
             pane.SaveButton = xrc.XRCCTRL(pane, 'SaveButton')
+            pane.AlertButton = xrc.XRCCTRL(pane, 'AlertButton')
             pane.BarcodeButton = xrc.XRCCTRL(pane, 'BarcodeButton')
             pane.PhoneButton = xrc.XRCCTRL(pane, 'PhoneButton')
             pane.PagingButton = xrc.XRCCTRL(pane, 'PagingButton')
@@ -562,6 +563,7 @@ class MyApp(wx.App):
             pane.NametagToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
             pane.ParentToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
             pane.SaveButton.Bind(wx.EVT_BUTTON, self.SaveRecord)
+            pane.AlertButton.Bind(wx.EVT_BUTTON, self.ShowAlertDialog)
             pane.BarcodeButton.Bind(wx.EVT_BUTTON, self.showBarcodePanel)
             pane.PagingButton.Bind(wx.EVT_BUTTON, self.SetPagingCode)
             pane.Activity.Bind(wx.EVT_CHOICE, self.OnSelectActivity)
@@ -627,6 +629,28 @@ class MyApp(wx.App):
             self.ShowResultsPanel()
         else:
             self.ShowSearchPanel()
+
+    def ShowAlertDialog(self, event):
+        #Load the alert frame:
+        self.AlertDialog = self.res.LoadDialog(None, 'AlertDialog')
+        #Setup controls and bindings:
+        self.AlertDialog.Cancel = xrc.XRCCTRL(self.AlertDialog, 'AlertCancel')
+        self.AlertDialog.Send = xrc.XRCCTRL(self.AlertDialog, 'AlertSend')
+        self.AlertDialog.Message = xrc.XRCCTRL(self.AlertDialog, 'AlertMessage')
+        self.AlertDialog.NotifyParent = xrc.XRCCTRL(self.AlertDialog, 'NotifyParent')
+        self.AlertDialog.NotifyTech = xrc.XRCCTRL(self.AlertDialog, 'NotifyTech')
+        self.AlertDialog.NotifyAdmin = xrc.XRCCTRL(self.AlertDialog, 'NotifyAdmin')
+        self.AlertDialog.SMSRecipients = xrc.XRCCTRL(self.AlertDialog, 'SMSRecipients')
+
+        self.AlertDialog.Cancel.Bind(wx.EVT_BUTTON, self.CloseAlert)
+        #Show the dialog
+        self.AlertDialog.ShowModal()
+
+    def SetAlertData(self, message, parent, recipients):
+        pass
+
+    def CloseAlert(self, event):
+        self.AlertDialog.Destroy()
 
     def SetPagingCode(self, event):
         btn = event.GetEventObject()
@@ -1136,8 +1160,10 @@ class MyApp(wx.App):
     def CheckResultItem(self, event):
         if len(self.ResultsList.GetSelected()) == 0:
             self.ResultsControls.CheckIn.Disable()
+            self.ResultsControls.MultiService.Disable()
         else:
             self.ResultsControls.CheckIn.Enable()
+            self.ResultsControls.MultiService.Enable()
 
     def DisplaySelectedRecord(self, event):
         ref = self.ResultsList.results[self.ResultsList.selected]['id']
@@ -2185,6 +2211,23 @@ free software by Zac Sturgeon.
     def Quit(self, event):
         self.frame.Close()
         app.ExitMainLoop()
+
+#Transient pop-up for searching and linking parent records:
+class ParentSearch(wx.PopupTransientWindow):
+    """
+    Transient pop-up for searching for a parent to link (internal or from
+    ChurchInfo, FellowshipOne, usw.
+    """
+    def __init__(self, parent, style):
+        wx.PopupTransientWindow.__init__(self, parent, style)
+        box1 = wx.BoxSizer(wx.VERTICAL)
+        box2 = wx.BoxSizer(wx.HORIZONTAL)
+
+        st = wx.StaticText(self, wx.ID_ANY, "Parent search")
+        box2.Add(st, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        box2.Add(0, 0, 1, wx.EXPAND, 5)
+
+
 
 #Modified splash screen example from wxPython wiki by Tian Xie.
 class SplashScreen(wx.SplashScreen):

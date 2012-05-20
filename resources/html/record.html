@@ -1,0 +1,250 @@
+<html>
+    <head>
+        <style type="text/css">
+            p.date {
+                text-align: right;
+                font-family: sans;
+                font-size: 12px;
+            }
+            p {
+                font-family: sans;
+                font-size: 16px;
+            }
+            p.info {
+                margin-left: 10px;
+            }
+            p.float {
+                text-align: right;
+                display: inline-table;
+            }
+            p.head {
+                text-align: center;
+            }
+
+            .circle {
+                border-radius: 50%;
+                display: inline-block;
+                margin-right: 5px;
+                margin-left: 10px;
+                margin-top: 5px;
+                margin-bottom: 0px;
+                float: middle;
+
+            }
+            #circle1 {
+                width: 20px;
+                height: 20px;
+                background: #EAEAEA;
+                border: 4px solid #000000;
+            }
+            #circle2 {
+                width: 5px;
+                height: 5px;
+                background: #000000;
+                border: 4px solid #000000;
+            }
+
+            #checkbox {
+                vertical-align: top;
+                margin-top: 4px;
+                margin-left: 5px;
+                margin-right: 2px;
+            }
+
+            table.field {
+                border-width: 1px;
+                border-spacing: 0px;
+                border-style: solid;
+                border-color: white;
+                border-collapse: separate;
+                background-color: white;
+            }
+            table.field th {
+                border-width: 1px;
+                padding: 1px;
+                border-style: solid;
+                border-color: grey;
+                background-color: white;
+            }
+            table.field td {
+                border-width: 2px;
+                padding: 0px;
+                border-style: solid;
+                border-color: black;
+                background-color: #EAEAEA;
+            }
+
+            hr {
+                color: #000000;
+                background-color: #000000;
+                height: 2px;
+            }
+        </style>
+    </head>
+    <body>
+        <table width=800px><tr>
+            <td width=200>
+                <img src="no-photo-480.png" width=200>
+            </td>
+            <td>
+                <p class="info"><b>%surname%,<br/>%name%</b><br/><br/>
+                Activity: %activity%<br/>
+                Room: %room%<br/>
+                </p>
+                <p class="info" style="font-size: 12px">
+                    Created: %created%<br>
+                    Last Seen: %lastseen%<br>
+                    Modified: %modified%<br>
+                    Check-in Count: %count%
+                </p>
+            </td>
+            <td valign="top">
+                <p class="date">%timestamp%</p>
+                <img src="logo.png" width=300 style="float:right; vertical-align:top">
+            </td>
+        </tr></table>
+
+        <table class="field" width=800px height=50px><tr>
+            <td width=90px>
+                <p class="head"><b>Name</b></p>
+            </td>
+            <td width=287px><p class="info">%name%</p></td>
+            <td width=120px><p class="head"><b>Last Name</b></p></td>
+            <td width=287px><p class="info">%surname%</p></td>
+        </tr></table>
+        <table class="field" width=800px height=50px><tr>
+            <td width=90px>
+                <p class="head"><b>Phone</b></p>
+            </td>
+            <td width=286px><p class="info">%phone%</p></td>
+            <td>
+                <img src="check-off.png" id="checkbox">
+                <p class="float">Mobile* (please list carrier):</p>
+            </td>
+        </tr></table>
+
+        <table class="field" width=800px height=50px><tr>
+            <td width=90px>
+                <p class="head"><b>Grade</b></p>
+            </td>
+            <td width=40px><p class="head">%g%</p></td>
+            <td width=140px>
+                <p class="head"><b>DOB</b> (Y/M/D)</p>
+            </td>
+            <td width=140px><p class="info">%dob%</p></td>
+            <td width=80px>
+                <p class="head"><b>Email</b></p>
+            </td>
+            <td><p class="info">%email%</p></td>
+        </tr></table>
+
+        <table class="field" width=800px height=50px><tr>
+            <td width=100px>
+                <p class="head"><b>Parent 1</b></p>
+            </td>
+            <td width=286px><p class="info">%parent1%</p></td>
+            <td width=100px>
+                <p class="head"><b>Parent 2</b></p>
+            </td>
+            <td><p class="info">%parent2%</p></td>
+        </tr></table>
+
+        <table class="field" width=800px height=50px><tr>
+            <td width=110px>
+                <p class="head"><b>Medical &amp; Allergies</b></p>
+            </td>
+            <td width=276px><p class="info">%medical%</p></td>
+            <td width=110px>
+                <p style="text-align: center"><b>Special Instruction</b></p>
+            </td>
+            <td><p class="info">%notes%</p></td>
+        </tr></table>
+
+        <p style="font-size: 12px">*Checking this means this number will receive paging notifications.
+        Please write your mobile provider's name in the blank provided.  Additional numbers below will
+        receive paging notifications, but will not be used for searching.</p>
+
+        <img src="black.gif" width=800 height=3 style="margin-top: 10px">
+        <p>Additional information and emergency contact (optional):</p>
+
+        <table class="field" width=800px height=50px><tr>
+            <td width=100px>
+                <p class="head"><b>Address</b></p>
+            </td>
+            <td width=676px><p class="info">%address%</p></td>
+        </tr></table>
+        <table class="field" width=800px height=50px><tr>
+            <td width=100px>
+                <p class="head"><b>City</b></p>
+            </td>
+            <td width=190px>
+                <p class="info">%city%</p>
+            </td>
+            <td width=100px>
+                <p class="head"><b>State</b></p>
+            </td>
+            <td width=100px>
+                <p class="info">%state%</p>
+            </td>
+            <td width=100px>
+                <p class="head"><b>ZIP</b></p>
+            </td>
+            <td width=170px>
+                <p class="info">%ZIP%</p>
+            </td>
+        </tr></table>
+
+        <table class="field" width=800px height=50px><tr>
+            <td width=100px>
+                <p class="head"><b>Parent 1 Phone</b></p>
+            </td>
+            <td width=286px><p class="info">%phone1%</p></td>
+            <td>
+                <p class="info">Mobile carrier: %carrier1%</p>
+            </td>
+        </tr></table>
+
+        <table class="field" width=800px height=50px><tr>
+            <td width=100px>
+                <p class="head"><b>Parent 2 Phone</b></p>
+            </td>
+            <td width=286px><p class="info">%phone2%</p></td>
+            <td>
+                <p class="info">Mobile carrier: %carrier2%</p>
+            </td>
+        </tr></table>
+
+        <table class="field" width=800px height=50px><tr>
+            <td width=120px>
+                <p class="head"><b>Emergency Contact 1</b></p>
+            </td>
+            <td width=286px><p class="info">%contact1%</p></td>
+            <td>
+                <p class="info">Relationship: %relationship1%</p>
+            </td>
+        </tr></table>
+        <table class="field" width=800px height=50px><tr>
+            <td width=100px>
+                <p class="head"><b>Phone</b></p>
+            </td>
+            <td width=560px><p class="info">%contactPhone1%</p></td>
+        </tr></table>
+
+        <table class="field" width=800px height=50px><tr>
+            <td width=120px>
+                <p class="head"><b>Emergency Contact 2</b></p>
+            </td>
+            <td width=286px><p class="info">%contact2%</p></td>
+            <td>
+                <p class="info">Relationship: %relationship2%</p>
+            </td>
+        </tr></table>
+        <table class="field" width=800px height=50px><tr>
+            <td width=100px>
+                <p class="head"><b>Phone</b></p>
+            </td>
+            <td width=560px><p class="info">%contactPhone2%</p></td>
+        </tr></table>
+
+    </body>
+</html>
