@@ -17,7 +17,7 @@ import wx
 import os
 import signal
 
-__version__ = '0.70.02-dev'
+__version__ = '0.70.03-dev'
 
 userHand = 'right'
 
@@ -92,6 +92,7 @@ class MyApp(wx.App):
 
         self.frame.SetBackgroundColour(themeBackgroundColour)
 
+        #Write background bitmap (will need to use ONPAINT event because OS X hates life).
         wximg = wx.Image(themeBanner)
         wxbanner=wximg.ConvertToBitmap()
         self.bitmap = wx.StaticBitmap(self.frame,-1,wxbanner,(0,0))
@@ -162,9 +163,21 @@ class MyApp(wx.App):
                     'confirm your configuration before continuing.'.format(datafile),
                     'Taxidi', wx.OK | wx.ICON_INFORMATION)
 
+        #Check that there's at least one activity, etc. defined:
+        if len(self.db.GetActivities()) == 0:
+            notify.warning('First run?', 'There are no activities defined. '\
+                'Some features might not work as expected!\nPlease add at '\
+                'least one activity before continuing.\n\nConsult the '\
+                'documentation for more info.')
+        if len(self.db.GetServices()) == 0:
+            notify.warning('First run?', 'There are no services defined. '\
+                'Some features will not work as expected!\nPlease add at '\
+                'least one service before continuing.')
+
     def InitMenus(self):
         #Setup the programme menus
         self.frame.Bind(wx.EVT_MENU, self.OnAboutBox, id=xrc.XRCID("MenuAbout"))
+        self.frame.Bind(wx.EVT_MENU, self.Quit, id=xrc.XRCID("MenuQuit"))
 
     def setupMainMenu(self):
         #Make it pretty
@@ -184,6 +197,7 @@ class MyApp(wx.App):
         #Bind buttons:
         self.MainMenu.Bind(wx.EVT_BUTTON, self.StartCheckin, self.MainMenu.begin)
         #~ self.MainMenu.Bind(wx.EVT_BUTTON, self.ShowConfiguration, self.MainMenu.configure)
+        self.MainMenu.Bind(wx.EVT_BUTTON, self.OnParentSearch, self.MainMenu.configure)
         self.MainMenu.Bind(wx.EVT_BUTTON, self.EditServices, self.MainMenu.services)
         #~ self.MainMenu.Bind(wx.EVT_BUTTON, self.EditActivities, self.MainMenu.activities)
         self.MainMenu.Bind(wx.EVT_BUTTON, self.OnAboutBox, self.MainMenu.about)
@@ -236,6 +250,7 @@ class MyApp(wx.App):
         #Setup inputs:
         for pane in panels:
             pane.Search = xrc.XRCCTRL(pane, 'Search')
+            pane.ServiceSelection = xrc.XRCCTRL(pane, 'ServiceSelection')
             pane.ClearButton = xrc.XRCCTRL(pane, 'ClearButton')
             pane.SearchButton = xrc.XRCCTRL(pane, 'SearchButton')
             pane.RegisterButton = xrc.XRCCTRL(pane, 'RegisterButton')
@@ -244,6 +259,7 @@ class MyApp(wx.App):
             pane.ExitButton = xrc.XRCCTRL(pane, 'ExitButton')
 
             pane.Search.Bind(wx.EVT_TEXT_ENTER, self.OnSearch)
+            pane.ServiceSelection.Bind(wx.EVT_CHOICE, self.OnChangeService)
             pane.Search.Bind(wx.EVT_TEXT, self.ResetSearchColour)
             pane.ClearButton.Bind(wx.EVT_BUTTON, self.clearSearchEvent)
             self.frame.Bind(wx.EVT_BUTTON, self.OnSearch, pane.SearchButton)
@@ -445,7 +461,6 @@ class MyApp(wx.App):
         pane.retake = xrc.XRCCTRL(pane, 'PhotoRetake')
         pane.retake.Bind(wx.EVT_BUTTON, self.RecordPhoto)
 
-    #TODO: (URGENT DEADLINE 04.05) Add basic record panel UI functionality.
     def setupRecordPanel(self):
         panels = (self.RecordPanelLeft, self.RecordPanelRight)
         self.RecordPanel = self.RecordPanelRight
@@ -567,6 +582,8 @@ class MyApp(wx.App):
             pane.BarcodeButton.Bind(wx.EVT_BUTTON, self.showBarcodePanel)
             pane.PagingButton.Bind(wx.EVT_BUTTON, self.SetPagingCode)
             pane.Activity.Bind(wx.EVT_CHOICE, self.OnSelectActivity)
+            pane.Parent1.Bind(wx.EVT_TEXT_ENTER, self.OnParentSearch)
+            pane.Parent1Find.Bind(wx.EVT_BUTTON, self.OnParentSearch)
             pane.Email.Bind(wx.EVT_TEXT, self.FormatEmailLive)
             pane.Phone.Bind(wx.EVT_KILL_FOCUS, self.FormatPhone)
             pane.Phone.Bind(wx.EVT_TEXT, self.FormatPhoneLive)
@@ -889,7 +906,10 @@ class MyApp(wx.App):
         if invalid:
             return 0 #Cancel saving, mark the missing required fields in red.
         pagingValue = panel.Paging.GetValue()   #(automatically generated)
-        activity = self.activities[panel.Activity.GetSelection()]
+        try:
+            activity = self.activities[panel.Activity.GetSelection()]
+        except IndexError:
+            activity = None
         medical = panel.Medical.GetValue()
         parent1 = panel.Parent1.GetValue()  #TODO: Add parent linking
         parent2 = panel.Parent2.GetValue()
@@ -1037,12 +1057,30 @@ class MyApp(wx.App):
         self.BarcodePanel.barcodes = []
         panel.photo = None #Prevent the saved photo from being deleted later
 
+        if button == panel.CheckinButton:  #Don't close the panel yet, call checkin/printing thread:
+            data = { 'id': index, 'name': name, 'surname': surname,
+                     'paging': pagingValue, 'medical': medical }
+
+            return 0
         self.CloseRecordPanel(None)
         if self.ResultsPanel.opened:
             #Reload the query:
             self.OnSearch(None)
 
+    def DoCheckin(self, services, activity, room, record, name, surname, paging, medical):
+        """
+        This method is for checking in one person.
+        """
+        #Get secure code, if needed
+        #Check-in user into the database
+        #Do printing
+        #Close calling panel
+        pass
 
+    def _printProducer(self, jobID, activity, ):
+        import printing
+
+        pass
 
     def setupResultsList(self):
         u"""
@@ -1694,6 +1732,11 @@ class MyApp(wx.App):
                     self.activities[panel.Activity.GetSelection()]['prefix'],
                     phone.GetValue()[-4:]))
 
+    def FormatParentPhoneLive(self, event):
+        phone = event.GetEventObject()
+        if phone.IsModified():
+            validate.PhoneFormat(phone)
+
     def FormatDateLive(self, event):
         dob = event.GetEventObject()
         if dob.IsModified():
@@ -1969,7 +2012,9 @@ class MyApp(wx.App):
         """
         ret = []
         activities = [ i['name'] for i in self.db.GetActivities() ]
-        rooms = { i['id'] : i['name'] for i in self.db.GetRooms() }
+        #~ rooms = { i['id'] : i['name'] for i in self.db.GetRooms() }
+        #Fixed for python 2.6. (Dict comprehensions only >= 2.7)
+        rooms = dict( (i['id'], i['name']) for i in self.db.GetRooms() )
         for i in results:
             room = ''
             if i['room'] != None:
@@ -2099,6 +2144,57 @@ class MyApp(wx.App):
     def BeginCheckinRoutine(self, event):
         self.MainMenu.Hide()
         self.ShowSearchPanel()
+        self.SetServices()  #Setup the service selections
+
+    def OnChangeService(self, event):
+        choice = event.GetEventObject()
+        if conf.as_bool(conf.config['config']['autoServices']):
+            if self.services[choice.GetSelection()] == self.GetCurrentService(self.services):
+                #Switched back to current automatic service.  Return to time-table operation:
+                self.serviceManual = False
+                self.service = self.services[choice.GetSelection()]
+                notify.info("Service Change", "Changed to currently active service. "\
+                    "Automatic service changes are now enabled.")
+            else: #Changed service manually. Show warning and stop automatic checking.
+                self.serviceManual = True
+                self.service = self.services[choice.GetSelection()]
+                notify.info("Manual Service Change", "The active service was manually changed "\
+                    "to <span weight=\"bold\">{0}</span>.  Service timings will be ignored until changed back to "\
+                    "the currently active service.".format(self.service['name']))
+        else: #Change service normally:
+            self.service = self.services[choice.GetSelection()]
+
+
+    def GetCurrentService(self, services):
+        today = date.today()
+        now = time.strftime('%H:%M:%S', time.localtime())
+        #Determine the current service and set it as the selection:
+        for i in range(len(services)):
+            if services[i]['day'] == date.isoweekday(today) or services[i]['day'] == 0:
+                delta = datetime.strptime(services[i]['endTime'], '%H:%M:%S') - datetime.strptime(now, '%H:%M:%S')
+                if delta.days < 0:  #Service has ended
+                    pass
+                if services[i]['time'] == '': #Assume All day
+                    delta2 = datetime.strptime('00:00:00', '%H:%M:%S') - datetime.strptime(now, '%H:%M:%S')
+                else:
+                    delta2 = datetime.strptime(services[i]['time'], '%H:%M:%S') - datetime.strptime(now, '%H:%M:%S')
+                if delta.days == 0 and delta2.days < 0:
+                    #Currently active service.  Set it as the selection.
+                    return services[i]
+
+    def SetServices(self):
+
+        self.services = self.db.GetServices()
+        serviceList = [ i['name'] for i in self.services ]
+        self.SearchPanel.ServiceSelection.SetItems(serviceList)
+
+        services = self.services
+        self.serviceManual = False #Flag used to descern between manual changes and automatic (time table) ones.
+        self.service = services[0] #Remember the current service
+        if conf.as_bool(conf.config['config']['autoServices']):
+            #Determine the current service and set it as the selection:
+            self.service = self.GetCurrentService(self.services)
+            self.SearchPanel.ServiceSelection.SetStringSelection(self.service['name'])
 
     def StartCheckin(self, event):
         conf.config.reload()
@@ -2107,6 +2203,31 @@ class MyApp(wx.App):
             self.BeginCheckinRoutine(None)
         else:
             self.db.close()
+
+    def OnParentSearch(self, event):
+        win = ParentSearch(self.frame, wx.SIMPLE_BORDER)
+        win.NewButton.Bind(wx.EVT_BUTTON, self.OnNewParent)
+        btn = event.GetEventObject()
+        win.callback = btn #Store the calling object for later
+        pos = btn.ClientToScreen( (0,0) )
+        sz =  btn.GetSize()
+        win.Position(pos, (0, sz[1]))
+        win.Popup()
+
+    def OnNewParent(self, event):
+        btn = event.GetEventObject()
+        #Close the old pop-up, getting the old coordinates
+        oldwin = btn.GetParent()
+        size = oldwin.GetPosition()
+        #Create the new pop-up
+        win = NewParent(self.frame, wx.SIMPLE_BORDER | wx.TAB_TRAVERSAL)
+        #copy the original calling object:
+        win.callback = oldwin.callback
+        oldwin.Destroy() #And destroy the old object
+
+        win.Phone.Bind(wx.EVT_TEXT, self.FormatParentPhoneLive) #phone validator
+        win.SetPosition(size)
+        win.Popup()
 
     def ShowSearchPanel(self):
         if self.user['leftHanded']:
@@ -2225,7 +2346,58 @@ class ParentSearch(wx.PopupTransientWindow):
 
         st = wx.StaticText(self, wx.ID_ANY, "Parent search")
         box2.Add(st, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        box2.Add(0, 0, 1, wx.EXPAND, 5)
+        box2.AddStretchSpacer()
+
+        self.NewButton = wx.Button(self, wx.ID_ANY, "New")
+        box2.Add(self.NewButton, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        box1.Add(box2, 0, wx.EXPAND, 5)
+        self.ListBox = wx.ListBox(self, wx.ID_ANY, style = wx.LB_SINGLE)
+        self.ListBox.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL, False))
+
+        box1.Add(self.ListBox, 1, wx.ALL | wx.EXPAND, 5)
+        self.SetSizer(box1)
+        self.SetSize((336, 142))
+        self.Layout()
+
+class NewParent(wx.PopupTransientWindow):
+    """
+    Transient pop-up for adding a new parent when creating a record.
+    """
+    def __init__(self, parent, style):
+        wx.PopupTransientWindow.__init__(self, parent, style)
+        box1 = wx.BoxSizer(wx.VERTICAL)
+        box2 = wx.BoxSizer(wx.HORIZONTAL)
+
+        st = wx.StaticText(self, wx.ID_ANY, 'New parent')
+        box2.Add(st, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 5)
+        box2.AddStretchSpacer()
+
+        self.SaveButton = wx.Button(self, wx.ID_ANY, "Save")
+        box2.Add(self.SaveButton, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        box1.Add(box2, 0, wx.EXPAND, 5)
+
+        box3 = wx.BoxSizer(wx.HORIZONTAL)
+        phonest = wx.StaticText(self, wx.ID_ANY, "Phone (optional):")
+        box3.Add(phonest, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        self.Phone = wx.TextCtrl(self, wx.ID_ANY, style = wx.TE_CENTRE)
+        self.Phone.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL, False))
+        box3.Add(self.Phone, 1, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 5)
+        box1.Add(box3, 0, wx.EXPAND, 5)
+
+        box4 = wx.BoxSizer(wx.HORIZONTAL)
+        carrierst = wx.StaticText(self, wx.ID_ANY, "Carrier:")
+        box4.Add(carrierst, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        self.CarrierSelection = wx.Choice(self, wx.ID_ANY, choices=['Land Line',])
+        box4.Add(self.CarrierSelection, 1, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 5)
+        box1.Add(box4, 0, wx.EXPAND, 5)
+
+        self.SetSizer(box1)
+        self.SetSize((336, 142))
+        self.Layout()
 
 
 
@@ -2299,6 +2471,7 @@ if __name__ == '__main__':
         import string
         import logging
         from wx import xrc
+        import wx.lib.delayedresult as delayedresult
         import taxidi
         import conf
         import SearchResultsList
@@ -2315,6 +2488,12 @@ if __name__ == '__main__':
             #Import file selection dialogue instead
             import wx.lib.imagebrowser as ib
             import webcam #for maniuplating database photos
+
+        #Libnotify?
+        if conf.as_bool(conf.config['interface']['libnotify']):
+            from notify import local as notify
+        else: #Load dummy module to supress messages
+            from notify.local import Dummy as notify
 
         try:
             app = MyApp(0)

@@ -569,9 +569,7 @@
                                             </font>
                                             <selection>0</selection>
                                             <content>
-                                                <item>First Service</item>
-                                                <item>Second Service</item>
-                                                <item>Third Service</item>
+                                                <item>—</item>
                                             </content>
                                         </object>
                                     </object>
@@ -1327,9 +1325,7 @@
                                                 </font>
                                                 <selection>0</selection>
                                                 <content>
-                                                    <item>First Service</item>
-                                                    <item>Second Service</item>
-                                                    <item>Third Service</item>
+                                                    <item>—</item>
                                                 </content>
                                             </object>
                                         </object>

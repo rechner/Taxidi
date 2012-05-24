@@ -99,6 +99,13 @@ class Database:
             fh.close()
             self.status = OK
         except IOError as e:
+            try: #Create intermediate directories if needed
+                os.makedirs(os.path.dirname(file))
+            except OSError as e:
+                if e.errno == 17: #Already exists
+                    pass
+                else:
+                    raise
             self.log.warn('({0})'.format(e))
             #file does not exist: Create table
             self.conn = sqlite.connect(file)
@@ -112,7 +119,7 @@ class Database:
         #check if database can be written to (modification/creation)
         if not os.access(file, os.W_OK):
             self.log.critical(
-                'the file {} does not have write permissions!'.format(file))
+                'the file {0} does not have write permissions!'.format(file))
             self.log.critical('Unable to open database.')
             return 127 #Causes TypeException in the calling module.
 
@@ -199,9 +206,9 @@ class Database:
         #statistics
         self.execute("""CREATE TABLE statistics(id integer primary key,
             person integer, date text,
-            services forgein key references services(id),
+            service forgein key references services(id), expires text,
             checkin text, checkout text, code text, location text,
-            volunteer integer);""")
+            volunteer integer, activity, room);""")
         self.log.info('Tables created')
         self.conn.commit()
         self.log.debug('Tables committed to database')
@@ -245,7 +252,8 @@ class Database:
             lastSeen = str(datetime.date.today())
 
         if lastModified == '':
-            lastModified = time.ctime() #should be plain ISO format, only for reporting
+            lastModified == time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
+            lastModified = time.ctime() #should be plain ISO 8601
 
         #escape and execute
         self.execute("""INSERT INTO data(name, lastname, dob, phone,
@@ -306,6 +314,32 @@ class Database:
             barcode=?,  picture=?, notes=? WHERE id=?;""", (int(visitor), expiry,
             int(noParentTag),  barcode, picture, notes, index))
     # === end data functions ===
+
+    # === Check-in functions ===
+    def DoCheckin(self, person, services, expires, code, location, activity, room):
+        """
+        person: id reference of who's being checked-in.
+        services: a tuple of services to be checked-in for.  Pass singleton if only one.
+            Services should be passed in chronological order!
+        expires: expiration time, if applicable, of the last service chronologically.
+        code: secure code, or hashed value on child's tag if not in simple mode.
+        location: text location to identify kiosk used for check-in.
+        activity: activity name as string.
+        room: room name as string.
+        """
+        expiry = None
+        for service in services:
+            if services.index(service) + 1 == len(services): #On the last item
+                expiry = expires
+            self.execute("""INSERT INTO statistics(person, date, service, expires,
+                checkin, checkout, code, location, activity, room)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", (person,
+                str(datetime.date.today()), service, expiry,
+                time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime()),
+                None, code, location, activity, room))
+
+
+
 
     #return all entries (for browsing)
     def GetAll(self):
@@ -694,7 +728,8 @@ class Database:
             joinDate = datetime.date.today()
 
         if lastModified == '':
-            lastModified == time.ctime() #should be plain ISO format
+            lastModified == time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
+            lastModified == time.ctime() #Use ISO 8601
 
         #execute
         self.execute("""INSERT INTO volunteers(name, lastname, dob,
@@ -748,7 +783,7 @@ class Database:
             data = self.cursor.execute(sql, args)
             return data
         except sqlite.OperationalError as e:
-            self.log.error('SQLite3 returned operational error: {}'
+            self.log.error('SQLite3 returned operational error: {0}'
                 .format(e))
             if self.conn:
                 self.conn.rollback()    #drop any changes to preserve db.
@@ -825,7 +860,7 @@ if __name__ == '__main__':
     #~ print db.SearchName('Gal*')
     #~ print db.SearchBarcode('1234')
     #~ print db.SearchPhone('1212')
-    print db.Search('wolf') #Full system search (default)
+    #~ print db.Search('wolf') #Full system search (default)
 
     #Barcodes
     #~ print db.GetBarcodes(300)
@@ -876,6 +911,11 @@ if __name__ == '__main__':
     #~ print db.GetRoom('Explorers')
     #~ db.RemoveRoom(3)
 
-    #~ db.commit()
+    #Check-in:
+    #~ db.DoCheckin(632, ('First Service', 'Second Service', 'Third Service'), '14:59:59', '5C55', 'Kiosk1', 'Explorers', 'Jungle Room')
+
+    print db.GetServices()
+
+    db.commit()
 
     db.close()

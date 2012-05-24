@@ -6,6 +6,10 @@
 #TODO: Implement file system organization, handle converting & uploading image to server.
 #TODO: Use gstreamer for Linux instead of opencv - better performance(?)
 
+#This is needed for PIL to import in OS X (FIXME)
+import sys
+sys.path.append('/opt/local/Library/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages')
+
 import os
 import wx
 import wx.lib.imagebrowser as ib

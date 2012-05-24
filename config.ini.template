@@ -9,6 +9,13 @@ pass =
 key =   #(self-signed) certificate or key file
 name = 'Kiosk1'     #;This instance's name.
 defaultActivity = 'Explorers'
+autoServices = True #True will use time table to switch activities automatically
+
+[printing]
+enable = False  #True to send output to printer
+preview = True  #Show preview
+printer = ""    #Name of system printer to use.
+
 
 [database]
 driver = sqlite     #sqlite, postgres, or mysql
@@ -80,3 +87,23 @@ config = True          #;enforce password protection?
 startup = False
 #;SHA256 password hash for single user mode.
 hash = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'
+
+[notifications]
+growl = False
+growlHost =
+growlPort =
+notifo = False
+notifoKey =
+notifoSecret =
+sms = True
+smsType = gvoice #Google voice is currently the only one implemented.
+#;Google voice settings should be stored in ~/.gvoice (only [auth] section is needed)
+
+
+[fellowshipone]
+enable = False
+#;Settings for token-based authentication:
+url = 'https://journeychurch.staging.fellowshiponeapi.com' #;base url without trailing slash
+key = "123" #;Consumer key
+secret = "deadbeef-faf191-00000-00000-0000000000" #;Consumer secret
+#;Do we still need a user/pass? This API is somewhat confusing...
