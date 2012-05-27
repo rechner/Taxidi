@@ -10,6 +10,8 @@ key =   #(self-signed) certificate or key file
 name = 'Kiosk1'     #;This instance's name.
 defaultActivity = 'Explorers'
 autoServices = True #True will use time table to switch activities automatically
+secureCodeRemote = False
+secureCodeURI = http://localhost/cgi-bin/secure-code.php  #path to secure code script path
 
 [printing]
 enable = False  #True to send output to printer
@@ -95,10 +97,12 @@ growlPort =
 notifo = False
 notifoKey =
 notifoSecret =
+#Message to format nursery alerts with:
+message = "Nursery alert for {code}. {name} needs you. Please come to the {activity} child check-in station."
 sms = True
 smsType = gvoice #Google voice is currently the only one implemented.
-#;Google voice settings should be stored in ~/.gvoice (only [auth] section is needed)
-
+email = # Google Account email address (one associated w/ your Voice account)
+password = # Raw password used for login
 
 [fellowshipone]
 enable = False

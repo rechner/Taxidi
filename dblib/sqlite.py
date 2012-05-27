@@ -37,7 +37,7 @@
 
 #TODO: FORGEIN KEY enforcements
 
-debug = False  #Set to true to enable [very] verbose logging to console
+debug = True  #Set to true to enable [very] verbose logging to console
 
 import os
 import logging
@@ -53,6 +53,7 @@ FAIL = 2
 EMPTY_RESULT = 4
 USER_EXISTS = 8
 CONSTRAINT_FAILED = 16
+UNKNOWN_ERROR = 32
 AUTHORIZED = 1
 UNAUTHORIZED = 0
 NEW = 128
@@ -124,7 +125,7 @@ class Database:
             return 127 #Causes TypeException in the calling module.
 
         #open database for writing and query
-        self.conn = sqlite.connect(file)
+        self.conn = sqlite.connect(file, check_same_thread = False)
         self.cursor = self.conn.cursor()
         self.log.info("Created sqlite3 database instance using file '{0}'".
             format(file))
@@ -189,7 +190,8 @@ class Database:
             nametagEnable bool, nametag text,
             parentTagEnable bool, parentTag text,
             admin integer, autoExpire bool, notifyExpire integer,
-            newsletter bool, newsletterLink text);""")
+            newsletter bool, newsletterLink text,
+            parentURI text);""")
         #services
         self.execute("""CREATE TABLE services(id integer primary key,
             name text, day integer, time text, endTime text);""")
@@ -331,12 +333,15 @@ class Database:
         for service in services:
             if services.index(service) + 1 == len(services): #On the last item
                 expiry = expires
+            #~ try:
             self.execute("""INSERT INTO statistics(person, date, service, expires,
-                checkin, checkout, code, location, activity, room)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", (person,
-                str(datetime.date.today()), service, expiry,
-                time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime()),
-                None, code, location, activity, room))
+                    checkin, checkout, code, location, activity, room)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", (person,
+                    str(datetime.date.today()), service, expiry,
+                    time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime()),
+                    None, code, location, activity, room))
+            #~ except sqlite.Error as e:
+                #~ raise DatabaseError(UNKNOWN_ERROR, e.args[0])
 
 
 

@@ -1,0 +1,7 @@
+For SMS using google voice to work, the user's ~/.gvoice must be configured.
+This has only been tested using UNIX systems, but Win32 should work too.
+
+The only required parts are the email= and password= keys in the [auth] section.
+Since we want to send notices automatically, it's recommended that
+two-factor authentication for the google voice account be switched
+off.

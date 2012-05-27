@@ -33,7 +33,7 @@ unix = ['Linux', 'linux2', 'Darwin']
 wkhtmltopdf = '/usr/bin/wkhtmltopdf' #path to wkhtmltopdf binary
 #TODO: Option to select native or builtin wkhtmltopdf
 
-#TODO: Determine whether to use ~/.taxidi/resources/ (config.ini in ~/.taxidi/) 
+#TODO: Determine whether to use ~/.taxidi/resources/ (config.ini in ~/.taxidi/)
 #      or $PWD/resources/ (config.ini in pwd).
 nametags = os.path.join('resources', 'nametag') #path where html can be found.
 #For distribution this may be moved to /usr/share/taxidi/ in UNIX, but should be
@@ -150,17 +150,17 @@ class Printer:
                     return 1
                 return 0
             elif sys.platform == 'linux2': #linux
-                #~ try: #attempt to use evince-previewer instead
-                    #~ self.log.debug('Attempting to preview file {0} with evince.'
-                        #~ .format(fileName))
-                    #~ ret=subprocess.call(('/usr/bin/evince-previewer', fileName))
-                    #~ if ret != 0:
-                        #~ self.log.error('evince returned non-zero exit code {0}'
-                            #~ .format(ret))
-                        #~ return 1
-                    #~ return 0
-                #~ except OSError:
-                    #~ self.log.debug('evince unavailable.')
+                try: #attempt to use evince-previewer instead
+                    self.log.debug('Attempting to preview file {0} with evince.'
+                        .format(fileName))
+                    ret=subprocess.Popen(('/usr/bin/evince-previewer', fileName))
+                    if ret != 0:
+                        self.log.error('evince returned non-zero exit code {0}'
+                            .format(ret))
+                        return 1
+                    return 0
+                except OSError:
+                    self.log.debug('evince unavailable.')
 
                 self.log.debug('Attempting to preview file {0} via xdg-open'
                     .format(fileName))
@@ -371,7 +371,7 @@ class Nametag:
 
 
     def parent(self, template='default', room='', first='', last='',
-               code='', secure='', link='', barcode=True):
+               code='', secure='', link=None, barcode=True):
         """
         Applies data to a nametag template and returns the resulting HTML.
         Accepts template theme from listTemplates() as first argument; 'default'
@@ -423,7 +423,8 @@ class Nametag:
             self.log.debug("Disabled barcode.")
 
         #Generate QR code if needed:
-        if link != '':
+        if link == '': link = None
+        if link != None:
             codebar.gen('qr', os.path.join(directory, 'parent-link.png'), link)
 
         #get the current date/time
@@ -631,27 +632,31 @@ class Main:
             orientation = self.conf[self.section]['orientation']
         self.con.printout(filename, printer, orientation)
 
-    def cleanup(self):
-        os.unlink(self.pdf)
+    def cleanup(self, trash=None):
+        if trash != None:
+            for item in trash:
+                os.unlink(item)
+        else:
+            os.unlink(self.pdf)
         self.section = ''
 
 if __name__ == '__main__':
 
     con = Main()
-    con.nametag(theme='outfitters', room='Green Room', first='Johnothan',
-                last='Churchgoer', medical='Peanuts', code='O-9999',
-                secure='5C55', barcode=True)
-    con.preview()
-    #~ con.printout()
+    #~ con.nametag(theme='outfitters', room='Green Room', first='Johnothan',
+                #~ last='Churchgoer', code='O-9999',
+                #~ secure='5C55', barcode=True)
+    #~ con.preview()
+    #~ con.printout(printer="Brother-QL-570")
 
     #con.volunteer(room='Jungle Room', first='Zac', last='Sturgeon', ministry='Tech')
     #con.printout()
     #con.preview()
     #con.cleanup()
 
-    #~ con.parent(room='Green Room', first='Johnothan', last='Churchgoer',
-        #~ code='O-9999', secure='9999:Z99', link='http://blahblahblah.com/church/taxidi/parent.cgi?id=12682862')
-    #~ con.preview()
+    con.parent(room='Green Room', first='Johnothan', last='Churchgoer',
+        code='O-9999', secure='9999:Z99', link='http://blahblahblah.com/church/taxidi/parent.cgi?id=12682862')
+    con.preview()
     #~ con.printout()
     #con.cleanup()
 

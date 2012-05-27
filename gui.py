@@ -37,7 +37,8 @@ class MyApp(wx.App):
         self.log = logging.getLogger(__name__)  #Setup logging
         self.res = xrc.XmlResource(os.path.join('xrc', 'menu.xrc'))
         self.init_frame()
-        self.PhotoStorage = webcam.Storage()
+        self.PhotoStorage = webcam.Storage() #Setup photo storage access
+        self.jobID = 0 #jobID counter for forking routines
 
         os.kill(child_pid, signal.SIGKILL)  #Close the splash
         #Setup error handling:
@@ -577,6 +578,7 @@ class MyApp(wx.App):
             pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseRecordPanel)
             pane.NametagToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
             pane.ParentToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
+            pane.CheckinButton.Bind(wx.EVT_BUTTON, self.SaveRecord)
             pane.SaveButton.Bind(wx.EVT_BUTTON, self.SaveRecord)
             pane.AlertButton.Bind(wx.EVT_BUTTON, self.ShowAlertDialog)
             pane.BarcodeButton.Bind(wx.EVT_BUTTON, self.showBarcodePanel)
@@ -1006,7 +1008,6 @@ class MyApp(wx.App):
             DOB = ''               #(true when has focus)——————^
         else: #Validate the entered date.
             a = validate.DateFormat(panel.DOB)
-            print a
             if not a:  #date was not validated
                 panel.DOB.SetBackgroundColour('orange')
                 return 0
@@ -1031,7 +1032,7 @@ class MyApp(wx.App):
                 mobileCarrier=0, activity=activity['id'], room=room, grade=grade,
                 parent2=parent2, parentEmail=email, dob=DOB, medical=medical,
                 count=0, noParentTag=noParentTag, barcode=None,
-                picture=panel.photo, notes=notes)
+                picture=panel.data['picture'], notes=notes)
             self.db.commit()
         except self.database.DatabaseError as e:
             wx.MessageBox('The database was unable to commit this record.\n'
@@ -1058,29 +1059,132 @@ class MyApp(wx.App):
         panel.photo = None #Prevent the saved photo from being deleted later
 
         if button == panel.CheckinButton:  #Don't close the panel yet, call checkin/printing thread:
+            print "Check-in routine....."
             data = { 'id': index, 'name': name, 'surname': surname,
-                     'paging': pagingValue, 'medical': medical }
+                     'paging': pagingValue, 'medical': medical,
+                     'room': panel.Room.GetStringSelection(),
+                     'activity': activity, 'nametag': nametagEnable,
+                     'parentTag': parentEnable }
+            self.DoCheckin((self.service['name'],), data)
 
-            return 0
         self.CloseRecordPanel(None)
         if self.ResultsPanel.opened:
             #Reload the query:
             self.OnSearch(None)
 
-    def DoCheckin(self, services, activity, room, record, name, surname, paging, medical):
+    def DoCheckin(self, services, data):
         """
         This method is for checking in one person.
+        'data' is a dictionary containing the following keys: 'id', 'name',
+        'surname', 'paging', 'medical', 'room', 'activity', 'nametag', 'parentTag'.
         """
+        #(Create fork, perform check-in)
+        #~ self._checkinProducer(0, data, services, data['activity'], data['room'])
+        self.jobID += 1
+        delayedresult.startWorker(self._checkinConsumer, self._checkinProducer,
+                                  wargs=(self.jobID, data, services,
+                                         data['activity'], data['room']),
+                                  jobID=self.jobID)
+        time.sleep(0.3)  #Give the database time to settle (sqlite3 thread-safe?)
+        return 0
+
+    def _checkinProducer(self, jobID, data, services, activity, room):
         #Get secure code, if needed
+        if activity['securityTag']:
+            if conf.as_bool(conf.config['config']['secureCodeRemote']):
+                #Use remote
+                code_generator = taxidi.SecureCode(conf.config['config']['secureCodeURI'])
+            else:
+                code_generator = taxidi.SecureCode() #Use local generator
+            secure = code_generator.request() #Draw a code
+            del code_generator #TODO: put generator initialization in BeginCheckinRoutine
+
+            #Hash secure mode if needed
+            if activity['securityMode'].lower() == 'simple':
+                parentSecure = secure
+            elif activity['securityMode'].lower() == 'md5':
+                parentSecure = secure
+                import hashlib
+                secure = hashlib.md5(secure).hexdigest()[:4].upper()
+        else:
+            secure = None
+            parentSecure = None
+
         #Check-in user into the database
+        if activity['autoExpire']:
+            expires = self.services[-1]['endTime']
+        else:
+            expires = None
+        location = conf.config['config']['name']
+        print services
+        try:
+            print data
+            self.db.DoCheckin(data['id'], services, expires, secure,
+                location, activity['name'], room)
+            self.db.commit()
+        except self.database.DatabaseError as e:
+            notify.error("Database Error", "A database error occurred " \
+                "while trying to check-in {0}.  Please check the database "\
+                "connection (Check-in was aborted).".format(data['name']))
+            raise
+
         #Do printing
-        #Close calling panel
-        pass
+        trash = []
+        if data['nametag'] == True:
+            if secure == None:
+                barcode = False
+            else:
+                barcode = True
+            #Generate the nametag:
+            self.printing.nametag(theme=activity['nametag'], room=room,
+                                  first=data['name'], last=data['surname'],
+                                  medical=data['medical'], code=data['paging'],
+                                  secure=secure, barcode=barcode)
+            if conf.as_bool(conf.config['printing']['preview']):
+                #Open print preview
+                self.printing.preview()
+                trash.append(self.printing.pdf) #Delete it later
+            if conf.as_bool(conf.config['printing']['enable']):
+                if conf.config['printing']['printer'] == '':
+                    self.printing.printout() #Use default printer
+                else:
+                    #TODO: do validation against printer name.
+                    self.printing.printout(printer=conf.config['printing']['printer'])
 
-    def _printProducer(self, jobID, activity, ):
-        import printing
 
-        pass
+        if data['parentTag']: #Print parent tag if needed:
+            if secure != None:
+                barcode = False
+            else:
+                barcode = True
+            link = activity['parentURI']
+            self.printing.parent(theme=activity['nametag'], room=room,
+                                 first=data['name'], last=data['surname'],
+                                 code=data['paging'], secure=parentSecure,
+                                 link=link)
+            if conf.as_bool(conf.config['printing']['preview']):
+                #Open preview
+                self.printing.preview()
+                trash.append(self.printing.pdf)
+            #Do printing if needed
+            if conf.as_bool(conf.config['printing']['enable']):
+                if conf.config['printing']['printer'] == '':
+                    self.printing.printout() #Use default printer
+                else:
+                    #TODO: do validation against printer name.
+                    self.printing.printout(printer=conf.config['printing']['printer'])
+
+        wx.CallLater(1000, self.printing.cleanup, trash) #Delete temporary files later
+        return jobID
+
+    def _checkinConsumer(self, delayedResult):
+        jobID = delayedResult.getJobID()
+        assert jobID == self.jobID
+        try:
+            result = delayedResult.get()
+        except Exception, exc:
+            notify.error("Thread Error", "Result for job %s raised exception: %s" % (jobID, exc) )
+            return
 
     def setupResultsList(self):
         u"""
@@ -1435,7 +1539,8 @@ class MyApp(wx.App):
 
             return 0  #Don't close the panel
 
-        #TODO: Add Visitor: Do printing if needed
+        #Do printing if needed:
+                
 
         #Cleanup and close:
         self.VisitorPanel.photo = None
@@ -2075,6 +2180,13 @@ class MyApp(wx.App):
             dob = date(*(time.strptime(data['dob'].encode('ascii'), '%Y-%m-%d')[0:3]))
             panel.AgeText.SetLabel(str(calculate_age(dob)))
         panel.Activity.SetStringSelection(self.db.GetActivity(data['activity']))
+        #Set the rooms accordingly:
+        selection = panel.Activity.GetStringSelection()
+        items = [ i['name'] for i in self.db.GetRoom(selection) ]
+        items.insert(0, '') #Allow blank selection
+        panel.Room.SetItems(items)
+        panel.Room.SetStringSelection('')
+
         if data['activity'] != 0:
             #ID starts at 1 in database, but activity list starts at 0:
             if self.activities[data['activity']-1]['nametagEnable']:
@@ -2085,6 +2197,8 @@ class MyApp(wx.App):
                 self.ToggleStateOn(panel.ParentToggle)
             else:
                 self.ToggleStateOff(panel.ParentToggle)
+        if data['noParentTag']: #Set parent-tag overrides if present:
+            self.ToggleStateOff(panel.ParentToggle)
         if data['room'] == None or data['room'] == 0:
             pass
         else:
@@ -2145,6 +2259,9 @@ class MyApp(wx.App):
         self.MainMenu.Hide()
         self.ShowSearchPanel()
         self.SetServices()  #Setup the service selections
+        #Setup printing if needed:
+        import printing
+        self.printing = printing.Main()
 
     def OnChangeService(self, event):
         choice = event.GetEventObject()
@@ -2181,16 +2298,27 @@ class MyApp(wx.App):
                 if delta.days == 0 and delta2.days < 0:
                     #Currently active service.  Set it as the selection.
                     return services[i]
+        #else:
+        return services[0]
 
     def SetServices(self):
 
-        self.services = self.db.GetServices()
+        services = self.db.GetServices()
+        if len(services) == 0:
+            if len(self.services) == 1 and \
+                self.services[0]['name'] == 'None Defined':
+                self.notify.warning('No Services', 'Please add a service '\
+                    'before continuing.')
+            self.services = [ {'name': 'None Defined', 
+                               'day' : 0, 'time': '00:00:00', 
+                               'endTime': '23:59:59' }, ]
+        else:
+            self.services = services
         serviceList = [ i['name'] for i in self.services ]
         self.SearchPanel.ServiceSelection.SetItems(serviceList)
 
-        services = self.services
         self.serviceManual = False #Flag used to descern between manual changes and automatic (time table) ones.
-        self.service = services[0] #Remember the current service
+        self.service = self.services[0] #Remember the current service
         if conf.as_bool(conf.config['config']['autoServices']):
             #Determine the current service and set it as the selection:
             self.service = self.GetCurrentService(self.services)
