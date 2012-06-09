@@ -23,6 +23,7 @@ printer = ""    #Name of system printer to use.
 driver = sqlite     #sqlite, postgres, or mysql
 file = 'database/users.db'   #for sqlite only
 host =              #[TODO] For Postgres and MySQL
+database = 'taxidi' #Name of database to use
 user =
 pass =
 cipher =

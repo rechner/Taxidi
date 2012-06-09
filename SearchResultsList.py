@@ -7,6 +7,7 @@
 #TODO: Create left-handed search results panel (SearchResultsList.py)
 
 import wx
+import  wx.lib.newevent
 import time
 import datetime
 from datetime import date
@@ -22,6 +23,8 @@ LIST_AUTOSIZE_FILL = -3
 #Some events for internal handling:
 t_RESULT_LIST_CHECK = wx.NewEventType()
 RESULT_LIST_CHECK = wx.PyEventBinder(t_RESULT_LIST_CHECK, 1)
+CheckOutEvent, EVT_CHECKOUT = wx.lib.newevent.NewEvent()
+CheckOutCommandEvent, EVT_CHECKOUT_COMMAND = wx.lib.newevent.NewCommandEvent()
 
 ########################################################################
 class SearchResultsPanel(wx.Panel):
@@ -122,10 +125,12 @@ class SearchResultsPanel(wx.Panel):
                 #TODO: Read database and see if checkout action required for activity.
                 #TODO: Read config and see if check-out action is allowed at this station (disallow for kiosk)
                 #TODO: Display authorized/unauthorized guardians if needed.
+                evt = CheckOutEvent(data = self.results[i])
+                wx.PostEvent(self.GetEventHandler(), evt)
                 #Change check-in status:
-                self.results[i]['status'] = taxidi.STATUS_CHECKED_OUT
-                self.results[i]['checkout-time'] = datetime.datetime.now().strftime("%H:%M:%S")
-                self.UpdateStatus(i)
+                #~ self.results[i]['status'] = taxidi.STATUS_CHECKED_OUT
+                #~ self.results[i]['checkout-time'] = datetime.datetime.now().strftime("%H:%M:%S")
+                #~ self.UpdateStatus(i)
             elif self.results[i]['status'] == taxidi.STATUS_CHECKED_OUT:
                 #Set checkbox back to x (checked-out) and don't perform an action.
                 self.checkboxes[i].SetLabel(u'✘')
@@ -481,6 +486,9 @@ class TestFrame(wx.Frame):
         panel.ShowResults(results)
         #~ panel = MultiServicePanel(self)
         self.Show()
+        #~ from dblib import sqlite as database
+        #~ db = database.Database("~/.taxidi/database/users.db")
+        #~ panel.SetServices(db.GetServices(), True)
         #~ panel.SetServices([ {'id': 1,  'name': 'First Service', 'day': 2, 'time': '00:00:00', 'endTime': '00:09:00'},
                              #~ {'id': 2, 'name': 'Second Service', 'day': 2, 'time': '00:30:00', 'endTime': '00:45:00'},
                              #~ {'id': 3, 'name': 'Third Service', 'day': 0, 'time': '00:30:00', 'endTime': '01:59:59'},

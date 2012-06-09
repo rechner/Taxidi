@@ -1,0 +1,23 @@
+Files in this directory are used as email templates.  Templates are defined
+by their own .conf files in this directory.  Resources should, but are not
+required to be in their own directory.  Each message is in it's own 
+configuration section, and Taxidi currently supports the following:
+	- [register]
+	- [visitor]
+	- [checkin]
+	- [checkout]
+	
+Each section supports the following keys:
+	- subject = #Message subject string
+	- from = #Common name to use in from field.
+	- text = #The message to send for plain text recipients
+	- html = #The HTML email template
+	- images = #Comma seperated list of images to attach.
+	
+The CID of each attached image will be interpreted by the file's base name
+(billy.jpg -> cid:<billy>). (Note that it takes the CID from the string part before the first dot, so the file 'billy.davis.jpg' will just become 'billy'.)
+Most software clients will load images attached in this way, but almost all
+webmail systems will prefer images loaded from an URL.
+
+Relevant configuration sections in config.ini:
+[report][[email]] to, from, host, TLS, user, pass

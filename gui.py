@@ -17,7 +17,7 @@ import wx
 import os
 import signal
 
-__version__ = '0.70.03-dev'
+__version__ = '0.70.05-dev'
 
 userHand = 'right'
 
@@ -38,7 +38,8 @@ class MyApp(wx.App):
         self.res = xrc.XmlResource(os.path.join('xrc', 'menu.xrc'))
         self.init_frame()
         self.PhotoStorage = webcam.Storage() #Setup photo storage access
-        self.jobID = 0 #jobID counter for forking routines
+        self.jobID = 0 #jobID counter for forking print routine
+        self.EmailJobID = 0 #jobID counter for sending email notifications
 
         os.kill(child_pid, signal.SIGKILL)  #Close the splash
         #Setup error handling:
@@ -122,7 +123,7 @@ class MyApp(wx.App):
         self.MainMenu.Show()
 
         self.frame.Centre()
-        #~ self.frame.ShowFullScreen(True)
+        self.frame.ShowFullScreen(conf.as_bool(conf.config['interface']['fullscreen']))
         self.MainMenu.begin.SetFocus()
         self.frame.Show()
 
@@ -154,15 +155,46 @@ class MyApp(wx.App):
             except TypeError:
                 wx.MessageBox('Unable to open {0}. The file may be write protected.'. \
                     format(datafile), 'Database Error', wx.OK | wx.ICON_ERROR)
+                raise
             except database.sqlite.OperationalError:
                 wx.MessageBox('Unable to open database file:\n{0}'. \
                     format(datafile), 'Database Error', wx.OK | wx.ICON_ERROR)
-                return 1
-            if self.db.status == database.NEW:
-                #The database was newly created
-                wx.MessageBox('A new database was created at\n{0}\n Please '
-                    'confirm your configuration before continuing.'.format(datafile),
-                    'Taxidi', wx.OK | wx.ICON_INFORMATION)
+                raise
+            
+        elif conf.config['database']['driver'].lower() == 'postgres':
+            import dblib.postgres as database
+            self.database = database
+            try:
+                self.db = database.Database(conf.config['database']['host'],
+                                            conf.config['database']['database'],
+                                            conf.config['database']['user'],
+                                            conf.config['database']['pass'])
+            except database.DatabaseError as e:
+                if e.code == database.INVALID_PASSWORD:
+                    wx.MessageBox("Invalid database username or password.",
+                                  "Database Error", wx.OK | wx.ICON_ERROR)
+                if e.code == database.FAIL:
+                    #Unhandled database error.
+                    wx.MessageBox("An unhandled database error occurred. "
+                                  "The error was:\n\n{0}".format(e.error),
+                                  "Database Error", wx.OK | wx.ICON_ERROR)
+                raise  #Do not continue
+                
+        else:
+            wx.MessageBox("Invalid database driver '{0}'.\n\nSelect "
+                          "sqlite or postgres.".format(conf.config['database']['driver']),
+                          u'Taxídí Error', wx.OK | wx.ICON_ERROR)
+                
+        if self.db.status == database.NEW:
+            #The database was newly created
+            wx.MessageBox('A new database was created at\n{0}\n Please '
+                'confirm your configuration before continuing.'.format(datafile),
+                'Taxidi', wx.OK | wx.ICON_INFORMATION)
+        elif self.db.status == database.RESET_TABLES:
+            wx.MessageBox('One or more database tables had to be created. '\
+                'If this is not a first run then database integrity may be'\
+                ' unstable.  Consult the documentation for more info.',
+                'Notice', wx.OK | wx.ICON_INFORMATION)
 
         #Check that there's at least one activity, etc. defined:
         if len(self.db.GetActivities()) == 0:
@@ -842,6 +874,7 @@ class MyApp(wx.App):
             pane.Surname.Bind(wx.EVT_TEXT, self.ResetBackgroundColour)
             pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseRegisterPanel)
             pane.SaveButton.Bind(wx.EVT_BUTTON, self.OnRegisterSave)
+            pane.CheckinButton.Bind(wx.EVT_BUTTON, self.OnRegisterSave)
 
             pane.NametagToggle.SetBackgroundColour(themeToggleColour) #On by default
             pane.NametagToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
@@ -973,6 +1006,43 @@ class MyApp(wx.App):
 
         self.CloseRegisterPanel(None)
 
+        #Print nametag and do check-in if needed:
+        if button == panel.CheckinButton:
+            data = { 'id': ref, 'name': name, 'surname': surname,
+                     'paging': pagingValue, 'medical': medical,
+                     'room': panel.Room.GetStringSelection(),
+                     'activity': activity, 'nametag': nametagEnable,
+                     'parentTag': parentEnable }
+            self.DoCheckin((self.service['name'],), data)
+
+        #Send registration email if needed:
+        if activity['registerEmailEnable'] and email != '':
+            self.EmailJobID += 1
+            delayedresult.startWorker(self._EmailRegisterConsumer,
+                self._EmailRegisterProducer,
+                wargs=(self.EmailJobID, email, activity['registerEmail']),
+                jobID=self.EmailJobID)
+
+    def _EmailRegisterConsumer(self, delayedResult):
+        jobID = delayedResult.getJobID()
+        assert jobID == self.EmailJobID
+        try:
+            result = delayedResult.get()
+        except Exception, exc:
+            notify.error("Thread Error", "Result for job %s raised exception: %s" % (jobID, exc) )
+            return
+
+    def _EmailRegisterProducer(self, JobID, recipient, template='default'):
+        """
+        template: Which template to use ('default')
+        section: Which message to send from template ('register')
+        recipient: Who to send email to
+        """
+        import mail
+        mail.register(recipient, template)
+        return JobID
+
+
     def SaveRecord(self, event):
         button = event.GetEventObject()
         panel = button.GetParent()
@@ -1089,6 +1159,7 @@ class MyApp(wx.App):
         return 0
 
     def _checkinProducer(self, jobID, data, services, activity, room):
+        #Note: activity is a dictionary
         #Get secure code, if needed
         if activity['securityTag']:
             if conf.as_bool(conf.config['config']['secureCodeRemote']):
@@ -1110,7 +1181,8 @@ class MyApp(wx.App):
             secure = None
             parentSecure = None
 
-        #Check-in user into the database
+        #Check-in user into the database, using a new cursor to keep
+        #  the program thread-safe.
         if activity['autoExpire']:
             expires = self.services[-1]['endTime']
         else:
@@ -1118,7 +1190,7 @@ class MyApp(wx.App):
         location = conf.config['config']['name']
         print services
         try:
-            print data
+            cursor = db.spawnCursor()
             self.db.DoCheckin(data['id'], services, expires, secure,
                 location, activity['name'], room)
             self.db.commit()
@@ -1186,6 +1258,9 @@ class MyApp(wx.App):
             notify.error("Thread Error", "Result for job %s raised exception: %s" % (jobID, exc) )
             return
 
+    def OnListCheckout(self, event):
+        print event.data
+
     def setupResultsList(self):
         u"""
         self.ResultsPanel (panel)
@@ -1201,6 +1276,8 @@ class MyApp(wx.App):
         self.ResultsList.ultimateList.Bind(wx.EVT_LIST_ITEM_SELECTED, self.SelectResultItem)
         #Bind check-box clicking:
         self.ResultsList.Bind(SearchResultsList.RESULT_LIST_CHECK, self.CheckResultItem)
+        #Bind check-out action:
+        self.ResultsList.Bind(SearchResultsList.EVT_CHECKOUT, self.OnListCheckout)
 
         #Perform initial resizes.
         self.ResultsList.SetSize((1024, 407))
@@ -1540,7 +1617,7 @@ class MyApp(wx.App):
             return 0  #Don't close the panel
 
         #Do printing if needed:
-                
+
 
         #Cleanup and close:
         self.VisitorPanel.photo = None
@@ -1951,6 +2028,18 @@ class MyApp(wx.App):
         self.RegisterPanel.Activity.SetItems([ i['name'] for i in self.activities ])
         self.RegisterPanel.Activity.SetStringSelection(
             conf.config['config']['defaultActivity']) #Set default activity
+        #Set nametag printing toggles:
+        activities = dict( (i['name'], i['nametagEnable']) for i in self.activities )
+        if activities[conf.config['config']['defaultActivity']]:
+            self.ToggleStateOn(self.RegisterPanel.NametagToggle)
+        else:
+            self.ToggleStateOff(self.RegisterPanel.NametagToggle)
+        activities = dict( (i['name'], i['parentTagEnable']) for i in self.activities )
+        if activities[conf.config['config']['defaultActivity']]:
+            self.ToggleStateOn(self.RegisterPanel.ParentToggle)
+        else:
+            self.ToggleStateOff(self.RegisterPanel.ParentToggle)
+
         self.rooms = self.db.GetRooms()
         items = [ i['name'] for i in self.db.GetRoom(
             conf.config['config']['defaultActivity']) ]
@@ -2092,6 +2181,7 @@ class MyApp(wx.App):
                 self.ResultsControls.Photo.SetBitmapLabel(self.NoPhoto100)
         else: #No results
             self.Search.SetBackgroundColour('pink')
+            notify.warning("No results", 'No results for "{0}".'.format(query))
             self.Search.SetFocus()
             return 0
         self.SearchPanel.SearchAny.SetValue(True) #Reset advanced search choice
@@ -2109,6 +2199,45 @@ class MyApp(wx.App):
         #~ else:  #Bad query
             #~ self.Search.SetBackgroundColour('red')
             #~ self.Search.SetFocus()
+
+    def OnCheckOut(self, event):
+        data = self.RecordPanel.data
+        if self.activities[data['activity']-1]['securityMode'].lower() == 'simple':
+            parent = self.parentPrompt()
+            if parent == None:
+                return
+            code = self.db.GetStatus(data['id'], True)['code']
+
+            if code.lower() == parent.lower():
+                print "Codes match.  Do check-out...."
+            else:
+                print "CODES DO NOT MATCH!!"
+
+        elif self.activities[data['activity']-1]['securityMode'].lower() == 'md5':
+            parent = self.parentPrompt()
+            code = self.db.GetStatus(data['id'], True)['code']
+
+            if hashlib.md5(parent).hexdigest()[:4] == code.lower():
+                print "Codes verify. Do check-out...."
+            else:
+                print "CODES DO NOT MATCH!!"
+        else:
+            print "Do check-out."
+
+
+    def parentPrompt(self):
+        #TODO: make this big and prettier
+        dlg = wx.TextEntryDialog(
+                self.frame, 'Please scan or key in the parent portion of the\n'
+                'security code to complete check-out.',
+                'Security Check-out Code')
+        if dlg.ShowModal() == wx.ID_OK:
+            parent = dlg.GetValue()
+        else:
+            parent = None
+        dlg.Destroy()
+        return parent
+
 
     def FormatResults(self, results):
         """
@@ -2131,9 +2260,16 @@ class MyApp(wx.App):
                 room = rooms[int(i['room'])]
             if int(i['activity'])-1 > len(activities): #activity/room index starts at 0
                 i['activity'] = 0
+            #Get status:
+            status = self.db.GetStatus(i['id'], True)
+            if status['status'] == taxidi.STATUS_CHECKED_OUT:
+                checkout = status['checkout']
+            else:
+                checkout = None
             ret.append({ 'id': i['id'], 'name': ('%s %s' % (i['name'], i['lastname'])),
                          'activity': activities[int(i['activity'])-1],
-                         'room': room, 'status': taxidi.STATUS_NONE,
+                         'room': room, 'status': status['status'],
+                         'checkout-time': checkout, 'code': status['code'],
                          'picture': str(i['picture']) })
         return ret
 
@@ -2229,16 +2365,57 @@ class MyApp(wx.App):
             panel.ModifiedText.SetLabel(time.strftime('%d %b %Y', time.strptime(data['lastModified'])))
         except ValueError: #Format of test data was wrong:
             panel.ModifiedText.SetLabel(str(data['lastModified'][0:10]))
+        panel.ModifiedText.SetToolTipString(str(data['lastModified']))
+        
+        try:
+            panel.CreatedText.SetLabel(time.strftime('%d %b %Y', 
+                time.strptime(data['joinDate'], "%Y-%m-%d")))
+        except: #Date can't be determined, etc.
+            panel.CreatedText.SetLabel('?')
+        try:
+            panel.LastSeenText.SetLabel(time.strftime('%d %b %Y',
+                time.strptime(data['lastSeen'], "%Y-%m-%d")))
+        except:
+            panel.createdText.SetLabel('?')
+            
         #~ if data['noParentTag']: self.ToggleStateOff(panel.ParentToggle)
         #Set barcode values:
         self.BarcodePanel.barcodes = [ j['value'] for i, j in enumerate(self.db.GetBarcodes(data['id'])) ]
+
+        #Set status text:
+        status = self.db.GetStatus(data['id'], True)
+        if data['visitor']:
+            rType = "Visitor"
+        else:
+            rType = "Member"
+
+        if status['status'] == taxidi.STATUS_NONE:
+            panel.StatusText.SetLabel(rType)
+            panel.CheckinButton.Unbind(wx.EVT_BUTTON)
+            panel.CheckinButton.SetLabel('Check-in')
+            panel.CheckinButton.Bind(wx.EVT_BUTTON, self.SaveRecord)
+        elif status['status'] == taxidi.STATUS_CHECKED_IN:
+            panel.StatusText.SetLabel(
+                "{0} - Checked-in at {1}".format(
+                rType,
+                datetime.strftime(datetime.strptime(status['checkin'], "%Y-%m-%dT%H:%M:%S"), "%H:%M:%S")))
+            panel.CheckinButton.Unbind(wx.EVT_BUTTON)
+            panel.CheckinButton.SetLabel('Check-out')
+            panel.CheckinButton.Bind(wx.EVT_BUTTON, self.OnCheckOut)
+        elif status['status'] == taxidi.STATUS_CHECKED_OUT:
+            panel.StatusText.SetLabel(
+                "{0} - Checked out at {1}".format(
+                rType,
+                datetime.strftime(datetime.strptime(status['checkout'], "%Y-%m-%dT%H:%M:%S"), "%H:%M:%S")))
+            panel.CheckinButton.Unbind(wx.EVT_BUTTON)
+            panel.CheckinButton.SetLabel('Check-in')
+            panel.CheckinButton.Bind(wx.EVT_BUTTON, self.SaveRecord)
 
         for i in range(len(self.BarcodePanel.barcodes)):
             self.BarcodePanel.codes[i].SetValue(str(self.BarcodePanel.barcodes[i]))
         panel.Email.SetBackgroundColour(wx.NullColour)
         panel.Phone.SetBackgroundColour(wx.NullColour)
         panel.DOB.SetBackgroundColour(wx.NullColour)
-
 
     def ResetSearchColour(self, event):
         self.Search.SetBackgroundColour(wx.NullColour)
@@ -2307,10 +2484,10 @@ class MyApp(wx.App):
         if len(services) == 0:
             if len(self.services) == 1 and \
                 self.services[0]['name'] == 'None Defined':
-                self.notify.warning('No Services', 'Please add a service '\
+                notify.warning('No Services', 'Please add a service '\
                     'before continuing.')
-            self.services = [ {'name': 'None Defined', 
-                               'day' : 0, 'time': '00:00:00', 
+            self.services = [ {'name': 'None Defined',
+                               'day' : 0, 'time': '00:00:00',
                                'endTime': '23:59:59' }, ]
         else:
             self.services = services
@@ -2609,6 +2786,7 @@ if __name__ == '__main__':
         import time
         from datetime import date, datetime
         from dateutil.relativedelta import relativedelta
+
 
         if conf.as_bool(conf.config['webcam']['enable']) == True:
             import webcam

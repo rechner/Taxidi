@@ -40,11 +40,17 @@
 debug = True  #Set to true to enable [very] verbose logging to console
 
 import os
+import sys
 import logging
 import time
 import datetime
 import sqlite3 as sqlite
 import hashlib
+
+# one directory up
+_root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, _root_dir)
+import taxidi
 
 #Signaling constants
 SUCCESS = 1
@@ -57,6 +63,7 @@ UNKNOWN_ERROR = 32
 AUTHORIZED = 1
 UNAUTHORIZED = 0
 NEW = 128
+RESET_TABLES = 256
 
 #Database schema version (integer):
 database_version = 1
@@ -71,11 +78,14 @@ class Database:
 
         self.debug = True
         #what columns will be returned when SELECT * is issued. Keeps things from breaking.
-        self.columns = """data.id, name, lastname, dob, activity, room, grade, phone,
-                          mobileCarrier, paging, parent1, parent1Link, parent2,
-                          parent2Link, parentEmail, medical, joinDate, lastSeen,
-                          lastModified, count, visitor, noParentTag, barcode,
-                          picture, authorized, unauthorized, notes"""
+        self.columns = """data.id, data.name, data.lastname, dob, data.activity,
+                          data.room, grade, phone, data.mobileCarrier,
+                          data.paging, data.parent1, data.parent1Link,
+                          data.parent2, data.parent2Link, data.parentEmail,
+                          data.medical, data.joinDate, data.lastSeen,
+                          data.lastModified, data.count, data.visitor,
+                          data.noParentTag, data.barcode, data.picture,
+                          data.authorized, data.unauthorized, data.notes"""
 
         #convert log to global if a handle was passed:
         if log:
@@ -129,9 +139,22 @@ class Database:
         self.cursor = self.conn.cursor()
         self.log.info("Created sqlite3 database instance using file '{0}'".
             format(file))
+        if self.debug:
+            self.log.debug("Default cursor instance is: {0}".format(str(self.cursor)))
+            
+    def spawnCursor(self):
+        """
+        Returns a new cursor object (for multi-threadding use).
+        Delete it when done.
+        """
+        return self.conn.cursor()
 
     def close(self):
+        self.log.info("Closing database cursor and connection...")
+        self.cursor.close()
         self.conn.close()
+        del self.cursor
+        del self.conn
 
     def createTables(self):
         """
@@ -191,6 +214,10 @@ class Database:
             parentTagEnable bool, parentTag text,
             admin integer, autoExpire bool, notifyExpire integer,
             newsletter bool, newsletterLink text,
+            registerSMSEnable bool, registerSMS text,
+            registerEmailEnable bool, registerEmail text,
+            checkinSMSEnable bool, checkinSMS text,
+            checkinEmailEnable bool, checkinEmail text,
             parentURI text);""")
         #services
         self.execute("""CREATE TABLE services(id integer primary key,
@@ -254,8 +281,8 @@ class Database:
             lastSeen = str(datetime.date.today())
 
         if lastModified == '':
-            lastModified == time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
-            lastModified = time.ctime() #should be plain ISO 8601
+            #~ lastModified = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
+            lastModified = time.ctime() #should be plain ISO 8601 (close enough)
 
         #escape and execute
         self.execute("""INSERT INTO data(name, lastname, dob, phone,
@@ -318,7 +345,7 @@ class Database:
     # === end data functions ===
 
     # === Check-in functions ===
-    def DoCheckin(self, person, services, expires, code, location, activity, room):
+    def DoCheckin(self, person, services, expires, code, location, activity, room, cursor=None):
         """
         person: id reference of who's being checked-in.
         services: a tuple of services to be checked-in for.  Pass singleton if only one.
@@ -339,7 +366,7 @@ class Database:
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", (person,
                     str(datetime.date.today()), service, expiry,
                     time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime()),
-                    None, code, location, activity, room))
+                    None, code, location, activity, room), cursor)
             #~ except sqlite.Error as e:
                 #~ raise DatabaseError(UNKNOWN_ERROR, e.args[0])
 
@@ -357,6 +384,47 @@ class Database:
         """
         a = self.dict_factory(self.execute("SELECT * FROM data WHERE id = ?", (ref,)).fetchone())
         return a
+
+    def GetStatus(self, ref, full=False):
+        """
+        Returns the check-in status for a specified record, according to the
+        constants defined in taxidi.py. (STATUS_NONE, STATUS_CHECKED_IN, or
+        STATUS_CHECKED_OUT).  If full=True, then the status is returned as part
+        of a dictionary of the matching statistics row.  Only returns values from
+        today's date.
+        """
+        a = self.execute("SELECT * FROM statistics WHERE person = ? AND checkin > date('now');", (ref,))
+        ret = []
+        for i in a.fetchall():
+            ret.append(self.dict_factory(i)) #return as a nested dictionary
+
+        if len(ret) == 0:
+            if full:
+                return { 'status': taxidi.STATUS_NONE, 'code': None }
+            return taxidi.STATUS_NONE
+        elif len(ret) == 1:
+            #Only one check-in. Return what's appropriate:
+            ret = ret[0]
+        else:
+            #Just check the last check-in for now
+            ret = ret[-1]
+
+        if ret['checkin'] == None:  #Not checked-in (this shouldn't happen)
+            if full:
+                ret['status'] = taxidi.STATUS_NONE
+                return ret
+            return taxidi.STATUS_NONE
+        else:
+            if ret['checkout'] == None: #Checked-in
+                if full:
+                    ret['status'] = taxidi.STATUS_CHECKED_IN
+                    return ret
+                return taxidi.STATUS_CHECKED_IN
+            else:
+                if full:
+                    ret['status'] = taxidi.STATUS_CHECKED_OUT
+                    return ret
+                return taxidi.STATUS_CHECKED_OUT
 
     # === begin search functions ===
     def Search(self, query):
@@ -382,6 +450,8 @@ class Database:
             if len(a) == 0:
                 #Search partial names:
                 a = self.SearchName(query+'%')
+        if len(query) == 3:
+            a = self.SearchSecure(query)
         if len(a) == 0: #Catch barcodes
             a = self.SearchBarcode(query)
 
@@ -499,8 +569,14 @@ class Database:
         """
         Searches for a record by the security code assigned at check-in, if applicable.
         """
-        #TODO: Search by secure code
-        pass
+        a = self.execute("""SELECT DISTINCT {0} FROM data
+                            INNER JOIN statistics ON data.id = statistics.person
+                            WHERE statistics.code = ?;
+                            """.format(self.columns), (query,))
+        ret = []
+        for i in a.fetchall():
+            ret.append(self.dict_factory(i)) #return as a nested dictionary
+        return ret
     # === end search functions ===
 
     # === barcode functions ===
@@ -732,9 +808,9 @@ class Database:
         if lastSeen == '':
             joinDate = datetime.date.today()
 
-        if lastModified == '':
+        if lastModified == '': #Use ISO 8601, not ctime()
             lastModified == time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
-            lastModified == time.ctime() #Use ISO 8601
+            #~ lastModified == time.ctime() 
 
         #execute
         self.execute("""INSERT INTO volunteers(name, lastname, dob,
@@ -779,13 +855,14 @@ class Database:
 
 
     # == generic SQL functions ==
-    def execute(self, sql, args=('')):
+    def execute(self, sql, args=(''), cursor=None):
         """Executes SQL, reporting debug to the log. For internal use."""
+        if cursor == None: cursor = self.cursor
         if self.debug:
             sql = sql.replace('    ', '').replace('\n', ' ')  #make it pretty
-            self.log.debug((sql, args))
+            self.log.debug((str(cursor).split()[-1][:-1], sql, args))
         try:
-            data = self.cursor.execute(sql, args)
+            data = cursor.execute(sql, args)
             return data
         except sqlite.OperationalError as e:
             self.log.error('SQLite3 returned operational error: {0}'
@@ -919,8 +996,9 @@ if __name__ == '__main__':
     #Check-in:
     #~ db.DoCheckin(632, ('First Service', 'Second Service', 'Third Service'), '14:59:59', '5C55', 'Kiosk1', 'Explorers', 'Jungle Room')
 
-    print db.GetServices()
-
+    #~ print db.GetServices()
+    print db.GetStatus(799, True)
+    #~ print db.SearchSecure("C0W")[0]['id']
     db.commit()
 
     db.close()

@@ -1,8 +1,9 @@
 
 #TODO: rewrite this with logging and make it pretty.
-#TODO: Add password checking, keep user/pass prompt open until checking is done.
 
 #FIXME: RCX incorrectly complains "Cannot load resources from file" despite loading them anyways. (?)
+#FIXME: For some reason, after clicking add, the time inputs don't disable, despite "All Day"
+    #being checked. (Priority: LOW)
 
 import os
 import wx
@@ -345,7 +346,8 @@ class EditServices(wx.Dialog):
         self.database.commit()
         self.services = []
         self.services = self.database.GetServices()
-        print "Commit"
+        self.SetAllDay(None)
+        print "Commit/Set All Day"
 
     def OnSave(self, event):
         try:
@@ -404,48 +406,49 @@ class EditServices(wx.Dialog):
                 self.Sunday.SetValue(True)
             #Set the times:
             self.AllDayCheckBox.SetValue(False)
-            if self.services[self.selected]['time'] != '':
+            if str(self.services[self.selected]['time']) != '':
                 self.StartTimeCheckBox.SetValue(True)
                 self.StartTime.Enable()
-                self.StartTime.SetValue(self.services[self.selected]['time'])
+                self.StartTime.SetValue(str(self.services[self.selected]['time']))
+                #^ Value must be a string, but database converts it to datetime object
 
-            if self.services[self.selected]['endTime'] != '':
+            if str(self.services[self.selected]['endTime']) != '':
                 self.EndTimeCheckBox.SetValue(True)
                 self.EndTime.Enable()
-                self.EndTime.SetValue(self.services[self.selected]['endTime'])
+                self.EndTime.SetValue(str(self.services[self.selected]['endTime']))
 
 
-            if self.services[self.selected]['time'] == '00:00:00' and \
-              self.services[self.selected]['endTime'] == '23:59:59':
+            if str(self.services[self.selected]['time']) == '00:00:00' and \
+              str(self.services[self.selected]['endTime']) == '23:59:59':
                 self.AllDayCheckBox.SetValue(True)
                 self.StartTime.Disable()
                 self.StartTimeCheckBox.SetValue(False)
                 self.EndTime.Disable()
                 self.EndTimeCheckBox.SetValue(False)
-            elif self.services[self.selected]['time'] == '00:00:00':
+            elif str(self.services[self.selected]['time']) == '00:00:00':
                 #Time is disabled
                 self.StartTime.Disable()
                 self.StartTime.SetValue('00:00:00')
                 self.StartTimeCheckBox.SetValue(False)
-            elif self.services[self.selected]['endTime'] == '23:59:59':
+            elif str(self.services[self.selected]['endTime']) == '23:59:59':
                 #End time is disabled
                 self.EndTime.Disable()
                 self.EndTime.SetValue('23:59:59')
                 self.EndTimeCheckBox.SetValue(False)
 
             else: #Set stored values:
-                if self.services[self.selected]['time'] != '00:00:00':
+                if str(self.services[self.selected]['time']) != '00:00:00':
                     self.StartTime.Enable()
-                    self.StartTime.SetValue(self.services[self.selected]['time'])
+                    self.StartTime.SetValue(str(self.services[self.selected]['time']))
                     self.StartTimeCheckBox.SetValue(True)
                 else:
                     self.StartTime.Disable()
                     self.StartTime.SetValue('11:00:00')
                     self.StartTimeCheckBox.SetValue(False)
 
-                if self.services[self.selected]['endTime'] != '23:59:59':
+                if str(self.services[self.selected]['endTime']) != '23:59:59':
                     self.EndTime.Enable()
-                    self.EndTime.SetValue(self.services[self.selected]['endTime'])
+                    self.EndTime.SetValue(str(self.services[self.selected]['endTime']))
                     self.EndTimeCheckBox.SetValue(True)
                 else:
                     self.EndTime.Disable()
@@ -531,6 +534,7 @@ class EditServices(wx.Dialog):
 
         self.database.AddService(self.elb.GetStrings()[-1], day=0)
         self.services = self.database.GetServices()
+        self.SetEveryDay(None)
 
         #Set selcted item text
         self.SelectedText.SetLabel(self.services[-1]['name'])
@@ -556,6 +560,7 @@ class EditServices(wx.Dialog):
 
     def AddItem(self, event):
         event.Skip()
+        #~ self.SetEveryDay(None)
         #~ self.database.AddService(
 
     def RemoveItem(self, event):
