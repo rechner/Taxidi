@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
-# dblib/sqlite.py (spaces, not tabs)
-# SQLite3 database driver for Taxídí.
+# dblib/postgres.py (spaces, not tabs)
+# PostgreSQL database driver for Taxídí.
 # Zac Sturgeon <admin@jkltech.net>
 
 # This program is free software; you can redistribute it and/or modify
@@ -31,11 +31,17 @@
 debug = True
 
 import os
+import sys
 import logging
 import time
 import datetime
 import psycopg2
 import hashlib
+
+# one directory up
+_root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, _root_dir)
+import taxidi
 
 #Signaling constants
 SUCCESS = 1
@@ -64,7 +70,7 @@ class Database:
         exist, but expects the database was created by the admin.
         """
 
-        self.columns = """data.id, name, lastname, dob, activity, room, grade, phone,
+        self.columns = """data.id, name, lastname, dob, data.activity, data.room, grade, phone,
                           "mobileCarrier", paging, parent1, "parent1Link", parent2,
                           "parent2Link", "parentEmail", medical, "joinDate", "lastSeen",
                           "lastModified", count, visitor, "noParentTag", barcode,
@@ -107,20 +113,20 @@ class Database:
         self.tableSQL.append("""CREATE TABLE categories(id SERIAL,
             name text, admin integer);""")
         self.tableSQL.append("""CREATE TABLE users(id SERIAL,
-            username text UNIQUE NOT NULL, hash text, salt text, 
-            admin integer, "notifoUser" text, "notifoSecret" text, 
-            "scATR" text, "leftHanded" integer, ref integer);""")
+            "user" text UNIQUE NOT NULL, hash text, salt text, 
+            admin bool, "notifoUser" text, "notifoSecret" text, 
+            "scATR" text, "leftHanded" bool, ref int);""")
         self.tableSQL.append("""CREATE TABLE activities(id SERIAL,
             name text, prefix text, "securityTag" text, "securityMode" text,
             "nametagEnable" bool, nametag text,
             "parentTagEnable" bool, "parentTag" text,
-            admin integer, "autoExpire" bool, "notifyExpire" integer,
+            admin integer, "autoExpire" bool, "notifyExpire" bool,
             newsletter bool, "newsletterLink" text,
             "registerSMSEnable" bool, "registerSMS" text,
             "registerEmailEnable" bool, "registerEmail" text,
             "checkinSMSEnable" bool, "checkinSMS" text,
             "checkinEmailEnable" bool, "checkinEmail" text,
-            "parentURI" text);""")
+            "parentURI" text, "alertText" text);""")
         self.tableSQL.append("""CREATE TABLE services(id SERIAL,
             name text, day integer, time TIME, "endTime" TIME);""")
         self.tableSQL.append("""CREATE TABLE rooms(id SERIAL,
@@ -133,9 +139,9 @@ class Database:
             message text);""")
         self.tableSQL.append("""CREATE TABLE statistics(id SERIAL,
             person integer, date date,
-            service integer, expires timestamp,
+            service text, expires text,
             checkin timestamp, checkout timestamp, code text, location text,
-            volunteer integer, activity integer, room integer);""")
+            volunteer integer, activity text, room text);""")
 
 
         #Setup logging
@@ -202,7 +208,7 @@ class Database:
         del self.cursor
         del self.conn
         
-    def execute(self, sql, args=('')):
+    def execute(self, sql, args=(''), cursor=None):
         """Executes SQL, reporting debug to the log. For internal use."""
         if debug:
             sql = sql.replace('    ', '').replace('\n', ' ')  #make it pretty
@@ -229,14 +235,12 @@ class Database:
             d[col[0]] = row[idx]
         return d
 
-    def to_dict(self, cursor=None):
+    def to_dict(self, a):
         """
         Converts results from a cursor object to a nested dictionary.
         """
-        if cursor == None:
-            cursor = self.cursor
         ret = []
-        for i in cursor.fetchall():
+        for i in a:
             ret.append(self.dict_factory(i)) #return as a nested dictionary
         return ret
         
@@ -315,7 +319,7 @@ class Database:
     def Update(self, index, name, lastname, phone, parent1, paging='',
             mobileCarrier=0, activity=0, room=0, grade='', parent2='',
             parent1Link='', parent2Link='', parentEmail='', dob='',
-            medical='', joinDate='', lastSeen='', count=0,
+            medical='', joinDate=None, lastSeen=None, count=0,
             visitor=False, expiry=None, noParentTag=None, barcode=None,
             picture='',  authorized=None, unauthorized=None, notes=''):
         """Update a record.  Pass index as first argument.  lastModified automatically set.
@@ -330,24 +334,31 @@ class Database:
             self.execute("UPDATE \"data\" SET name=%s, lastname=%s WHERE id=%s;", (name, lastname, index))
             self.execute("UPDATE \"data\" SET dob=%s WHERE id=%s;", (dob, index))
             self.execute("UPDATE \"data\" SET phone=%s, paging=%s WHERE id=%s;",(phone, paging, index))
-            self.execute("UPDATE \"data\" SET mobileCarrier=%s WHERE id=%s;",
+            self.execute("UPDATE \"data\" SET \"mobileCarrier\"=%s WHERE id=%s;",
                 (mobileCarrier, index))
             self.execute("""UPDATE "data" SET parent1=%s, parent2=%s,
-                parent1Link=%s, parent2Link=%s WHERE id=%s""", (parent1,
+                "parent1Link"=%s, "parent2Link"=%s WHERE id=%s""", (parent1,
                 parent2, parent1Link, parent2Link, index))
             self.execute("UPDATE \"data\" SET activity=%s, room=%s, grade=%s WHERE id=%s;",
                 (activity, room, grade, index))
-            self.execute("UPDATE \"data\" SET parentEmail=%s, medical=%s WHERE id=%s;",
+            self.execute("UPDATE \"data\" SET \"parentEmail\"=%s, medical=%s WHERE id=%s;",
                 (parentEmail, medical, index))
-            self.execute("UPDATE \"data\" SET joinDate=%s, lastSeen=%s, lastModified=%s WHERE id=%s;",
-                (joinDate, lastSeen, time.ctime(), index))
-            self.execute("""UPDATE "data" SET visitor=%s, expiry=%s, noParentTag=%s,
+            if joinDate != None:
+                self.execute("UPDATE \"data\" SET \"joinDate\"=%s WHERE id=%s;",
+                    (joinDate, index))
+            if lastSeen != None:
+                self.execute("UPDATE \"data\" SET \"lastSeen\"=%s WHERE id=%s;",
+                    (lastSeen, index))
+            self.execute("UPDATE \"data\" SET \"lastModified\"=%s WHERE id=%s;",
+                (datetime.datetime.now(), index))
+            self.execute("""UPDATE "data" SET visitor=%s, expiry=%s, "noParentTag"=%s,
                 barcode=%s,  picture=%s, notes=%s WHERE id=%s;""", (visitor, expiry,
                 noParentTag,  barcode, picture, notes, index))
         except psycopg2.Error as e:
             self.log.error(e)
             self.log.error("Error while updating. Rolling back transaction....")
             self.conn.rollback()
+            raise
         self.commit()
     # === end data functions ===
     
@@ -375,7 +386,14 @@ class Database:
             if len(a) == 0:
                 #Search partial names:
                 a = self.SearchName(query+'%')
-        if len(query) == 3:
+        #check if hex:
+        try:
+            hexval = int(query, 16)
+            isHex = True
+        except:
+            isHex = False
+            
+        if len(query) == 3 or (isHex and len(query) == 4) and len(a) == 0:
             a = self.SearchSecure(query)
         if len(a) == 0: #Catch barcodes
             a = self.SearchBarcode(query)
@@ -489,7 +507,30 @@ class Database:
             ret.append(self.dict_factory(i)) #return as a nested dictionary
         return ret
 
+    def SearchSecure(self, query):
+        """
+        Searches for a record by the security code assigned at check-in, if applicable.
+        """
+        a = self.execute("""SELECT DISTINCT {0} FROM data
+                            INNER JOIN statistics ON data.id = statistics.person
+                            WHERE statistics.code = %s;
+                            """.format(self.columns), (query.upper(),))
+        ret = []
+        for i in a:
+            ret.append(self.dict_factory(i)) #return as a nested dictionary
+        return ret
     # === end search functions ===
+    
+    def GetRecordByID(self, ref):
+        """
+        Returns a single row specified by id.
+        """
+        a = self.execute("SELECT * FROM data WHERE id = %s", (ref,))
+        
+        ret = []
+        for i in a:
+            ret.append(self.dict_factory(i)) #return as a nested dictionary
+        return ret[0]
     
     # === barcode functions ===
     def GetBarcodes(self, record):
@@ -501,6 +542,7 @@ class Database:
         ret = []
         for i in a:
             ret.append(self.dict_factory(i)) #return as a nested dictionary
+            #~ ret.append(i)
         return ret
 
     def AddBarcode(self, record, value):
@@ -522,7 +564,7 @@ class Database:
 
     # === services functions ===
     def GetServices(self):
-        a = self.execute("SELECT * FROM services;")
+        a = self.execute("SELECT * FROM services ORDER BY id;")
         ret = []
         for i in a:
             ret.append(self.dict_factory(i)) #return as a nested dictionary
@@ -546,6 +588,7 @@ class Database:
         a = self.execute("SELECT * FROM activities;")
         ret = []
         for i in a:
+            if i == None: i = u'—'
             ret.append(self.dict_factory(i)) #return as a nested dictionary
         return ret
 
@@ -556,7 +599,14 @@ class Database:
         """
         a = self.execute("SELECT name FROM activities WHERE id = %s;", (ref,))
         if len(a) > 0:
-            return self.dict_factory(i[0])
+            return a[0][0]
+        else:
+            return None
+            
+    def GetActivityById(self, ref):
+        a = self.execute("SELECT * FROM activities WHERE id = %s;", (ref,))
+        if len(a) > 0:
+            return self.dict_factory(a[0])
         else:
             return None
         
@@ -565,18 +615,20 @@ class Database:
                     nametag='default', nametagEnable=True,
                     parentTag='default', parentTagEnable=True, admin=None,
                     autoExpire = False, notifyExpire = False, newsletter=False,
-                    newsletterLink=''):
+                    newsletterLink='', parentURI='', alert=''):
         if prefix == '' or prefix == None:
             prefix = name[0].upper()
-        self.execute("""INSERT INTO activities(name, prefix, securityTag,
-                        securityMode, nametagEnable, nametag,
-                        parentTagEnable, parentTag, admin, autoExpire,
-                        notifyExpire, newsletter, newsletterLink)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);""",
+        self.execute("""INSERT INTO activities(name, prefix, "securityTag",
+                        "securityMode", "nametagEnable", nametag,
+                        "parentTagEnable", "parentTag", admin, "autoExpire",
+                        "notifyExpire", newsletter, "newsletterLink",
+                        "parentURI", "alertText")
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                        %s, %s, %s, %s, %s, %s);""",
                         (name, prefix, securityTag, securityMode,
                         nametagEnable, nametag, parentTagEnable, parentTag,
                         admin, autoExpire, notifyExpire, newsletter,
-                        newsletterLink))
+                        newsletterLink, parentURI, alert))
 
     def RemoveActivity(self, ref):
         self.execute("DELETE FROM activities WHERE id = %s;", (ref,))
@@ -598,6 +650,220 @@ class Database:
                         autoExpire, notifyExpire, newsletter,
                         newsletterLink, ref))
     # === end activities functions ==
+    
+    # === rooms functions ===
+    def AddRoom(self, name, activity, volunteerMinimum=0, maximumOccupancy=0,
+                camera='', cameraFPS=0, admin=0, notifoUser=None,
+                notifoSecret=None, email='', mobile='', carrier=None):
+        #Check to see that activity exists:
+        ret = self.execute('SELECT id FROM activities WHERE id = %s;',
+            (activity,))
+        if len(ret) == 1:
+            #Activity exists.  Create room.
+            self.execute("""INSERT INTO rooms(name, activity, "volunteerMinimum",
+                            "maximumOccupancy", camera, "cameraFPS", admin,
+                            "notifoUser", "notifoSecret", email, mobile, carrier)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                            (name, activity, volunteerMinimum, maximumOccupancy,
+                            camera, cameraFPS, admin, notifoUser,
+                            notifoSecret, email, mobile, carrier))
+            return SUCCESS
+        else:
+            return CONSTRAINT_FAILED #Forgein key constraint failed
+
+    def GetRooms(self):
+        a = self.execute('SELECT * FROM rooms;')
+        ret = []
+        for i in a:
+            ret.append(self.dict_factory(i)) #return as a nested dictionary
+        return ret
+
+    def GetRoomByID(self, ref):
+        """
+        Returns a room name specified from a reference (for displaying results).
+        """
+        a = self.execute('SELECT name FROM rooms WHERE id = %s;', (ref,))
+        if a != None:
+            try:
+                return a[0]
+            except IndexError:
+                return ''
+        else:
+            return ''
+
+    def GetRoom(self, activity):
+        """
+        Returns rooms dictionary matching a given activity (by name).
+        """
+        a = self.execute("""SELECT rooms.*
+                            FROM rooms
+                            INNER JOIN activities ON
+                            activities.id = rooms.activity
+                            WHERE activities.name = %s;""",
+                            (activity,))
+        ret = []
+        for i in a:
+            ret.append(self.dict_factory(i)) #return as a nested dictionary
+        return ret
+
+    def GetRoomID(self, name):
+        """
+        Return's a room's primary key (id) given a name.
+        """
+        a = self.execute("SELECT id FROM rooms WHERE name = %s;", (name,))
+        if a != None:
+            return a[0]
+        else:
+            return ''
+
+    def RemoveRoom(self, ref):
+        self.execute("DELETE FROM rooms WHERE id = %s;", (ref,))
+    # === end room functions ===
+    
+    # === users functions ===
+    def GetUsers(self):
+        a = self.execute("""SELECT "user", admin, "notifoUser", "notifoSecret",
+                            "scATR", "leftHanded", ref FROM users;""")
+        return self.to_dict(a)
+
+    def GetUser(self, user):
+        #Should only return one row
+        return self.to_dict(self.execute("SELECT * FROM users WHERE \"user\" = %s;", (user,)))[0]
+
+    def UserExists(self, user):
+        a = self.execute("SELECT id FROM \"users\" WHERE \"user\"= %s;", (user,))
+        self.commit()
+        if len(a) == 0:
+            return False
+        else:
+            return True
+
+    def AddUser(self, user, password, admin=False, notifoUser=None,
+                notifoSecret=None, scATR=None, leftHanded=False, ref=None):
+        #Check that the user doesn't exist:
+        if len(self.execute("SELECT * FROM users WHERE user = %s;", \
+          (user,))) != 0:
+            self.commit()
+            return USER_EXISTS
+
+        salt = os.urandom(29).encode('base_64').strip('\n') #Get a salt
+        if password == '': #Set a random password
+            password = os.urandom(8).encode('base_64').strip('\n')
+        ph = hashlib.sha256(password + salt)
+        ph.hexdigest()
+
+        try:
+            self.execute("""INSERT INTO "users"("user", hash, salt, admin, "notifoUser",
+                            "notifoSecret", "scATR", "leftHanded", ref) VALUES
+                            (%s, %s, %s, %s, %s, %s, %s, %s, %s);""",
+                            (user, ph.hexdigest(), salt, admin, notifoUser,
+                            notifoSecret, scATR, leftHanded, ref))
+        except psycopg2.IntegrityError:
+            return USER_EXISTS
+        finally:
+            self.commit()
+        return SUCCESS
+
+    def RemoveUser(self, user):
+        """
+        Remove an user from the system by username.
+        """
+        self.execute("DELETE FROM users WHERE \"user\" = %s;", (user,))
+
+    def AuthenticateUser(self, user, password):
+        if self.UserExists(user):
+            info = self.GetUser(user)
+            passhash = hashlib.sha256(password + info['salt'])
+            if info['hash'] == passhash.hexdigest():
+                return 1
+        return 0
+    # == end users functions ==
+    
+    # === Check-in functions ===
+    def DoCheckin(self, person, services, expires, code, location, activity, room, cursor=None):
+        """
+        person: id reference of who's being checked-in.
+        services: a tuple of services to be checked-in for.  Pass singleton if only one.
+            Services should be passed in chronological order!
+        expires: expiration time, if applicable, of the last service chronologically.
+        code: secure code, or hashed value on child's tag if not in simple mode.
+        location: text location to identify kiosk used for check-in.
+        activity: activity name as string.
+        room: room name as string.
+        """
+        expiry = None
+        for service in services:
+            if services.index(service) + 1 == len(services): #On the last item
+                expiry = expires
+            #~ try:
+            self.execute("""INSERT INTO statistics(person, date, service, expires,
+                    checkin, checkout, code, location, activity, room)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);""", 
+                    (person, str(datetime.date.today()), service, expiry,
+                    datetime.datetime.now(), None, code, location, activity, room), 
+                    cursor)
+            #~ except sqlite.Error as e:
+                #~ raise DatabaseError(UNKNOWN_ERROR, e.args[0])
+                
+        #~ #TODO: Incrament count, update last seen date.
+        count = self.execute("SELECT count FROM data WHERE id = %s;", (person,))
+        count = int(count[0][0]) + 1
+        today = datetime.date.today()
+        self.execute("UPDATE data SET count = %s, \"lastSeen\" = %s WHERE id = %s;", 
+            (count, today, person))
+        self.commit()
+
+    def DoCheckout(self, person):
+        """
+        Marks a record as checked-out.
+        """
+        self.execute("UPDATE statistics SET checkout = %s WHERE id = %s;",
+            (datetime.datetime.now(), person))
+        self.commit()
+        
+    # === end checkin functions ===
+    
+    def GetStatus(self, ref, full=False):
+        """
+        Returns the check-in status for a specified record, according to the
+        constants defined in taxidi.py. (STATUS_NONE, STATUS_CHECKED_IN, or
+        STATUS_CHECKED_OUT).  If full=True, then the status is returned as part
+        of a dictionary of the matching statistics row.  Only returns values from
+        today's date.
+        """
+        a = self.execute("SELECT * FROM statistics WHERE person = %s AND checkin > date('now');", (ref,))
+        ret = []
+        for i in a:
+            ret.append(self.dict_factory(i)) #return as a nested dictionary
+
+        if len(ret) == 0:
+            if full:
+                return { 'status': taxidi.STATUS_NONE, 'code': None }
+            return taxidi.STATUS_NONE
+        elif len(ret) == 1:
+            #Only one check-in. Return what's appropriate:
+            ret = ret[0]
+        else:
+            #Just check the last check-in for now
+            ret = ret[-1]
+
+        if ret['checkin'] == None:  #Not checked-in (this shouldn't happen)
+            if full:
+                ret['status'] = taxidi.STATUS_NONE
+                return ret
+            return taxidi.STATUS_NONE
+        else:
+            if ret['checkout'] == None: #Checked-in
+                if full:
+                    ret['status'] = taxidi.STATUS_CHECKED_IN
+                    return ret
+                return taxidi.STATUS_CHECKED_IN
+            else:
+                if full:
+                    ret['status'] = taxidi.STATUS_CHECKED_OUT
+                    return ret
+                return taxidi.STATUS_CHECKED_OUT
+
 
 class DatabaseError(Exception):
     def __init__(self, code, value=''):
@@ -621,7 +887,7 @@ class DatabaseError(Exception):
 
 if __name__ == '__main__':
     try:
-        db = Database('localhost', 'taxidi', 'taxidi', '@01e769Ef8')
+        db = Database('192.168.1.250', 'taxidi', 'taxidi', '@01e769Ef8')
     except DatabaseError as e:
         print e.error
         exit()
@@ -637,13 +903,55 @@ if __name__ == '__main__':
     #~ db.AddBarcode(1, '12345')
     #~ db.RemoveBarcode(1)
     #~ pprint.pprint(db.Search("ABCD"))
-    #~ pprint.pprint(db.GetBarcodes(1))
+    #~ codes = db.GetBarcodes(2)
+    #~ pprint.pprint(codes)
+    #~ print
+    #~ print [ a['value'] for a in codes ]
+    
+    #~ print db.Search("203a")
     
     #Services:
     #~ db.AddService('First Service')
     #~ print db.GetServices()
     
-    print db.GetActivity(0)
+    #Activities:
+    #~ db.AddActivity('Explorers', securityTag=True, securityMode='md5', 
+                    #~ nametagEnable=True, parentTagEnable=True,
+                    #~ alert='Nursery alert text goes here.')
+    #~ db.AddActivity('Outfitters', securityTag=False, securityMode='simple', 
+                    #~ nametagEnable=True, parentTagEnable=False,
+                    #~ alert='Nursery alert text goes here.')
+    #~ db.commit()
+    #~ print db.GetActivityById(1)
+    
+    #User functions:
+    #~ db.RemoveUser('admin')
+    #~ db.commit()
+    #~ if db.AddUser('admin', 'password', admin=True) == USER_EXISTS: print "User admin already exists"
+    #~ db.commit()
+    #~ pprint.pprint( db.GetUsers() )
+    #~ print
+    #~ print (db.AuthenticateUser('admin', 'badpassword') == AUTHORIZED) #False
+    #~ print (db.AuthenticateUser('baduser', 'pass') == AUTHORIZED)      #False
+    #~ print (db.AuthenticateUser(u'admin', u'password') == AUTHORIZED)    #True
+    #~ print (db.AuthenticateUser('admin', 'password') == AUTHORIZED)    #True
+    
+    #Check-in:
+    #~ db.DoCheckin(2, ('First Service', 'Second Service', 'Third Service'), 
+                 #~ '14:59:59', '5C55', 'Kiosk1', 'Explorers', 'Jungle Room')
+                 
+    #Rooms:
+    db.AddRoom("Bunnies", 1)
+    db.AddRoom("Ducks", 1)
+    db.AddRoom("Kittens", 1)
+    db.AddRoom("Robins", 1)
+    db.AddRoom("Squirrels", 1)
+    db.AddRoom("Puppies", 1)
+    db.AddRoom("Caterpillars", 1)
+    db.AddRoom("Butterflies", 1)
+    db.AddRoom("Turtles", 1)
+    db.AddRoom("Frogs", 1)
+    db.AddRoom("Outfitters", 2)
     
     db.commit()
 
