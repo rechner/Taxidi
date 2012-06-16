@@ -319,8 +319,19 @@ class MultiServicePanel(wx.Panel):
         #~ self.ultimateList.SetColumnWidth(1, 350)
         self.ultimateList.SetColumnWidth(1, LIST_AUTOSIZE_FILL)
 
+        sz = wx.BoxSizer(wx.HORIZONTAL)
+        st = wx.StaticText(self, wx.ID_ANY, 'Select services, then press "OK"', wx.DefaultPosition, wx.DefaultSize, 0)
+        AcceptButton = wx.Button(self, wx.ID_OK, size=(160, -1))
+        CancelButton = wx.Button(self, wx.ID_CANCEL, size=(160, -1))
+        
+        sz.Add(st, 1, wx.ALL, 5)
+        sz.AddStretchSpacer()
+        sz.Add(CancelButton, 1, wx.EXPAND | wx.ALL, 5)
+        sz.Add(AcceptButton, 1, wx.EXPAND | wx.ALL, 5)
+
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.ultimateList, 1, wx.EXPAND)
+        sizer.Add(sz, 1, wx.ALL | wx.EXPAND, 5)
+        sizer.Add(self.ultimateList, 6, wx.EXPAND)
         self.SetSizer(sizer)
         self.Bind(ULC.EVT_LIST_ITEM_SELECTED, self.Click, self.ultimateList)
 
@@ -472,6 +483,16 @@ class MultiServicePanel(wx.Panel):
         lv = len(value)
         return tuple(int(value[i:i+lv/3], 16) for i in range(0, lv, lv/3))
 
+class MultiServiceDialog(wx.Dialog):
+    def __init__(self, parent, id, services):
+        """Constructor"""
+        wx.Dialog.__init__(self, parent, id, size=(500, 400))
+        self.InitUI()
+        
+    def SetServices(self, services):
+        pass
+        
+        
 
 ########################################################################
 class TestFrame(wx.Frame):
@@ -482,18 +503,18 @@ class TestFrame(wx.Frame):
         """Constructor"""
         wx.Frame.__init__(self, None, title="UltimateListCtrl test", size=(1024, 558))
         #~ wx.Frame.__init__(self, None, title="UltimateListCtrl test", size=(500, 400))
-        panel = SearchResultsPanel(self)
-        panel.ShowResults(results)
-        #~ panel = MultiServicePanel(self)
+        #~ panel = SearchResultsPanel(self)
+        #~ panel.ShowResults(results)
+        panel = MultiServicePanel(self)
         self.Show()
         #~ from dblib import sqlite as database
         #~ db = database.Database("~/.taxidi/database/users.db")
         #~ panel.SetServices(db.GetServices(), True)
-        #~ panel.SetServices([ {'id': 1,  'name': 'First Service', 'day': 2, 'time': '00:00:00', 'endTime': '00:09:00'},
-                             #~ {'id': 2, 'name': 'Second Service', 'day': 2, 'time': '00:30:00', 'endTime': '00:45:00'},
-                             #~ {'id': 3, 'name': 'Third Service', 'day': 0, 'time': '00:30:00', 'endTime': '01:59:59'},
-                             #~ {'id': 4, 'name': 'Every day', 'day': 0, 'time': '00:00:00', 'endTime': '17:53:59'} ], True)
-        #~ print panel.GetSelected()
+        panel.SetServices([ {'id': 1,  'name': 'First Service', 'day': 2, 'time': '00:00:00', 'endTime': '00:09:00'},
+                             {'id': 2, 'name': 'Second Service', 'day': 2, 'time': '00:30:00', 'endTime': '00:45:00'},
+                             {'id': 3, 'name': 'Third Service', 'day': 0, 'time': '00:30:00', 'endTime': '01:59:59'},
+                             {'id': 4, 'name': 'Every day', 'day': 0, 'time': '00:00:00', 'endTime': '17:53:59'} ], True)
+        print panel.GetSelected()
 
 
 #----------------------------------------------------------------------

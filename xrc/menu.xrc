@@ -1831,7 +1831,7 @@
                                 <selection>0</selection>
                                 <content>
                                     <item>Land Line</item>
-                                    <item>Verizon Wireless</item>
+                                    <item>Mobile</item>
                                 </content>
                             </object>
                         </object>
@@ -2876,7 +2876,7 @@
                                 <selection>0</selection>
                                 <content>
                                     <item>Land Line</item>
-                                    <item>Verizon Wireless</item>
+                                    <item>Mobile</item>
                                 </content>
                             </object>
                         </object>
@@ -3906,6 +3906,7 @@
                                 <selection>0</selection>
                                 <content>
                                     <item>Land Line</item>
+                                    <item>Mobile</item>
                                 </content>
                             </object>
                         </object>
@@ -4889,6 +4890,7 @@
                                 <selection>0</selection>
                                 <content>
                                     <item>Land Line</item>
+                                    <item>Mobile</item>
                                 </content>
                             </object>
                         </object>
@@ -5823,7 +5825,7 @@
                                 <selection>0</selection>
                                 <content>
                                     <item>Land Line</item>
-                                    <item>Verizon Wireless</item>
+                                    <item>Mobile</item>
                                 </content>
                             </object>
                         </object>
@@ -6738,7 +6740,7 @@
                                 <selection>0</selection>
                                 <content>
                                     <item>Land Line</item>
-                                    <item>Verizon Wireless</item>
+                                    <item>Mobile</item>
                                 </content>
                             </object>
                         </object>
@@ -7787,4 +7789,251 @@
             </object>
         </object>
     </object>
+    
+    <!-- Statistics Dialogue -->
+    <object class="wxDialog" name="StatisticsDialog">
+		<style>wxDEFAULT_DIALOG_STYLE</style>
+		<size>354,384</size>
+		<title>Check-in Statistics</title>
+		<object class="wxBoxSizer">
+			<orient>wxVERTICAL</orient>
+			<object class="sizeritem">
+				<option>0</option>
+				<flag>wxALL|wxEXPAND</flag>
+				<border>5</border>
+				<object class="wxStaticBoxSizer">
+					<orient>wxVERTICAL</orient>
+					<label>Filters</label>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>5</border>
+						<object class="wxFlexGridSizer">
+							<rows>3</rows>
+							<cols>2</cols>
+							<vgap>0</vgap>
+							<hgap>0</hgap>
+							<growablecols>1</growablecols>
+							<growablerows></growablerows>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+								<border>5</border>
+								<object class="wxStaticText" name="st1">
+									<label>Service:</label>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxEXPAND|wxBOTTOM|wxRIGHT|wxLEFT</flag>
+								<border>5</border>
+								<object class="wxChoice" name="Service">
+									<selection>0</selection>
+									<content />
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+								<border>5</border>
+								<object class="wxStaticText" name="st2">
+									<label>Activity:</label>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxEXPAND|wxBOTTOM|wxRIGHT|wxLEFT</flag>
+								<border>5</border>
+								<object class="wxChoice" name="Activity">
+									<selection>0</selection>
+									<content />
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+								<border>5</border>
+								<object class="wxStaticText" name="st3">
+									<label>Room</label>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxEXPAND|wxBOTTOM|wxRIGHT|wxLEFT</flag>
+								<border>5</border>
+								<object class="wxChoice" name="Room">
+									<selection>0</selection>
+									<content />
+								</object>
+							</object>
+						</object>
+					</object>
+				</object>
+			</object>
+			<object class="sizeritem">
+				<option>0</option>
+				<flag>wxALIGN_RIGHT</flag>
+				<border>5</border>
+				<object class="wxGridSizer">
+					<rows>4</rows>
+					<cols>2</cols>
+					<vgap>0</vgap>
+					<hgap>0</hgap>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="totalSt">
+							<font>
+								<family>default</family>
+								<style>normal</style>
+								<weight>normal</weight>
+								<underlined>0</underlined>
+							</font>
+							<label>Total Checked-in:</label>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="TotalText">
+							<font>
+								<size>18</size>
+								<family>default</family>
+								<style>normal</style>
+								<weight>bold</weight>
+								<underlined>0</underlined>
+							</font>
+							<label>0</label>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="membersSt">
+							<label>Members:</label>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="MembersText">
+							<font>
+								<size>14</size>
+								<family>default</family>
+								<style>normal</style>
+								<weight>normal</weight>
+								<underlined>0</underlined>
+							</font>
+							<label>0</label>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="visitorsSt">
+							<label>Visitors:</label>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="VisitorsText">
+							<font>
+								<size>14</size>
+								<family>default</family>
+								<style>normal</style>
+								<weight>normal</weight>
+								<underlined>0</underlined>
+							</font>
+							<label>0</label>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxRIGHT|wxLEFT</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="volunteersSt">
+							<label>Volunteers:</label>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxRIGHT|wxLEFT|wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="VolunteersText">
+							<font>
+								<size>14</size>
+								<family>default</family>
+								<style>normal</style>
+								<weight>normal</weight>
+								<underlined>0</underlined>
+							</font>
+							<label>0</label>
+						</object>
+					</object>
+				</object>
+			</object>
+			<object class="sizeritem">
+				<option>0</option>
+				<flag>wxEXPAND | wxALL</flag>
+				<border>5</border>
+				<object class="wxStaticLine" name="m_staticline1">
+					<style>wxLI_HORIZONTAL</style>
+				</object>
+			</object>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxEXPAND|wxALL</flag>
+				<border>5</border>
+				<object class="wxGridSizer">
+					<rows>2</rows>
+					<cols>2</cols>
+					<vgap>0</vgap>
+					<hgap>0</hgap>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>5</border>
+						<object class="wxButton" name="PrintButton">
+							<label>Print</label>
+							<default>0</default>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>5</border>
+						<object class="wxButton" name="SaveButton">
+							<label>Save</label>
+							<default>0</default>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>5</border>
+						<object class="wxButton" name="RefreshButton">
+							<label>↺ Refresh</label>
+							<default>0</default>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>5</border>
+						<object class="wxButton" name="CloseButton">
+							<label>Close</label>
+							<default>0</default>
+						</object>
+					</object>
+				</object>
+			</object>
+		</object>
+	</object>
 </resource>

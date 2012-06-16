@@ -289,7 +289,10 @@ class MyApp(wx.App):
             pane.RegisterButton = xrc.XRCCTRL(pane, 'RegisterButton')
             pane.VisitorButton = xrc.XRCCTRL(pane, 'VisitorButton')
             pane.SwitchUserButton = xrc.XRCCTRL(pane, 'SwitchUserButton')
+            pane.StatisticsButton = xrc.XRCCTRL(pane, 'StatisticsButton')
+            pane.EmergencyListButton = xrc.XRCCTRL(pane, 'EmergencyListButton')
             pane.ExitButton = xrc.XRCCTRL(pane, 'ExitButton')
+            
 
             pane.Search.Bind(wx.EVT_TEXT_ENTER, self.OnSearch)
             pane.ServiceSelection.Bind(wx.EVT_CHOICE, self.OnChangeService)
@@ -299,6 +302,7 @@ class MyApp(wx.App):
             self.frame.Bind(wx.EVT_BUTTON, self.OnRegister, pane.RegisterButton)
             self.frame.Bind(wx.EVT_BUTTON, self.OnVisitor, pane.VisitorButton)
             self.Bind(wx.EVT_BUTTON, self.SwitchUser, pane.SwitchUserButton)
+            self.Bind(wx.EVT_BUTTON, self.ShowStatistics, pane.StatisticsButton)
             self.frame.Bind(wx.EVT_BUTTON, self.ExitSearch, pane.ExitButton)
 
         #Setup keypad:
@@ -342,6 +346,47 @@ class MyApp(wx.App):
     def searchRadioButtonClick(self, event):
         self.Search.SetFocus()
 
+    def ShowStatistics(self, event):    
+        self.setupStatisticsDialog()
+        self.StatFrame.ShowModal()
+        self.StatFrame.Destroy()
+        
+    def setupStatisticsDialog(self):
+        self.StatFrame = self.res.LoadDialog(self.frame, 'StatisticsDialog')
+        self.StatFrame.Service = xrc.XRCCTRL(self.StatFrame, 'Service')
+        self.StatFrame.Activity = xrc.XRCCTRL(self.StatFrame, 'Activity')
+        self.StatFrame.Room = xrc.XRCCTRL(self.StatFrame, 'Room')
+        self.StatFrame.TotalText = xrc.XRCCTRL(self.StatFrame, 'TotalText')
+        self.StatFrame.MembersText = xrc.XRCCTRL(self.StatFrame, 'MembersText')
+        self.StatFrame.VisitorsText = xrc.XRCCTRL(self.StatFrame, 'VisitorsText')
+        self.StatFrame.VolunteersText = xrc.XRCCTRL(self.StatFrame, 'VolunteersText')
+        
+        self.StatFrame.PrintButton = xrc.XRCCTRL(self.StatFrame, 'PrintButton')
+        self.StatFrame.SaveButton = xrc.XRCCTRL(self.StatFrame, 'SaveButton')
+        self.StatFrame.RefreshButton = xrc.XRCCTRL(self.StatFrame, 'RefreshButton')
+        self.StatFrame.CloseButton = xrc.XRCCTRL(self.StatFrame, 'CloseButton')
+        
+        self.StatFrame.CloseButton.Bind(wx.EVT_BUTTON, self.CloseStatisticsDialog)
+        
+        services = [u'— Any —']
+        services.extend([ i['name'] for i in self.services ])
+        self.StatFrame.Service.SetItems(services)
+        self.StatFrame.Service.SetSelection(0)
+        
+        self.activities = self.db.GetActivities()
+        activities = [u'— Any —']
+        activities.extend([ i['name'] for i in self.activities ])
+        self.StatFrame.Activity.SetItems(activities)
+        self.StatFrame.Activity.SetSelection(0)
+        
+        self.rooms = self.db.GetRooms()
+        rooms = [u'— Any —']
+        rooms.extend([ i['name'] for i in self.rooms ])
+        self.StatFrame.Room.SetItems(rooms)
+        self.StatFrame.Room.SetSelection(0)
+        
+    def CloseStatisticsDialog(self, event):
+        self.StatFrame.Destroy()
 
     def EditServices(self, event):
         self.setupDatabase() #Open database
@@ -479,7 +524,6 @@ class MyApp(wx.App):
 
     def showBarcodePanel(self, event=None):
         self.BarcodePanel.Show()
-        #TODO: Populate inputs with saved values
         self.BarcodePanel.code1.SetFocus()
 
     def hideBarcodePanel(self, event=None):
@@ -694,11 +738,85 @@ class MyApp(wx.App):
         self.AlertDialog.SMSRecipients = xrc.XRCCTRL(self.AlertDialog, 'SMSRecipients')
 
         self.AlertDialog.Cancel.Bind(wx.EVT_BUTTON, self.CloseAlert)
+        self.AlertDialog.Send.Bind(wx.EVT_BUTTON, self.SendAlert)
+        
+        #Set data:
+        button = event.GetEventObject()
+        parent = button.GetParent()
+        
+        #Update data from form:
+        parent.data['phone'] = parent.Phone.GetValue()
+        parent.data['name'] = parent.FirstName.GetValue()
+        parent.data['lastname'] = parent.Surname.GetValue()
+        parent.data['paging'] = parent.Paging.GetValue()
+        self.AlertDialog.data = parent.data
+        self.AlertDialog.activity = self.activities[parent.data['activity']-1]
+        message = self.AlertDialog.activity['alertText']
+        message = message.replace('{code}', parent.data['paging'])
+        message = message.replace('{name}', parent.data['name'])
+        message = message.replace('{lastname}', parent.data['lastname'])
+        message = message.replace('{activity}', self.AlertDialog.activity['name'])
+        message = message.replace('{room}', self.db.GetRoomByID(parent.data['room']))
+        if parent.data['mobileCarrier'] == 0 or None:
+            self.SetAlertData(message, None, []) #Number is landline
+        else:
+            self.SetAlertData(message, parent.data['phone'], []) #Number is landline
+        
         #Show the dialog
         self.AlertDialog.ShowModal()
 
     def SetAlertData(self, message, parent, recipients):
-        pass
+        """
+        Sets data for the alert dialog.
+        `message`: Alert message to send
+        `parent`: Formatted mobile phone number to send SMS alert to.
+                  None for land-line.
+        `recipients`: List of additinoal formatted phone numbers to send
+                      alerts to.
+        """
+        self.AlertDialog.Message.SetValue(str(message))
+        if parent != None:
+            self.AlertDialog.NotifyParent.SetLabel("SMS Parent: {0}".format(parent))
+            self.AlertDialog.NotifyParent.SetValue(True)
+            self.AlertDialog.NotifyParent.Enable()
+        else:
+            self.AlertDialog.NotifyParent.SetLabel("(Unavailable)")
+            self.AlertDialog.NotifyParent.SetValue(False)
+            self.AlertDialog.NotifyParent.Disable()
+        
+        self.AlertDialog.parent = parent
+        
+        self.AlertDialog.SMSRecipients.SetItems(recipients)
+        #~ for i in recipients:
+        self.AlertDialog.SMSRecipients.SetCheckedStrings(recipients)
+            
+        self.AlertDialog.NotifyTech.SetValue(True)
+        self.AlertDialog.NotifyAdmin.SetValue(True)
+        
+    def SendAlert(self, event):
+        #Read in data from form
+        #Create fork:
+            #TODO: Send growl/notifo/openLP alert, if applicable.
+            #Send SMS
+        button = event.GetEventObject()
+        panel = button.GetParent()
+        
+        message = panel.Message.GetValue()
+        if panel.NotifyParent.GetValue():
+            recipients = [ panel.parent ] #Parent number on SMS list
+        else:
+            recipients = []
+        recipients.append(panel.SMSRecipients.GetCheckedStrings())
+        
+        panel.Destroy() #Close panel
+        #TODO: Send alerts
+            #Get growl/openLP data for tech/activity admin
+            #Get phone number for tech/activity admin
+            #Get notifo keys/passes
+        notify.info("Alert Sent",
+                "Sent alert for {0}.".format(panel.data['paging']))
+        
+        
 
     def CloseAlert(self, event):
         self.AlertDialog.Destroy()
@@ -928,6 +1046,7 @@ class MyApp(wx.App):
         name = panel.FirstName.GetValue()  #Required
         surname = panel.Surname.GetValue() #Required
         phone = panel.Phone.GetValue()     #Required
+        carrier = panel.PhoneCarrier.GetSelection()
         invalid = False
         if name == '':
             panel.FirstName.SetBackgroundColour('red')
@@ -980,7 +1099,7 @@ class MyApp(wx.App):
 
         try:
             ref = self.db.Register(name, surname, phone, parent1, paging=pagingValue,
-                mobileCarrier=0, activity=activity['id'], room=room, grade=grade,
+                mobileCarrier=carrier, activity=activity['id'], room=room, grade=grade,
                 parent2=parent2, parentEmail=email, dob=DOB, medical=medical,
                 count=0, noParentTag=noParentTag, barcode=None,
                 picture=panel.photo, notes=notes)
@@ -1051,6 +1170,7 @@ class MyApp(wx.App):
         name = panel.FirstName.GetValue()  #Required
         surname = panel.Surname.GetValue() #Required
         phone = panel.Phone.GetValue()     #Required
+        carrier = panel.PhoneCarrier.GetSelection()
         invalid = False
         if name == '':
             panel.FirstName.SetBackgroundColour('red')
@@ -1099,12 +1219,18 @@ class MyApp(wx.App):
         index = self.RecordPanel.data['id']
         try:
             self.db.Update(index, name, surname, phone, parent1, paging=pagingValue,
-                mobileCarrier=0, activity=activity['id'], room=room, grade=grade,
+                mobileCarrier=carrier, activity=activity['id'], room=room, grade=grade,
                 parent2=parent2, parentEmail=email, dob=DOB, medical=medical,
                 count=0, noParentTag=noParentTag, barcode=None,
-                picture=panel.data['picture'], notes=notes)
+                picture=panel.data['picture'], notes=notes,
+                joinDate=panel.data['joinDate'], 
+                lastSeen=panel.data['lastSeen'])
             self.db.commit()
         except self.database.DatabaseError as e:
+            wx.MessageBox('The database was unable to commit this record.\n'
+                          'The error was: {0}'.format(e), 'Database Error',
+                          wx.OK | wx.ICON_ERROR)
+        except Error as e:
             wx.MessageBox('The database was unable to commit this record.\n'
                           'The error was: {0}'.format(e), 'Database Error',
                           wx.OK | wx.ICON_ERROR)
@@ -1155,7 +1281,7 @@ class MyApp(wx.App):
                                   wargs=(self.jobID, data, services,
                                          data['activity'], data['room']),
                                   jobID=self.jobID)
-        time.sleep(0.3)  #Give the database time to settle (sqlite3 thread-safe?)
+        time.sleep(0.6)  #Give the database time to settle (sqlite3 thread-safe?)
         return 0
 
     def _checkinProducer(self, jobID, data, services, activity, room):
@@ -1180,6 +1306,8 @@ class MyApp(wx.App):
         else:
             secure = None
             parentSecure = None
+            
+        print "Do checkin"
 
         #Check-in user into the database, using a new cursor to keep
         #  the program thread-safe.
@@ -1190,7 +1318,7 @@ class MyApp(wx.App):
         location = conf.config['config']['name']
         print services
         try:
-            cursor = db.spawnCursor()
+            #~ cursor = self.db.spawnCursor()
             self.db.DoCheckin(data['id'], services, expires, secure,
                 location, activity['name'], room)
             self.db.commit()
@@ -1546,6 +1674,7 @@ class MyApp(wx.App):
         name = self.VisitorPanel.FirstName.GetValue()  #Required
         surname = self.VisitorPanel.Surname.GetValue() #Required
         phone = self.VisitorPanel.Phone.GetValue()     #Required
+        carrier = self.VisitorPanel.PhoneCarrier.GetSelection()
         invalid = False
         if name == '':
             self.VisitorPanel.FirstName.SetBackgroundColour('red')
@@ -1583,22 +1712,6 @@ class MyApp(wx.App):
             noParentTag = not(activity['parentTag'])
         else:
             noParentTag = not(parentEnable)
-
-        print nametagEnable
-        print parentEnable
-        print name
-        print surname
-        print phone
-        print paging
-        print activity['name']
-        print room
-        print medical
-        print parent
-        print email
-        print newsletter
-        print expiration
-        print notifyExpires
-        print self.VisitorPanel.photo
 
         #Attempt to add record to database:
         try:
@@ -2208,8 +2321,9 @@ class MyApp(wx.App):
                 return
             code = self.db.GetStatus(data['id'], True)['code']
 
+            print (code, parent)
             if code.lower() == parent.lower():
-                print "Codes match.  Do check-out...."
+                self.DoCheckout()
             else:
                 print "CODES DO NOT MATCH!!"
 
@@ -2218,12 +2332,19 @@ class MyApp(wx.App):
             code = self.db.GetStatus(data['id'], True)['code']
 
             if hashlib.md5(parent).hexdigest()[:4] == code.lower():
-                print "Codes verify. Do check-out...."
-            else:
+                self.DoCheckout(data)
+            else: 
                 print "CODES DO NOT MATCH!!"
         else:
             print "Do check-out."
-
+            self.DoCheckout()
+            
+    def DoCheckout(self, data):
+        self.db.DoCheckout(data['id'])
+        self.HideAll()
+        self.ShowSearchPanel()
+        notify.info("Taxidi", "Checked out {0} successfully.".format(data['name']))
+        
 
     def parentPrompt(self):
         #TODO: make this big and prettier
@@ -2305,6 +2426,10 @@ class MyApp(wx.App):
         panel.Grade.SetValue(str(data['grade']))
         panel.Phone.SetValue(str(data['phone']))
         validate.PhoneFormat(panel.Phone) #Format the number if needed.
+        try:
+            panel.PhoneCarrier.SetSelection(int(data['mobileCarrier']))
+        except:
+            panel.PhoneCarrier.SetSelection(0)
         panel.Paging.SetValue(str(data['paging']))
         if data['dob'] == '' or data['dob'] == None:
             pass
@@ -2313,9 +2438,18 @@ class MyApp(wx.App):
             foreground = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT)
             panel.DOB.SetForegroundColour(foreground)
             #calculate age:
-            dob = date(*(time.strptime(data['dob'].encode('ascii'), '%Y-%m-%d')[0:3]))
+            
+            try: #Database provided date as string
+                dob = date(*(time.strptime(str(data['dob']).encode('ascii'), '%Y-%m-%d')[0:3]))
+            except TypeError:
+                #Database provided date as time/datetime object.
+                dob = date(*data['dob'])
             panel.AgeText.SetLabel(str(calculate_age(dob)))
-        panel.Activity.SetStringSelection(self.db.GetActivity(data['activity']))
+
+        try:
+            panel.Activity.SetStringSelection(self.db.GetActivity(data['activity']))
+        except TypeError:
+            panel.Activity.SetSelection(0)
         #Set the rooms accordingly:
         selection = panel.Activity.GetStringSelection()
         items = [ i['name'] for i in self.db.GetRoom(selection) ]
@@ -2362,21 +2496,31 @@ class MyApp(wx.App):
         self.RecordPanel.photo = data['picture']
         #For some reason trying to use '%c' as the format fails.
         try:
-            panel.ModifiedText.SetLabel(time.strftime('%d %b %Y', time.strptime(data['lastModified'])))
-        except ValueError: #Format of test data was wrong:
-            panel.ModifiedText.SetLabel(str(data['lastModified'][0:10]))
+            panel.ModifiedText.SetLabel(time.strftime('%d %b %Y', 
+                time.strptime(str(data['lastModified']), "%Y-%m-%dT%H:%M:%S")))
+        except ValueError: #FIXME Format of test data was wrong: (????)
+            panel.ModifiedText.SetLabel(str(data['lastModified'])[0:10])
+        try:
+            panel.ModifiedText.SetLabel(datetime.strftime(data['lastModified'], "%d %b %Y"))
+        except (ValueError, TypeError):
+            pass
         panel.ModifiedText.SetToolTipString(str(data['lastModified']))
         
         try:
             panel.CreatedText.SetLabel(time.strftime('%d %b %Y', 
                 time.strptime(data['joinDate'], "%Y-%m-%d")))
+        except TypeError:
+            panel.CreatedText.SetLabel(time.strftime('%d %b %Y',
+                time.strptime(str(data['joinDate']), '%Y-%m-%d')))
         except: #Date can't be determined, etc.
             panel.CreatedText.SetLabel('?')
         try:
             panel.LastSeenText.SetLabel(time.strftime('%d %b %Y',
-                time.strptime(data['lastSeen'], "%Y-%m-%d")))
+                time.strptime(str(data['lastSeen']), "%Y-%m-%d")))
         except:
-            panel.createdText.SetLabel('?')
+            panel.CreatedText.SetLabel('?')
+            
+        panel.CountText.SetLabel(str(data['count']))
             
         #~ if data['noParentTag']: self.ToggleStateOff(panel.ParentToggle)
         #Set barcode values:
@@ -2395,22 +2539,36 @@ class MyApp(wx.App):
             panel.CheckinButton.SetLabel('Check-in')
             panel.CheckinButton.Bind(wx.EVT_BUTTON, self.SaveRecord)
         elif status['status'] == taxidi.STATUS_CHECKED_IN:
+            if type(status['checkin']) is str:
+                checkin = datetime.strftime(datetime.strptime(str(status['checkin']), "%Y-%m-%dT%H:%M:%S"), "%H:%M:%S")
+            elif type(status['checkin']) is datetime:
+                checkin = datetime.strftime(status['checkin'], "%H:%M:%S")
             panel.StatusText.SetLabel(
                 "{0} - Checked-in at {1}".format(
                 rType,
-                datetime.strftime(datetime.strptime(status['checkin'], "%Y-%m-%dT%H:%M:%S"), "%H:%M:%S")))
+                checkin))
             panel.CheckinButton.Unbind(wx.EVT_BUTTON)
             panel.CheckinButton.SetLabel('Check-out')
             panel.CheckinButton.Bind(wx.EVT_BUTTON, self.OnCheckOut)
         elif status['status'] == taxidi.STATUS_CHECKED_OUT:
+            if type(status['checkout']) is str:
+                checkout = datetime.strftime(datetime.strptime(str(status['checkout']), "%Y-%m-%dT%H:%M:%S"), "%H:%M:%S")
+            elif type(status['checkout']) is datetime:
+                checkout = datetime.strftime(status['checkout'], "%H:%M:%S")
             panel.StatusText.SetLabel(
-                "{0} - Checked out at {1}".format(
-                rType,
-                datetime.strftime(datetime.strptime(status['checkout'], "%Y-%m-%dT%H:%M:%S"), "%H:%M:%S")))
+                "{0} - Checked out at {1}".format(rType, checkout))
             panel.CheckinButton.Unbind(wx.EVT_BUTTON)
             panel.CheckinButton.SetLabel('Check-in')
             panel.CheckinButton.Bind(wx.EVT_BUTTON, self.SaveRecord)
 
+        pane = self.BarcodePanel
+        pane.code1.SetValue('')
+        pane.code2.SetValue('')
+        pane.code3.SetValue('')
+        pane.code4.SetValue('')
+        pane.code5.SetValue('')
+        pane.code6.SetValue('')
+        #~ codes = self.db.GetBarcodes(
         for i in range(len(self.BarcodePanel.barcodes)):
             self.BarcodePanel.codes[i].SetValue(str(self.BarcodePanel.barcodes[i]))
         panel.Email.SetBackgroundColour(wx.NullColour)
@@ -2435,6 +2593,7 @@ class MyApp(wx.App):
     def BeginCheckinRoutine(self, event):
         self.MainMenu.Hide()
         self.ShowSearchPanel()
+        self.services = self.db.GetServices()
         self.SetServices()  #Setup the service selections
         #Setup printing if needed:
         import printing
@@ -2465,13 +2624,13 @@ class MyApp(wx.App):
         #Determine the current service and set it as the selection:
         for i in range(len(services)):
             if services[i]['day'] == date.isoweekday(today) or services[i]['day'] == 0:
-                delta = datetime.strptime(services[i]['endTime'], '%H:%M:%S') - datetime.strptime(now, '%H:%M:%S')
+                delta = datetime.strptime(str(services[i]['endTime']), '%H:%M:%S') - datetime.strptime(now, '%H:%M:%S')
                 if delta.days < 0:  #Service has ended
                     pass
                 if services[i]['time'] == '': #Assume All day
                     delta2 = datetime.strptime('00:00:00', '%H:%M:%S') - datetime.strptime(now, '%H:%M:%S')
                 else:
-                    delta2 = datetime.strptime(services[i]['time'], '%H:%M:%S') - datetime.strptime(now, '%H:%M:%S')
+                    delta2 = datetime.strptime(str(services[i]['time']), '%H:%M:%S') - datetime.strptime(now, '%H:%M:%S')
                 if delta.days == 0 and delta2.days < 0:
                     #Currently active service.  Set it as the selection.
                     return services[i]
@@ -2481,7 +2640,7 @@ class MyApp(wx.App):
     def SetServices(self):
 
         services = self.db.GetServices()
-        if len(services) == 0:
+        if len(self.services) == 0:
             if len(self.services) == 1 and \
                 self.services[0]['name'] == 'None Defined':
                 notify.warning('No Services', 'Please add a service '\
