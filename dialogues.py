@@ -10,6 +10,7 @@ import wx
 from wx import xrc
 import wx.gizmos as gizmos
 import wx.lib.masked as masked
+import datetime
 
 resourceCache = dict()
 
@@ -576,6 +577,130 @@ class EditServices(wx.Dialog):
 
 
 
+class HistoryDialog(wx.Dialog):
+    def __init__(self, parent, id, history=None, data=None):
+
+        if data != None:
+            title = 'Check-in History for {0} {1}'.format(data['name'], data['lastname'])
+        else:
+            title = 'Check-in History'
+        wx.Dialog.__init__(self, parent, id, title, (800,800))
+        box1 = wx.BoxSizer(wx.VERTICAL)
+        
+        toolbar = wx.ToolBar(self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TB_HORIZONTAL)
+        toolbar.AddLabelTool(10, '', wx.Bitmap("resources/icons/document-save-as-22.png"))
+        toolbar.AddLabelTool(20, '', wx.Bitmap("resources/icons/document-print-22.png"))
+        self.Bind(wx.EVT_TOOL, self.Save, id=10)
+        self.Bind(wx.EVT_TOOL, self.Print, id=20)
+        
+        
+        toolbar.AddSeparator()
+        
+        self.FilterCheck = wx.CheckBox(toolbar, wx.ID_ANY, "Filter Date:")
+        toolbar.AddControl(self.FilterCheck)
+        self.FilterDate = wx.DatePickerCtrl(toolbar, size=(120,-1),
+                                style = wx.DP_DROPDOWN
+                                      | wx.DP_SHOWCENTURY)
+        self.Bind(wx.EVT_CHECKBOX, self.OnDateFilter, self.FilterCheck)
+        self.Bind(wx.EVT_DATE_CHANGED, self.OnDateChanged, self.FilterDate)
+        toolbar.AddControl(self.FilterDate)
+                                      
+        toolbar.AddSeparator()
+        
+        toolbar.AddLabelTool(30, '', wx.Bitmap("resources/icons/window-close-22.png"))
+        self.Bind(wx.EVT_TOOL, self.quit, id=30)
+        toolbar.Realize()
+        box1.Add(toolbar, 0, wx.EXPAND, 5)
+        
+        self.Report = wx.ListCtrl( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LC_REPORT );
+        box1.Add(self.Report, 1, wx.EXPAND, 5)
+        self.SetSizer(box1)
+        self.Layout()
+        self.SetSize((800, 600))
+        self.Centre(wx.BOTH)
+        
+        self.Report.InsertColumn(0, 'Date', width=125)
+        self.Report.InsertColumn(1, 'Service', width=200)
+        self.Report.InsertColumn(2, 'Check-in', width=100)
+        self.Report.InsertColumn(3, 'Check-out', width=100)
+        self.Report.InsertColumn(4, 'Location', width=125)
+        self.Report.InsertColumn(5, 'Room', width=200)
+        
+        self.history = history
+        if history != None:
+            self.SetData(history)
+            
+    def SetData(self, history, date=None):
+        index = 0
+        for row in history:
+            if date != None: #With date filter
+                if row['date'] == date: 
+                    self.Report.InsertStringItem(index, datetime.datetime.strftime(row['date'], "%a %d %b %Y"))
+                    self.Report.SetStringItem(index, 1, row['service'])
+                    self.Report.SetStringItem(index, 2, datetime.datetime.strftime(row['checkin'], "%H:%M:%S"))
+                    self.Report.SetStringItem(index, 3, datetime.datetime.strftime(row['checkout'], "%H:%M:%S"))
+                    self.Report.SetStringItem(index, 4, row['location'])
+                    self.Report.SetStringItem(index, 5, row['room'])
+            else: #without
+                self.Report.InsertStringItem(index, datetime.datetime.strftime(row['date'], "%a %d %b %Y"))
+                self.Report.SetStringItem(index, 1, row['service'])
+                self.Report.SetStringItem(index, 2, datetime.datetime.strftime(row['checkin'], "%H:%M:%S"))
+                self.Report.SetStringItem(index, 3, datetime.datetime.strftime(row['checkout'], "%H:%M:%S"))
+                self.Report.SetStringItem(index, 4, row['location'])
+                self.Report.SetStringItem(index, 5, row['room'])
+            if index % 2:
+                self.Report.SetItemBackgroundColour(index, "white")
+            else:
+                self.Report.SetItemBackgroundColour(index, "grey")
+            index += 1
+            
+    def OnDateChanged(self, evt):
+        if self.FilterCheck.GetValue():
+            #Reload with filtered results:
+            date = _wxdate2pydate(evt.GetDate())
+            self.Report.DeleteAllItems()
+            self.SetData(self.history, date)
+        
+    def OnDateFilter(self, evt):
+        if evt.GetEventObject().GetValue():
+            date = _wxdate2pydate(self.FilterDate.GetValue())
+            self.Report.DeleteAllItems()
+            self.SetData(self.history, date)
+            
+        
+    def Save(self, evt):
+        dlg = wx.FileDialog(
+            self, message="Save file as ...", defaultDir='~', 
+            defaultFile="", 
+            wildcard="Comma Separated Values (*.csv)|*.csv|" \
+            "All files (*.*)|*.*", style=wx.SAVE )
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+            if path[-4:].lower() != '.csv':
+                path = path + '.csv'
+            f = open(path, 'w')
+            f.write('"date","service","checkin","checkout","room","location"\n')
+            for row in history:
+                f.write('"{0}","{1}","{2}","{3}","{4}","{5}"\n'.format(
+                        str(row['date']), row['service'], str(row['checkin']),
+                        str(row['checkout']), row['room'], row['location']))
+            f.close()
+            wx.MessageBox("File was saved as {0}".format(path), "Saved")
+        
+    def Print(self, evt):
+        pass
+        
+    def quit(self, evt):
+        self.EndModal(0)
+        
+def _wxdate2pydate(date):
+     import datetime
+     assert isinstance(date, wx.DateTime)
+     if date.IsValid():
+         ymd = map(int, date.FormatISODate().split('-'))
+         return datetime.date(*ymd)
+     else:
+         return None
 
 # --- Sample Usage ---
 if __name__ == '__main__':
@@ -586,17 +711,36 @@ if __name__ == '__main__':
     #Services management dialog:
     app = wx.PySimpleApp(0)
 
-    from dblib import sqlite
-    db = sqlite.Database('~/.taxidi/database/users.db')
-
-    dlg = EditServices(None, -1, db)
-    services = db.GetServices()
-    dlg.SetServices(services)
-
-    dlg.ShowModal()
-    db.commit()
+    #~ from dblib import sqlite
+    #~ db = sqlite.Database('~/.taxidi/database/users.db')
+#~ 
+    #~ dlg = EditServices(None, -1, db)
+    #~ services = db.GetServices()
+    #~ dlg.SetServices(services)
+#~ 
+    #~ dlg.ShowModal()
+    #~ db.commit()
 
     #changed = [i for i in dlg.GetServices() if i not in db.GetServices() or i not in dlg.GetServices()]
+    
+    import datetime
+    
+    history = [{'checkin': datetime.datetime(2012, 6, 16, 10, 19, 54, 133162),
+  'checkout': datetime.datetime(2012, 6, 16, 10, 25, 4, 653988),
+  'date': datetime.date(2012, 6, 16),
+  'location': 'Kiosk1',
+  'service': 'First Service',
+  'room': 'Butterflies'},
+ {'checkin': datetime.datetime(2012, 6, 16, 10, 19, 54, 135601),
+  'checkout': datetime.datetime(2012, 6, 16, 10, 25, 4, 653988),
+  'date': datetime.date(2012, 6, 16),
+  'location': 'Kiosk1',
+  'service': 'Second Service',
+  'room': 'Butterflies'}]
+
+    
+    dlg = HistoryDialog(None, wx.ID_ANY, history)
+    dlg.ShowModal()
 
     dlg.Destroy()
     app.MainLoop()

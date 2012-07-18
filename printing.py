@@ -356,9 +356,11 @@ class Nametag:
         html = self.date_re.sub(now.strftime("%a %d %b, %Y"), html)
         html = self.time_re.sub(now.strftime("%H:%M:%S"), html)
         html = self.room_re.sub(room, html)
-        html = self.first_re.sub(first, html)
-        html = self.last_re.sub(last, html)
-        html = self.medical_re.sub(medical, html)
+        #Fix for if database returns None instead of empty string:
+        if medical == None: medical = ''
+        html = self.first_re.sub(str(first), html)
+        html = self.last_re.sub(str(last), html)
+        html = self.medical_re.sub(str(medical), html)
         html = self.code_re.sub(code, html)
         html = self.secure_re.sub(secure, html)
 
@@ -643,10 +645,10 @@ class Main:
 if __name__ == '__main__':
 
     con = Main()
-    #~ con.nametag(theme='outfitters', room='Green Room', first='Johnothan',
-                #~ last='Churchgoer', code='O-9999',
-                #~ secure='5C55', barcode=True)
-    #~ con.preview()
+    con.nametag(theme='outfitters', room='Green Room', first='Johnothan',
+                last='Churchgoer', code='O-9999', medical=None,
+                secure='5C55', barcode=True)
+    con.preview()
     #~ con.printout(printer="Brother-QL-570")
 
     #con.volunteer(room='Jungle Room', first='Zac', last='Sturgeon', ministry='Tech')
@@ -654,9 +656,9 @@ if __name__ == '__main__':
     #con.preview()
     #con.cleanup()
 
-    con.parent(room='Green Room', first='Johnothan', last='Churchgoer',
-        code='O-9999', secure='9999:Z99', link='http://blahblahblah.com/church/taxidi/parent.cgi?id=12682862')
-    con.preview()
+    #~ con.parent(room='Green Room', first='Johnothan', last='Churchgoer',
+        #~ code='O-9999', secure='9999:Z99', link='http://blahblahblah.com/church/taxidi/parent.cgi?id=12682862')
+    #~ con.preview()
     #~ con.printout()
     #con.cleanup()
 

@@ -33,9 +33,13 @@ class SearchResultsPanel(wx.Panel):
     """
 
     #----------------------------------------------------------------------
-    def __init__(self, parent):
+    def __init__(self, parent, size=None):
         """Constructor"""
         wx.Panel.__init__(self, parent)
+        
+        if size != None:
+            self.SetSize(size)
+            self.Layout()
 
         self.font = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
         self.font.SetPointSize(16)
@@ -135,6 +139,8 @@ class SearchResultsPanel(wx.Panel):
                 #Set checkbox back to x (checked-out) and don't perform an action.
                 self.checkboxes[i].SetLabel(u'✘')
                 self.checkboxes[i].SetForegroundColour('#d42b1d') #replace with themeCheckOffColour
+                #Send event
+                #~ self.GetEventHandler().ProcessEvent(EVT_CHECKOUT)
             else:
                 #Just unset the label:
                 self.checkboxes[i].SetLabel('')
@@ -179,6 +185,10 @@ class SearchResultsPanel(wx.Panel):
             self.ultimateList.SetStringItem(i, 4, 'Checked-in')
             self.SetCellTextColour(i, 4, '#2F6617')
         elif self.results[i]['status'] == taxidi.STATUS_CHECKED_OUT:
+            print type(self.results[i]['checkout-time'])
+            if isinstance(self.results[i]['checkout-time'], datetime.datetime):
+                self.results[i]['checkout-time'] = \
+                    datetime.datetime.strftime(self.results[i]['checkout-time'], "%X")
             self.ultimateList.SetStringItem(i, 4,
                 'Checked-out\n%s' % self.results[i]['checkout-time'])
             self.SetCellTextColour(i, 4, wx.RED)
@@ -221,6 +231,9 @@ class SearchResultsPanel(wx.Panel):
                 self.SetCellTextColour(pos, 4, '#2F6617')
                 self.SetToggle(i, True)
             elif results[i]['status'] == taxidi.STATUS_CHECKED_OUT:
+                if isinstance(self.results[i]['checkout-time'], datetime.datetime):
+                    self.results[i]['checkout-time'] = \
+                        datetime.datetime.strftime(self.results[i]['checkout-time'], "%X")
                 self.ultimateList.SetStringItem(pos, 4,
                     'Checked-out\n%s' % results[i]['checkout-time'])
                 self.SetCellTextColour(pos, 4, wx.RED)
@@ -321,13 +334,13 @@ class MultiServicePanel(wx.Panel):
 
         sz = wx.BoxSizer(wx.HORIZONTAL)
         st = wx.StaticText(self, wx.ID_ANY, 'Select services, then press "OK"', wx.DefaultPosition, wx.DefaultSize, 0)
-        AcceptButton = wx.Button(self, wx.ID_OK, size=(160, -1))
-        CancelButton = wx.Button(self, wx.ID_CANCEL, size=(160, -1))
+        self.AcceptButton = wx.Button(self, wx.ID_OK, size=(160, -1))
+        self.CancelButton = wx.Button(self, wx.ID_CANCEL, size=(160, -1))
         
         sz.Add(st, 1, wx.ALL, 5)
         sz.AddStretchSpacer()
-        sz.Add(CancelButton, 1, wx.EXPAND | wx.ALL, 5)
-        sz.Add(AcceptButton, 1, wx.EXPAND | wx.ALL, 5)
+        sz.Add(self.CancelButton, 1, wx.EXPAND | wx.ALL, 5)
+        sz.Add(self.AcceptButton, 1, wx.EXPAND | wx.ALL, 5)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(sz, 1, wx.ALL | wx.EXPAND, 5)
@@ -400,7 +413,9 @@ class MultiServicePanel(wx.Panel):
                 if services[i]['day'] == date.isoweekday(today) or services[i]['day'] == 0:
                     #Show if day of week matches today's:
                     self.FormatItem(services[i], a)
-                    delta = datetime.datetime.strptime(services[i]['endTime'], '%H:%M:%S') - datetime.datetime.strptime(now, '%H:%M:%S')
+
+                    delta = datetime.datetime.strptime(str(services[i]['endTime']), '%H:%M:%S') - \
+                            datetime.datetime.strptime(now, '%H:%M:%S')
                     if delta.days < 0:  #Service has ended
                         self.SetCellTextColour(a, 1, 'grey')
                         if force: self.checkboxes[i].Disable()
@@ -408,7 +423,7 @@ class MultiServicePanel(wx.Panel):
                     if services[i]['time'] == '': #Assume All day
                         delta2 = datetime.datetime.strptime('00:00:00', '%H:%M:%S') - datetime.datetime.strptime(now, '%H:%M:%S')
                     else:
-                        delta2 = datetime.datetime.strptime(services[i]['time'], '%H:%M:%S') - datetime.datetime.strptime(now, '%H:%M:%S')
+                        delta2 = datetime.datetime.strptime(str(services[i]['time']), '%H:%M:%S') - datetime.datetime.strptime(now, '%H:%M:%S')
                     if delta.days == 0 and delta2.days < 0:
                         self.SetCellTextColour(a, 1, 'darkgreen')
                         self.SetToggle(a, True)
@@ -486,11 +501,26 @@ class MultiServicePanel(wx.Panel):
 class MultiServiceDialog(wx.Dialog):
     def __init__(self, parent, id, services):
         """Constructor"""
-        wx.Dialog.__init__(self, parent, id, size=(500, 400))
+        wx.Dialog.__init__(self, parent, id, size=(800, 500))
         self.InitUI()
+        if services != None:
+            self.SetServices(services)
+        
+    def InitUI(self):
+        self.panel = MultiServicePanel(self)
+        self.panel.CancelButton.Bind(wx.EVT_BUTTON, self.Cancel)
+        self.panel.AcceptButton.Bind(wx.EVT_BUTTON, self.Accept)
         
     def SetServices(self, services):
-        pass
+        self.panel.SetServices(services, filter=True)
+    
+    def Accept(self, event):
+        self.selected = self.panel.GetSelected()
+        self.EndModal(wx.ID_OK)
+    
+    def Cancel(self, event):
+        self.EndModal(wx.ID_CANCEL)
+        self.Close()
         
         
 
@@ -501,30 +531,44 @@ class TestFrame(wx.Frame):
     #----------------------------------------------------------------------
     def __init__(self):
         """Constructor"""
-        wx.Frame.__init__(self, None, title="UltimateListCtrl test", size=(1024, 558))
+        #~ wx.Frame.__init__(self, None, title="UltimateListCtrl test", size=(1024, 558))
+        
         #~ wx.Frame.__init__(self, None, title="UltimateListCtrl test", size=(500, 400))
         #~ panel = SearchResultsPanel(self)
         #~ panel.ShowResults(results)
-        panel = MultiServicePanel(self)
-        self.Show()
+        
+        #~ panel = MultiServicePanel(self)
+        #~ self.Show()
+        
         #~ from dblib import sqlite as database
         #~ db = database.Database("~/.taxidi/database/users.db")
         #~ panel.SetServices(db.GetServices(), True)
-        panel.SetServices([ {'id': 1,  'name': 'First Service', 'day': 2, 'time': '00:00:00', 'endTime': '00:09:00'},
-                             {'id': 2, 'name': 'Second Service', 'day': 2, 'time': '00:30:00', 'endTime': '00:45:00'},
-                             {'id': 3, 'name': 'Third Service', 'day': 0, 'time': '00:30:00', 'endTime': '01:59:59'},
-                             {'id': 4, 'name': 'Every day', 'day': 0, 'time': '00:00:00', 'endTime': '17:53:59'} ], True)
-        print panel.GetSelected()
+        #~ panel.SetServices([ {'id': 1,  'name': 'First Service', 'day': 2, 'time': '00:00:00', 'endTime': '00:09:00'},
+                             #~ {'id': 2, 'name': 'Second Service', 'day': 2, 'time': '00:30:00', 'endTime': '00:45:00'},
+                             #~ {'id': 3, 'name': 'Third Service', 'day': 0, 'time': '00:30:00', 'endTime': '01:59:59'},
+                             #~ {'id': 4, 'name': 'Every day', 'day': 0, 'time': '00:00:00', 'endTime': '17:53:59'} ], True)
+        #~ print panel.GetSelected()
+        
 
 
 #----------------------------------------------------------------------
 if __name__ == "__main__":
-    results = [ {'name':'Johnathan Churchgoer', 'activity':'Explorers',  'room':'Jungle Room', 'status':taxidi.STATUS_CHECKED_IN},
-                {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_CHECKED_IN},
-                {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_NONE},
-                {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_NONE},
-                {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_NONE},
-                {'name':'Joseph Flint',         'activity':'Outfitters', 'room':u'—',          'status':taxidi.STATUS_CHECKED_OUT, 'checkout-time':'11:46:34'} ]
+    #~ results = [ {'name':'Johnathan Churchgoer', 'activity':'Explorers',  'room':'Jungle Room', 'status':taxidi.STATUS_CHECKED_IN},
+                #~ {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_CHECKED_IN},
+                #~ {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_NONE},
+                #~ {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_NONE},
+                #~ {'name':'Jane Smith',           'activity':'Explorers',  'room':'Ocean Room',  'status':taxidi.STATUS_NONE},
+                #~ {'name':'Joseph Flint',         'activity':'Outfitters', 'room':u'—',          'status':taxidi.STATUS_CHECKED_OUT, 'checkout-time':'11:46:34'} ]
     app = wx.App(False)
-    frame = TestFrame()
+    
+    services = [ {'id': 1,  'name': 'First Service', 'day': 2, 'time': '00:00:00', 'endTime': '00:09:00'},
+                             {'id': 2, 'name': 'Second Service', 'day': 2, 'time': '00:30:00', 'endTime': '00:45:00'},
+                             {'id': 3, 'name': 'Third Service', 'day': 0, 'time': '00:30:00', 'endTime': '01:59:59'},
+                             {'id': 4, 'name': 'Every day', 'day': 0, 'time': '00:00:00', 'endTime': '17:53:59'} ]
+    dlg = MultiServiceDialog(None, wx.ID_ANY, services)
+    if dlg.ShowModal() == wx.ID_OK:
+        print dlg.selected
+        print [ i['name'] for i in dlg.selected ]
+    dlg.Destroy()
+    print "done"
     app.MainLoop()

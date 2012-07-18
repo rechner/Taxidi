@@ -206,7 +206,7 @@ class Database:
         self.execute("""CREATE TABLE users(id integer primary key,
             user text UNIQUE NOT NULL, hash text, salt text, admin integer,
             notifoUser text, notifoSecret text, scATR text,
-            leftHanded integer, ref integer);""")
+            leftHanded bool, ref integer);""")
         #activities
         self.execute("""CREATE TABLE activities(id integer primary key,
             name text, prefix text, securityTag text, securityMode text,
@@ -281,8 +281,8 @@ class Database:
             lastSeen = str(datetime.date.today())
 
         if lastModified == '':
-            #~ lastModified = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
-            lastModified = time.ctime() #should be plain ISO 8601 (close enough)
+            lastModified = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
+            #~ lastModified = time.ctime() #should be plain ISO 8601 (close enough)
 
         #escape and execute
         self.execute("""INSERT INTO data(name, lastname, dob, phone,
@@ -369,9 +369,21 @@ class Database:
                     None, code, location, activity, room), cursor)
             #~ except sqlite.Error as e:
                 #~ raise DatabaseError(UNKNOWN_ERROR, e.args[0])
+                
+        #~ #TODO: Incrament count, update last seen date.
+        count = self.execute("SELECT count FROM data WHERE id = ?;", (person,)).fetchone()
+        count = int(count) + 1
+        today = datetime.date.today()
+        self.execute("UPDATE data SET count = ?, lastSeen = ? WHERE id = ?;", 
+            (count, today, person))
 
-
-
+    def DoCheckout(self, person):
+        """
+        Marks a record as checked-out.
+        """
+        self.execute("UPDATE statistics SET checkout = ? WHERE id = ?;",
+            (time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime()), person))
+        self.commit()
 
     #return all entries (for browsing)
     def GetAll(self):
@@ -425,6 +437,8 @@ class Database:
                     ret['status'] = taxidi.STATUS_CHECKED_OUT
                     return ret
                 return taxidi.STATUS_CHECKED_OUT
+                
+    
 
     # === begin search functions ===
     def Search(self, query):
@@ -997,8 +1011,10 @@ if __name__ == '__main__':
     #~ db.DoCheckin(632, ('First Service', 'Second Service', 'Third Service'), '14:59:59', '5C55', 'Kiosk1', 'Explorers', 'Jungle Room')
 
     #~ print db.GetServices()
-    print db.GetStatus(799, True)
+    #~ print db.GetStatus(799, True)
     #~ print db.SearchSecure("C0W")[0]['id']
+    
+    #~ print db.GetActivities()
     db.commit()
 
     db.close()

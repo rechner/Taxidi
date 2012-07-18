@@ -13,7 +13,7 @@ class SMS:
         if notifyEnable:
             import local as notify
         else:
-            from local import Dummy as notify #Supress notifications
+            import local.Dummy as notify #Supress notifications
         self.notify = notify
 
         if driver == 'gvoice':
@@ -59,3 +59,8 @@ class LoginError(Exception):
     """
     Occurs when login credentials are incorrect.
     """
+
+
+if __name__ == '__main__':
+    sms = SMS(notifyEnable = True, user='journeytaxidi', passwd='aRY0VtKfhXtDDZeLbXTu')
+    sms.send(u"(317) 455-5832", "Mew")

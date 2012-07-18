@@ -685,7 +685,7 @@ class Database:
         a = self.execute('SELECT name FROM rooms WHERE id = %s;', (ref,))
         if a != None:
             try:
-                return a[0]
+                return a[0][0] #Return string
             except IndexError:
                 return ''
         else:
@@ -817,11 +817,21 @@ class Database:
         """
         Marks a record as checked-out.
         """
-        self.execute("UPDATE statistics SET checkout = %s WHERE id = %s;",
+        self.execute("UPDATE statistics SET checkout = %s WHERE person = %s AND \"date\" = date('now');",
             (datetime.datetime.now(), person))
         self.commit()
         
     # === end checkin functions ===
+    
+    def GetHistory(self, person):
+        """
+        Returns check-in history.
+        """
+        a = self.execute("SELECT date, service, checkin, checkout, room, location FROM statistics WHERE person = %s;", (person,))
+        ret = []
+        for i in a:
+            ret.append(self.dict_factory(i)) #return as a nested dictionary
+        return ret
     
     def GetStatus(self, ref, full=False):
         """
@@ -863,6 +873,8 @@ class Database:
                     ret['status'] = taxidi.STATUS_CHECKED_OUT
                     return ret
                 return taxidi.STATUS_CHECKED_OUT
+                
+    
 
 
 class DatabaseError(Exception):
@@ -941,17 +953,20 @@ if __name__ == '__main__':
                  #~ '14:59:59', '5C55', 'Kiosk1', 'Explorers', 'Jungle Room')
                  
     #Rooms:
-    db.AddRoom("Bunnies", 1)
-    db.AddRoom("Ducks", 1)
-    db.AddRoom("Kittens", 1)
-    db.AddRoom("Robins", 1)
-    db.AddRoom("Squirrels", 1)
-    db.AddRoom("Puppies", 1)
-    db.AddRoom("Caterpillars", 1)
-    db.AddRoom("Butterflies", 1)
-    db.AddRoom("Turtles", 1)
-    db.AddRoom("Frogs", 1)
-    db.AddRoom("Outfitters", 2)
+    #~ db.AddRoom("Bunnies", 1)
+    #~ db.AddRoom("Ducks", 1)
+    #~ db.AddRoom("Kittens", 1)
+    #~ db.AddRoom("Robins", 1)
+    #~ db.AddRoom("Squirrels", 1)
+    #~ db.AddRoom("Puppies", 1)
+    #~ db.AddRoom("Caterpillars", 1)
+    #~ db.AddRoom("Butterflies", 1)
+    #~ db.AddRoom("Turtles", 1)
+    #~ db.AddRoom("Frogs", 1)
+    #~ db.AddRoom("Outfitters", 2)
+    
+    #~ pprint.pprint(db.GetRoomByID(8))
+    pprint.pprint(db.GetHistory(1))
     
     db.commit()
 

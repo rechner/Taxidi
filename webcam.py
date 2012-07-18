@@ -343,7 +343,10 @@ class Storage:
         """
         Returns the full file path for a photo record (local).
         """
-        return os.path.join(self.target, str(int(record)).zfill(6) + '.jpg')
+        try:
+            return os.path.join(self.target, str(int(record)).zfill(6) + '.jpg')
+        except ValueError:
+            return None
 
     def getThumbnailPath(self, record):
         """

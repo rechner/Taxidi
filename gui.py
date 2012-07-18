@@ -40,6 +40,7 @@ class MyApp(wx.App):
         self.PhotoStorage = webcam.Storage() #Setup photo storage access
         self.jobID = 0 #jobID counter for forking print routine
         self.EmailJobID = 0 #jobID counter for sending email notifications
+        self.multiJobID = 0 #For multiple check-in's.
 
         os.kill(child_pid, signal.SIGKILL)  #Close the splash
         #Setup error handling:
@@ -649,12 +650,14 @@ class MyApp(wx.App):
                 'EmergencyContactButton')
             pane.HistoryButton = xrc.XRCCTRL(pane, 'HistoryButton')
             pane.DeleteButton = xrc.XRCCTRL(pane, 'DeleteButton')
+            pane.PrintNametagButton = xrc.XRCCTRL(pane, 'ReprintNametag')
 
             pane.ProfilePicture.Bind(wx.EVT_BUTTON, self.ShowPhotoPanel)
             pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseRecordPanel)
             pane.NametagToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
             pane.ParentToggle.Bind(wx.EVT_TOGGLEBUTTON, self.ToggleState)
             pane.CheckinButton.Bind(wx.EVT_BUTTON, self.SaveRecord)
+            pane.MultiServiceButton.Bind(wx.EVT_BUTTON, self.SaveRecord)
             pane.SaveButton.Bind(wx.EVT_BUTTON, self.SaveRecord)
             pane.AlertButton.Bind(wx.EVT_BUTTON, self.ShowAlertDialog)
             pane.BarcodeButton.Bind(wx.EVT_BUTTON, self.showBarcodePanel)
@@ -667,7 +670,33 @@ class MyApp(wx.App):
             pane.Phone.Bind(wx.EVT_TEXT, self.FormatPhoneLive)
             pane.FirstName.Bind(wx.EVT_TEXT, self.ResetBackgroundColour)
             pane.Surname.Bind(wx.EVT_TEXT, self.ResetBackgroundColour)
+            pane.HistoryButton.Bind(wx.EVT_BUTTON, self.ShowHistory)
             pane.DeleteButton.Bind(wx.EVT_BUTTON, self.OnDeleteRecord)
+            pane.PrintNametagButton.Bind(wx.EVT_BUTTON, self.PrintNametag)
+            
+    def ShowHistory(self, event):
+        panel = event.GetEventObject().GetParent()
+        history = self.db.GetHistory(panel.data['id'])
+        dlg = dialogues.HistoryDialog(self.frame, wx.ID_ANY, history, panel.data)
+        dlg.ShowModal()
+        #~ dlg.Destroy()  #FIXME: This causes a segfault for some reason
+        
+    def PrintNametag(self, event):
+        panel = event.GetEventObject().GetParent()
+        nametagEnable = panel.NametagToggle.GetValue()
+        parentEnable = panel.ParentToggle.GetValue()
+        name = panel.FirstName.GetValue()  #Required
+        surname = panel.Surname.GetValue() #Required
+        paging = panel.Paging.GetValue()     #Required
+        medical = panel.Medical.GetValue()
+        activity = self.activities[panel.Activity.GetSelection()]
+        data = { 'id': panel.data['id'], 'name': name, 'surname': surname,
+                     'paging': paging, 'medical': medical,
+                     'room': panel.Room.GetStringSelection(),
+                     'activity': activity, 'nametag': nametagEnable,
+                     'parentTag': parentEnable }
+        self.DoCheckin((self.service['name'],), data, printOnly=True)
+        notify.info("Re-printing nametags, please wait....", "Taxidi")
 
     def ShowPhotoPanel(self, event):
         self.DisplayPhotoPanel.ParentObject = event.GetEventObject().GetParent()
@@ -752,6 +781,8 @@ class MyApp(wx.App):
         self.AlertDialog.data = parent.data
         self.AlertDialog.activity = self.activities[parent.data['activity']-1]
         message = self.AlertDialog.activity['alertText']
+        if message == None:
+            message = ""
         message = message.replace('{code}', parent.data['paging'])
         message = message.replace('{name}', parent.data['name'])
         message = message.replace('{lastname}', parent.data['lastname'])
@@ -813,10 +844,49 @@ class MyApp(wx.App):
             #Get growl/openLP data for tech/activity admin
             #Get phone number for tech/activity admin
             #Get notifo keys/passes
-        notify.info("Alert Sent",
-                "Sent alert for {0}.".format(panel.data['paging']))
+        notify.info("Sending Alert",
+                "Sending alert for {0}.".format(panel.data['paging']))
+                
+        if panel.NotifyTech.GetValue(): #Notify tech booth
+            #Notify via growl and/or notifo:
+            if conf.as_bool(conf.config['notifications']['notifo']):
+                #Use notifo:
+                d = {'msg': message, 'title': 'Nursery Alert',
+                     'label': 'Taxidi',
+                     'uri': conf.config['notifications']['notifyURI'] }
+                self._notifoProducer(None, d)
+                
+        #Send SMS alert to recipients
+        self._smsProducer(None, recipients, message)
+            
+    def _smsProducer(self, jobID, recipients, message):
+        if hasattr(self, 'smsDriver') == False:
+            from notify import sms
+            try:
+                self.smsDriver = sms.SMS(notifyEnable=True, 
+                                     user=conf.config['notifications']['email'], 
+                                     passwd=conf.config['notifications']['password'])
+            except sms.LoginError:
+                notify.error("Notification Error", "Unable to login to GoogleVoice.")
+                return jobID
+        self.smsDriver.sendMany(recipients, message)
+        return jobID
+                
+    def _notifoProducer(self, jobID, d):
+        from notify import notifo
+        key = conf.config['notifications']['notifoKey']
+        secret = conf.config['notifications']['notifoSecret']
         
+        note = notifo.Notifo(key, secret)
+        ret = note.sendNotification(d)
+        if ret < 0:
+            notify.error("Notifo error",
+                         "Unable to send alert to tech booth via notifo.")
+                         
+        return jobID
         
+    def _notifoConsumer(self, delayedResult):
+        pass
 
     def CloseAlert(self, event):
         self.AlertDialog.Destroy()
@@ -1255,20 +1325,238 @@ class MyApp(wx.App):
         panel.photo = None #Prevent the saved photo from being deleted later
 
         if button == panel.CheckinButton:  #Don't close the panel yet, call checkin/printing thread:
-            print "Check-in routine....."
             data = { 'id': index, 'name': name, 'surname': surname,
                      'paging': pagingValue, 'medical': medical,
                      'room': panel.Room.GetStringSelection(),
                      'activity': activity, 'nametag': nametagEnable,
                      'parentTag': parentEnable }
             self.DoCheckin((self.service['name'],), data)
-
+            
+        if button == panel.MultiServiceButton:
+            #Prompt the user for services selection:
+            self.services = self.db.GetServices()
+            dlg = SearchResultsList.MultiServiceDialog(self.frame, wx.ID_ANY, self.services)
+            if dlg.ShowModal() == wx.ID_OK:
+                print "DEBUG"
+                print dlg.selected
+                print [ i ['name'] for i in dlg.selected ]
+                if dlg.selected != []: #Make sure something's selected
+                    services = [ i['name'] for i in dlg.selected ]
+                    data = { 'id': index, 'name': name, 'surname': surname,
+                         'paging': pagingValue, 'medical': medical,
+                         'room': panel.Room.GetStringSelection(),
+                         'activity': activity, 'nametag': nametagEnable,
+                         'parentTag': parentEnable }
+                    self.DoCheckin(services, data)
+                else:
+                    notify.info("Checkin incomplete", "No services selected.")
+                    dlg.Destroy()
+                    return
+            else:
+                dlg.Destroy()
+                return
+            dlg.Destroy()
+            
         self.CloseRecordPanel(None)
         if self.ResultsPanel.opened:
             #Reload the query:
             self.OnSearch(None)
+    
+    def OnMultiCheckin(self, event):
+        checked = self.ResultsList.GetSelected() #Index of checked items
+        
+        #Remove those already marked as checked-in.
+        for i in checked:
+            if self.ResultsList.results[i]['status'] == taxidi.STATUS_CHECKED_IN:
+                checked.remove(i)
+            else:
+                self.ResultsList.results[i]['status'] = taxidi.STATUS_CHECKED_IN
+                self.ResultsList.UpdateStatus(i)
+        
+        #Convert them to explicit database id references
+        selected = [ self.ResultsList.results[i]['id'] for i in checked ]
+        
+        #Convert references into full data dictionary useable by check-in producer
+        fullResults =  []
+        for row in self.results:
+            for i in selected:
+                if i == row['id']:
+                    fullResults.append(row)
+                    
+        #Perform check-in on database and printing.
+        self.DoMultiCheckin((self.service['name'],), fullResults)
+        
+        #Close the result panel:
+        self.CloseResults(None)
+        
+    def OnMultiCheckinMultiService(self, event):
+        #^ This needs a better method name
+        
+        #Get the selected items.
+        checked = self.ResultsList.GetSelected() #Index of checked items
+        
+        #Remove those already marked as checked-in.
+        for i in checked:
+            if self.ResultsList.results[i]['status'] == taxidi.STATUS_CHECKED_IN:
+                checked.remove(i)
+            else:
+                self.ResultsList.results[i]['status'] = taxidi.STATUS_CHECKED_IN
+                self.ResultsList.UpdateStatus(i)
+                
+        #Stop if nothing's selected:
+        if len(checked) == 0:
+            return
+        
+        #Convert them to explicit database id references
+        selected = [ self.ResultsList.results[i]['id'] for i in checked ]
+        
+        #Convert references into full data dictionary useable by check-in producer
+        fullResults =  []
+        for row in self.results:
+            for i in selected:
+                if i == row['id']:
+                    fullResults.append(row)
+        
+        #Prompt the user for services selection:
+        self.services = self.db.GetServices()
+        dlg = SearchResultsList.MultiServiceDialog(self.frame, wx.ID_ANY, self.services)
+        if dlg.ShowModal() == wx.ID_OK:
+            if dlg.selected != []: #Make sure something's selected
+                #Selected services as list for use by check-in producer
+                services = [ i['name'] for i in dlg.selected ]
+                print "services ", services
+                
+                #Perform check-in on database and printing.
+                self.DoMultiCheckin(services, fullResults)
+            else:
+                notify.info("Checkin incomplete", "No services selected.")
+                dlg.Destroy()
+                return
+        else:
+            dlg.Destroy()
+            return
+        dlg.Destroy()
+        
+        #Close the result panel:
+        self.CloseResults(None)
+            
+    def DoMultiCheckin(self, services, data):
+        self.multiJobID += 1
+        delayedresult.startWorker(self._multiCheckinConsumer, self._multiCheckinProducer,
+                                  wargs=(self.multiJobID, data, services),
+                                  jobID=self.multiJobID)
+        time.sleep(0.6)
+        return 0
+        
+    def _multiCheckinConsumer(self, delayedResult):
+        jobID = delayedResult.getJobID()
+        assert jobID == self.multiJobID
+        try:
+            result = delayedResult.get()
+        except Exception, exc:
+            notify.error("Thread Error", "Result for job %s raised exception: %s" % (jobID, exc) )
+            raise
+            return
+        
+    def _multiCheckinProducer(self, jobID, data, services):
+        #Note: activity is a dictionary
+        #Note: dictionary keys match database, not _checkinProducer()
+        #Get secure code, if needed
+        self.activities = self.db.GetActivities()
+        trash = []
+        for row in data:
+            print row['activity']
+            activity = self.activities[row['activity']-1]
+            room = self.db.GetRoomByID(row['room'])
+            
+            if activity['securityTag']:
+                if conf.as_bool(conf.config['config']['secureCodeRemote']):
+                    #Use remote
+                    code_generator = taxidi.SecureCode(conf.config['config']['secureCodeURI'])
+                else:
+                    code_generator = taxidi.SecureCode() #Use local generator
+                secure = code_generator.request() #Draw a code
+                del code_generator #TODO: put generator initialization in BeginCheckinRoutine
+    
+                #Hash secure mode if needed
+                if activity['securityMode'].lower() == 'simple':
+                    parentSecure = secure
+                elif activity['securityMode'].lower() == 'md5':
+                    parentSecure = secure
+                    import hashlib
+                    secure = hashlib.md5(secure).hexdigest()[:4].upper()
+            else:
+                secure = None
+                parentSecure = None
+    
+            #Check-in user into the database, using a new cursor to keep
+            #  the program thread-safe.
+            if activity['autoExpire']:
+                expires = self.services[-1]['endTime']
+            else:
+                expires = None
+            location = conf.config['config']['name']
+            try:
+                #~ cursor = self.db.spawnCursor()
+                self.db.DoCheckin(row['id'], services, expires, secure,
+                    location, activity['name'], room)
+                self.db.commit()
+            except self.database.DatabaseError as e:
+                notify.error("Database Error", "A database error occurred " \
+                    "while trying to check-in {0}.  Please check the database "\
+                    "connection (Check-in was aborted).".format(data['name']))
+                raise
+                
+            #Do printing
+            if activity['nametagEnable'] == True:
+                if secure == None:
+                    barcode = False
+                else:
+                    barcode = True
+                #Generate the nametag:
+                self.printing.nametag(theme=activity['nametag'], room=room,
+                                      first=row['name'], last=row['lastname'],
+                                      medical=row['medical'], code=row['paging'],
+                                      secure=secure, barcode=barcode)
+                if conf.as_bool(conf.config['printing']['preview']):
+                    #Open print preview
+                    self.printing.preview()
+                    trash.append(self.printing.pdf) #Delete it later
+                if conf.as_bool(conf.config['printing']['enable']):
+                    if conf.config['printing']['printer'] == '':
+                        self.printing.printout() #Use default printer
+                    else:
+                        #TODO: do validation against printer name.
+                        self.printing.printout(printer=conf.config['printing']['printer'])
+    
+    
+            if activity['parentTagEnable']: #Print parent tag if needed:
+                if secure != None:
+                    barcode = False
+                else:
+                    barcode = True
+                link = activity['parentURI']
+                self.printing.parent(theme=activity['nametag'], room=room,
+                                     first=row['name'], last=row['lastname'],
+                                     code=row['paging'], secure=parentSecure,
+                                     link=link)
+                if conf.as_bool(conf.config['printing']['preview']):
+                    #Open preview
+                    self.printing.preview()
+                    trash.append(self.printing.pdf)
+                #Do printing if needed
+                if conf.as_bool(conf.config['printing']['enable']):
+                    if conf.config['printing']['printer'] == '':
+                        self.printing.printout() #Use default printer
+                    else:
+                        #TODO: do validation against printer name.
+                        self.printing.printout(printer=conf.config['printing']['printer'])
 
-    def DoCheckin(self, services, data):
+        wx.CallLater(5000, self.printing.cleanup, trash) #Delete temporary files later
+                
+        return jobID
+    
+    def DoCheckin(self, services, data, printOnly=False):
         """
         This method is for checking in one person.
         'data' is a dictionary containing the following keys: 'id', 'name',
@@ -1279,12 +1567,12 @@ class MyApp(wx.App):
         self.jobID += 1
         delayedresult.startWorker(self._checkinConsumer, self._checkinProducer,
                                   wargs=(self.jobID, data, services,
-                                         data['activity'], data['room']),
+                                         data['activity'], data['room'], printOnly),
                                   jobID=self.jobID)
         time.sleep(0.6)  #Give the database time to settle (sqlite3 thread-safe?)
         return 0
 
-    def _checkinProducer(self, jobID, data, services, activity, room):
+    def _checkinProducer(self, jobID, data, services, activity, room, printOnly=False):
         #Note: activity is a dictionary
         #Get secure code, if needed
         if activity['securityTag']:
@@ -1306,8 +1594,6 @@ class MyApp(wx.App):
         else:
             secure = None
             parentSecure = None
-            
-        print "Do checkin"
 
         #Check-in user into the database, using a new cursor to keep
         #  the program thread-safe.
@@ -1316,17 +1602,17 @@ class MyApp(wx.App):
         else:
             expires = None
         location = conf.config['config']['name']
-        print services
-        try:
-            #~ cursor = self.db.spawnCursor()
-            self.db.DoCheckin(data['id'], services, expires, secure,
-                location, activity['name'], room)
-            self.db.commit()
-        except self.database.DatabaseError as e:
-            notify.error("Database Error", "A database error occurred " \
-                "while trying to check-in {0}.  Please check the database "\
-                "connection (Check-in was aborted).".format(data['name']))
-            raise
+        if not printOnly:
+            try:
+                #~ cursor = self.db.spawnCursor()
+                self.db.DoCheckin(data['id'], services, expires, secure,
+                    location, activity['name'], room)
+                self.db.commit()
+            except self.database.DatabaseError as e:
+                notify.error("Database Error", "A database error occurred " \
+                    "while trying to check-in {0}.  Please check the database "\
+                    "connection (Check-in was aborted).".format(data['name']))
+                raise
 
         #Do printing
         trash = []
@@ -1387,7 +1673,38 @@ class MyApp(wx.App):
             return
 
     def OnListCheckout(self, event):
-        print event.data
+        #Do checkout
+        #~ print event.data
+        data = event.data
+        self.activities = self.db.GetActivities()
+        for act in self.activities:
+            if data['activity'] == act['name']:
+                activity = act
+        
+        if activity['securityMode'].lower() == 'simple':
+            parent = self.parentPrompt()
+            if parent == None:
+                return
+            code = self.db.GetStatus(data['id'], True)['code']
+
+            print (code, parent)
+            if code.lower() == parent.lower():
+                self.DoCheckout(data, hold=True)
+            else:
+                print "CODES DO NOT MATCH!!"
+
+        elif activity['securityMode'].lower() == 'md5':
+            parent = self.parentPrompt()
+            code = self.db.GetStatus(data['id'], True)['code']
+
+            if hashlib.md5(parent).hexdigest()[:4] == code.lower():
+                self.DoCheckout(data, hold=True)
+            else: 
+                print "CODES DO NOT MATCH!!"
+        else:
+            print "Do check-out."
+            self.DoCheckout(data, hold=True)
+
 
     def setupResultsList(self):
         u"""
@@ -1444,6 +1761,8 @@ class MyApp(wx.App):
         self.ResultsControls.Photo.Bind(wx.EVT_BUTTON, self.ShowPhotoPanel)
         self.ResultsControls.Close.Bind(wx.EVT_BUTTON, self.CloseResults)
         self.ResultsControls.Display.Bind(wx.EVT_BUTTON, self.DisplaySelectedRecord)
+        self.ResultsControls.CheckIn.Bind(wx.EVT_BUTTON, self.OnMultiCheckin)
+        self.ResultsControls.MultiService.Bind(wx.EVT_BUTTON, self.OnMultiCheckinMultiService)
 
         #Create statictexts:
         self.ResultsControls.Text = wx.StaticText(self.ResultsControls,
@@ -1840,11 +2159,13 @@ class MyApp(wx.App):
             panel.Hide() #Hide it for now
             if panel.data['picture'] != None:
                 #re-take; overwrite the old photo.
+                if panel.data['picture'] == '':
+                    panel.data['picture'] = None
                 try:
                     f = open(self.PhotoStorage.getImagePath(panel.data['picture']))
                     f.close()
                     self.WebcamPanel.SetOverwrite(panel.data['picture'])
-                except IOError:
+                except:
                     self.WebcamPanel.SetOverwrite(None)
             #Show the webcam input panel, setting call-back functions:
             self.ShowWebcamPanel(self.PanelPhotoCancel, \
@@ -2282,6 +2603,7 @@ class MyApp(wx.App):
             self.ResultsControls.CheckIn.Disable()  #Disable actions (nothing's selected)
             self.ResultsControls.Display.Disable()
             self.ResultsControls.MultiService.Disable()
+            self.results = results #Remember original query results
             self.ResultsList.results = self.FormatResults(results)
             self.ResultsList.ShowResults(self.ResultsList.results)
 
@@ -2323,7 +2645,7 @@ class MyApp(wx.App):
 
             print (code, parent)
             if code.lower() == parent.lower():
-                self.DoCheckout()
+                self.DoCheckout(data)
             else:
                 print "CODES DO NOT MATCH!!"
 
@@ -2339,10 +2661,12 @@ class MyApp(wx.App):
             print "Do check-out."
             self.DoCheckout()
             
-    def DoCheckout(self, data):
+    def DoCheckout(self, data, hold=False): #hold=True will not close the panel when done.
         self.db.DoCheckout(data['id'])
-        self.HideAll()
-        self.ShowSearchPanel()
+        self.db.commit()
+        if hold == False:
+            self.HideAll()
+            self.ShowSearchPanel()
         notify.info("Taxidi", "Checked out {0} successfully.".format(data['name']))
         
 

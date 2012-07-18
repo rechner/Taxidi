@@ -12,12 +12,15 @@ class Dummy:
     """
     Dummy class to supress notifications with.
     """
+    @staticmethod
     def warning(title, message):
         pass
-        
+    
+    @staticmethod    
     def error(title, message):
         pass 
-        
+    
+    @staticmethod    
     def info(title, message):
         pass
 
@@ -34,7 +37,7 @@ def warning(title, message):
     if enable:
         n = pynotify.Notification(title, message, "dialog-warning")
         n.set_timeout(3000) #Don't show it for too long
-        n.set_urgency(pynotify.URGENCY_LOW)
+        n.set_urgency(pynotify.URGENCY_CRITICAL)
         n.show()
 
 def error(title, message):
