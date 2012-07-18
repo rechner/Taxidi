@@ -2034,7 +2034,7 @@ class MyApp(wx.App):
 
         #Attempt to add record to database:
         try:
-            self.db.Register(name, surname, phone, parent, paging=paging,
+            ref = self.db.Register(name, surname, phone, parent, paging=paging,
                 mobileCarrier=0, activity=activity['id'], room=room,
                 parentEmail=email, medical=medical, visitor=True,
                 expiry=expiration, noParentTag=noParentTag, barcode=None,
@@ -2048,8 +2048,14 @@ class MyApp(wx.App):
 
             return 0  #Don't close the panel
 
-        #Do printing if needed:
-
+        #Do printing if needed: (And checkin!)
+        activity = self.activities[panel.Activity.GetSelection()]
+        data = {'id': ref, 'name': name, 'surname': surname, 
+                'paging': paging, 'medical': medical, 
+                'activity': activity, 
+                'room': self.VisitorPanel.Room.GetStringSelection(),
+                'nametag': nametagEnable, 'parentTag': parentEnable }
+        self.DoCheckin((self.service['name'],), data)
 
         #Cleanup and close:
         self.VisitorPanel.photo = None
