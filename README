@@ -34,4 +34,11 @@ Additional guidelines and information can be found at:
 	- https://jkltech.net/taxidi/
 	- https://jkltech.net/taxidi/wiki/
 	- https://github.com/jkltechinc/Taxidi
+
+Dependancies:
+========================================================================
+python-configobj
+pyBarcode - http://pypi.python.org/pypi/pyBarcode/
+PIL
+wkhtmltopdf
 	

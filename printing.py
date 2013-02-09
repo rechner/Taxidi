@@ -282,7 +282,8 @@ class Nametag:
             self.log.error(e)
             self.log.error("{0} contains no [default] section and is invalid."
                 .format(inifile))
-            raise KeyError
+            raise KeyError("{0} contains no [default] section and is invalid."
+                .format(inifile))
         del default
         return config
 
