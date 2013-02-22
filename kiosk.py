@@ -1,21 +1,39 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
+#TODO: (BUG, LOW PRIORITY): Fix size issue on screens > (1024x786)
+
 #Global imports
 import wx
-import conf
 import datetime
 from datetime import date
 import time
 import subprocess
 import wx.lib.delayedresult as delayedresult
 import hashlib
+from optparse import OptionParser #for CLI options
 
 #Set locale to system default (for date/time format):
 import locale
 locale.setlocale(locale.LC_ALL, '')
 
+#parse command line:
+parser = OptionParser(usage="Usage: %prog [options]")
+parser.add_option("--verbose", action="store_true", 
+                  dest="verbose", default=False,
+                  help="Enable verbose logging to console")
+parser.add_option("-q", "--quiet", action="store_false", 
+                  dest="verbose", help="Supress output to console")
+parser.add_option("-f", "--fullscreen", action="store_true",
+                  dest="fullscreen", help="Force opening in fullscreen")
+parser.add_option("-w", "--windowed", action="store_false",
+                  dest="fullscreen", help="Force opening in a window")
+parser.add_option("-l", "--location", dest="location",
+                  help="Name of this kiosk (for reporting)")
+(opts, args) = parser.parse_args()
+
 #Local imports
+import conf
 import taxidi
 import SearchResultsList
 import webcam #for storage class
@@ -123,8 +141,13 @@ class SearchPanel(wx.Panel):
         panel.Layout()
         
     def ShowKeyboard(self, event):
-        subprocess.Popen(('/usr/bin/onboard', '-x', '0', 
+        try:
+            subprocess.Popen(('/usr/bin/onboard', '-x', '0', 
                           '-y', '470', '-s', '1024x300'))
+        except OSError:
+            print "Onboard is not installed.  Unable to open keyboard"
+            notify.warning('Onboard not installed', 
+                'Unable to open on-screen keyboard')
         self.Search.SetFocus()
         
 
@@ -276,11 +299,52 @@ class ActionPanel(wx.Panel):
         panel = self
         size = panel.GetParent().GetSize()
         panel.CentreOnParent(dir=wx.BOTH)
-        panel.SetPosition(( int((size[0]-1024)/2), 0 ))
+        #~ panel.SetPosition(( int((size[0]-1024)/2), 0 ))
         #~ panel.bitmap.SetPosition(( int((size[0]-1024)/2), 0 ))
         panel.SetSize((1024, 768))
         panel.Layout()
         
+
+class BirthdayPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        
+        self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)        
+        #Background Image
+        self.wximg = wx.Bitmap("resources/themes/air/birthday.png")
+        self.CloseButton = wx.Button(self, wx.ID_CLOSE, "", size=(300,50), pos=(362,650))        
+        
+        self.SetSize((1024, 768))
+        self.Layout()
+        self.Bind(wx.EVT_SIZE, self.on_size)
+        self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
+        
+    def on_size(self, event):
+        event.Skip()
+        panel = event.GetEventObject()
+        panel = self
+        size = panel.GetParent().GetSize()
+        panel.CentreOnParent(dir=wx.BOTH)
+        #~ panel.SetPosition(( int((size[0]-1024)/2), 0 ))
+        #~ panel.bitmap.SetPosition(( int((size[0]-1024)/2), 0 ))
+        panel.SetSize((1024, 768))
+        panel.Layout()
+
+    #proper method as pulled from blog.pythonlibrary.org
+    def OnEraseBackground(self, event):
+        """
+        Add a picture to the background
+        """
+        # yanked from ColourDB.py
+        dc = event.GetDC()
+ 
+        if not dc:
+            dc = wx.ClientDC(self)
+            rect = self.GetUpdateRegion().GetBox()
+            dc.SetClippingRect(rect)
+        dc.Clear()
+        dc.DrawBitmap(self.wximg, 0, 0)
+
         
 class ResultsPanel(wx.Panel):
     def __init__(self, parent):
@@ -363,7 +427,7 @@ class ResultsPanel(wx.Panel):
         panel = self
         size = panel.GetParent().GetSize()
         panel.CentreOnParent(dir=wx.BOTH)
-        panel.SetPosition(( int((size[0]-1024)/2), 0 ))
+        #~ panel.SetPosition(( int((size[0]-1024)/2), 0 ))
         #~ panel.bitmap.SetPosition(( int((size[0]-1024)/2), 0 ))
         panel.SetSize((1024, 768))
         panel.Layout()
@@ -425,7 +489,10 @@ class KioskApp(wx.App):
     def OnInit(self):
         #Setup the frame:
         self.frame = wx.Frame(None, size=wx.DisplaySize())
-        if conf.as_bool(conf.config['interface']['fullscreen']):
+        if opts.fullscreen is None:
+            if conf.as_bool(conf.config['interface']['fullscreen']):
+                self.frame.ShowFullScreen(True)
+        elif opts.fullscreen:
             self.frame.ShowFullScreen(True)
         self.frame.SetBackgroundColour(themeBackgroundColour)
         
@@ -433,10 +500,12 @@ class KioskApp(wx.App):
         self.SearchPanel = SearchPanel(self.frame)
         self.ActionPanel = ActionPanel(self.frame)
         self.ResultsPanel = ResultsPanel(self.frame)
+        self.BirthdayPanel = BirthdayPanel(self.frame)
         
         #Hide all except for search:
         self.ActionPanel.Hide()
         self.ResultsPanel.Hide()
+        self.BirthdayPanel.Hide()
         
         #Handle resizing the frame:
         self.frame.Bind(wx.EVT_SIZE, self._on_size)
@@ -456,6 +525,9 @@ class KioskApp(wx.App):
         self.ResultsPanel.CancelButton.Bind(wx.EVT_BUTTON, self.ResultsPanelCancel)
         self.ResultsPanel.CheckinButton.Bind(wx.EVT_BUTTON, self.OnMultiCheckin)
         self.ResultsPanel.MultiServiceButton.Bind(wx.EVT_BUTTON, self.OnMultiCheckinMultiService)
+        
+        #Bind button actions (BirthdayPanel):
+        self.BirthdayPanel.CloseButton.Bind(wx.EVT_BUTTON, self.BirthdayPanelClose)
         
         #Show the frame:
         self.frame.Show()
@@ -514,6 +586,7 @@ class KioskApp(wx.App):
         if conf.config['database']['driver'].lower() == 'sqlite':
             datafile = conf.homeAbsolutePath(conf.config['database']['file'])
             import dblib.sqlite as database
+            database.debug = opts.verbose
             self.database = database
             try:
                 self.db = database.Database(datafile)
@@ -528,6 +601,7 @@ class KioskApp(wx.App):
             
         elif conf.config['database']['driver'].lower() == 'postgres':
             import dblib.postgres as database
+            database.debug = opts.verbose
             self.database = database
             try:
                 self.db = database.Database(conf.config['database']['host'],
@@ -627,9 +701,9 @@ class KioskApp(wx.App):
             self.services = self.db.GetServices()
             dlg = SearchResultsList.MultiServiceDialog(self.frame, wx.ID_ANY, self.services)
             if dlg.ShowModal() == wx.ID_OK:
-                print "DEBUG"
-                print dlg.selected
-                print [ i ['name'] for i in dlg.selected ]
+                #print "DEBUG"
+                #print dlg.selected
+                #print [ i ['name'] for i in dlg.selected ]
                 if dlg.selected != []: #Make sure something's selected
                     services = [ i['name'] for i in dlg.selected ]
                     data = { 'id': index, 'name': name, 'surname': surname,
@@ -646,7 +720,7 @@ class KioskApp(wx.App):
                 dlg.Destroy()
                 return
             dlg.Destroy()
-        
+              
         self.jobID += 1
         self._checkinProducer(0, self.ActionPanel.data, services, activity, room, False)
         #delayedresult.startWorker(self._checkinConsumer, self._checkinProducer,
@@ -654,7 +728,7 @@ class KioskApp(wx.App):
         #                                 services, activity, room, False),
         #                          jobID=self.jobID)
         time.sleep(0.4)  #Give the database time to settle (sqlite3 thread-safe?)
-        self.ActionPanelCancel(None)
+        self.ActionPanelCancel(None)        
         return 0
         
     def _checkinProducer(self, jobID, data, services, activity, room, printOnly=False):
@@ -686,7 +760,10 @@ class KioskApp(wx.App):
             expires = self.services[-1]['endTime']
         else:
             expires = None
-        location = conf.config['config']['name']
+        if opts.location is not None:
+            location = opts.location
+        else:
+            location = conf.config['config']['name']
         if not printOnly:
             try:
                 #~ cursor = self.db.spawnCursor()
@@ -810,7 +887,7 @@ class KioskApp(wx.App):
         self.activities = self.db.GetActivities()
         trash = []
         for row in data:
-            print row['activity']
+            #print row['activity']
             activity = self.activities[row['activity']-1]
             room = self.db.GetRoomByID(row['room'])
             
@@ -840,7 +917,10 @@ class KioskApp(wx.App):
                 expires = self.services[-1]['endTime']
             else:
                 expires = None
-            location = conf.config['config']['name']
+            if args.location is not None:
+                location = args.location
+            else:
+                location = conf.config['config']['name']
             try:
                 #~ cursor = self.db.spawnCursor()
                 self.db.DoCheckin(row['id'], services, expires, secure,
@@ -936,7 +1016,7 @@ class KioskApp(wx.App):
             if dlg.selected != []: #Make sure something's selected
                 #Selected services as list for use by check-in producer
                 services = [ i['name'] for i in dlg.selected ]
-                print "services ", services
+                #print "services ", services
                 
                 #Perform check-in on database and printing.
                 self.DoMultiCheckin(services, fullResults)
@@ -971,6 +1051,9 @@ class KioskApp(wx.App):
             self.SearchPanel.Hide()
             self.ActionPanel.Show()
             self.SetRecordData(results[0])
+            # Show birthday notice
+            if results[0]['dob'][5:] == date.today().isoformat()[5:]:
+                self.BirthdayPanel.Show()
             
         elif len(results) > 1:
             #Show multiple results:
@@ -980,6 +1063,12 @@ class KioskApp(wx.App):
             self.results = results
             self.ResultsPanel.results = self.FormatResults(results)
             self.ResultsPanel.ResultsList.ShowResults(self.ResultsPanel.results)
+            birthday = False
+            for i in results:
+                if date.today().isoformat()[5:] in i['dob'][5:]:
+                    birthday = True
+            if birthday:
+                self.BirthdayPanel.Show()
             
         else: #No results
             self.SearchPanel.Search.SetValue('')
@@ -992,11 +1081,20 @@ class KioskApp(wx.App):
         #Close OSK keyboard (onboard)
         subprocess.Popen(('/usr/bin/pkill', 'onboard'))
         
+    def SetMissingData(self):
+        self.ActionPanel.CheckinButton.Disable()
+        return
+        
+        
     def SetRecordData(self, data):
         name = "{0} {1}".format(data['name'], data['lastname'])
+        if data['dob'] == '' or data['dob'] == None:
+          #Show missing data dialogue
+          self.SetMissingData()
+          #return
         
         #Get photo path
-        print data['picture']
+        #print data['picture']
         if data['picture'] != None and data['picture'] != '':
             try: #Load photo if the path exists.
                 photo = self.PhotoStorage.getThumbnailPath(data['picture'])
@@ -1072,6 +1170,8 @@ class KioskApp(wx.App):
                          'picture': str(i['picture']) })
         return ret
 
+    def BirthdayPanelClose(self, event):
+        self.BirthdayPanel.Hide()
         
     def ActionPanelCancel(self, event):
         """
@@ -1179,8 +1279,10 @@ class KioskApp(wx.App):
         self.ActionPanel.CentreOnParent(dir=wx.HORIZONTAL)
         self.ResultsPanel.SetSize((1024, 768))
         self.ResultsPanel.CentreOnParent(dir=wx.HORIZONTAL)
+        self.BirthdayPanel.SetSize((1024, 768))
+        self.BirthdayPanel.CentreOnParent(dir=wx.HORIZONTAL)
         
         
-if __name__ == "__main__":  
+if __name__ == "__main__":     
     app = KioskApp()
     app.MainLoop()
