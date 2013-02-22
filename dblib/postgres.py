@@ -64,7 +64,7 @@ class Database:
     """
     PostgreSQL driver for Taxídí database.
     """
-    def __init__(self, host, dbname, user, password):
+    def __init__(self, host, dbname, user, password, location='pyTaxidi'):
         """
         Opens connection to a PostgreSQL database.  Creates tables if they don't
         exist, but expects the database was created by the admin.
@@ -158,7 +158,14 @@ class Database:
 
         #Create connection:
         try: #TODO: Add SSL/SSH tunnel
-            self.conn = psycopg2.connect(host=host, database=dbname, user=user, password=password)
+            if ':' in host:
+                host, port = host.split(':')
+            else:
+                port = 5432
+            self.conn = psycopg2.connect(host=host, database=dbname, 
+                user=user, password=password, port=port, 
+                application_name=location)
+                
             self.cursor = self.conn.cursor()
         except psycopg2.OperationalError as e:
             if e.pgcode == '28P01' or e.pgcode == '28000':
