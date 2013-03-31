@@ -695,6 +695,12 @@ class KioskApp(wx.App):
         activity = self.db.GetActivityById(self.ActionPanel.data['activity']) #as dict
         room = self.db.GetRoomByID(self.ActionPanel.data['room'])
         services = (self.SearchPanel.service,)
+        index = self.ActionPanel.data['id']
+        name = self.ActionPanel.data['name']
+        surname = self.ActionPanel.data['lastname']
+        pagingValue = self.ActionPanel.data['paging']
+        medical = self.ActionPanel.data['medical']
+        parentEnable = not self.ActionPanel.data['noParentTag']
         
         if button == panel.MultiServiceButton:
             #Prompt the user for services selection:
@@ -708,10 +714,10 @@ class KioskApp(wx.App):
                     services = [ i['name'] for i in dlg.selected ]
                     data = { 'id': index, 'name': name, 'surname': surname,
                          'paging': pagingValue, 'medical': medical,
-                         'room': panel.Room.GetStringSelection(),
-                         'activity': activity, 'nametag': nametagEnable,
+                         'room': room,
+                         'activity': activity, 'nametag': True,
                          'parentTag': parentEnable }
-                    self.DoCheckin(services, data)
+                    self.DoMultiCheckin(services, data)
                 else:
                     notify.info("Checkin incomplete", "No services selected.")
                     dlg.Destroy()
