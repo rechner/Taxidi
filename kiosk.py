@@ -766,10 +766,15 @@ class KioskApp(wx.App):
             expires = self.services[-1]['endTime']
         else:
             expires = None
-        if opts.location is not None:
-            location = opts.location
-        else:
+            
+        try:
+            if opts.location is not None:
+                location = opts.location
+            else:
+                location = conf.config['config']['name']
+        except AttributeError:
             location = conf.config['config']['name']
+            
         if not printOnly:
             try:
                 #~ cursor = self.db.spawnCursor()
@@ -923,10 +928,15 @@ class KioskApp(wx.App):
                 expires = self.services[-1]['endTime']
             else:
                 expires = None
-            if args.location is not None:
-                location = args.location
-            else:
+                
+            try:
+                if args.location is not None:
+                    location = args.location
+                else:
+                    location = conf.config['config']['name']
+            except AttributeError:
                 location = conf.config['config']['name']
+                
             try:
                 #~ cursor = self.db.spawnCursor()
                 self.db.DoCheckin(row['id'], services, expires, secure,
@@ -1058,8 +1068,8 @@ class KioskApp(wx.App):
             self.ActionPanel.Show()
             self.SetRecordData(results[0])
             # Show birthday notice
-            if results[0]['dob'][5:] == date.today().isoformat()[5:]:
-                self.BirthdayPanel.Show()
+            #~ if results[0]['dob'][5:] == date.today().isoformat()[5:]:
+                #~ self.BirthdayPanel.Show()
             
         elif len(results) > 1:
             #Show multiple results:
@@ -1069,12 +1079,12 @@ class KioskApp(wx.App):
             self.results = results
             self.ResultsPanel.results = self.FormatResults(results)
             self.ResultsPanel.ResultsList.ShowResults(self.ResultsPanel.results)
-            birthday = False
-            for i in results:
-                if date.today().isoformat()[5:] in i['dob'][5:]:
-                    birthday = True
-            if birthday:
-                self.BirthdayPanel.Show()
+            #~ birthday = False
+            #~ for i in results:
+                #~ if date.today().isoformat()[5:] in i['dob'][5:]:
+                    #~ birthday = True
+            #~ if birthday:
+                #~ self.BirthdayPanel.Show()
             
         else: #No results
             self.SearchPanel.Search.SetValue('')
