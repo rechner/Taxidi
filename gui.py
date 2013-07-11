@@ -5,6 +5,7 @@
 #TODO: (HIGH   DEADLINE 03.05) Integrate configuration, theme files.
 #TODO: (URGENT DEADLINE 03.05) Add username/password dialogue.
 
+#TODO: Make logging suck less
 #TODO: Fix layout issues.  (Held together with duct tape right now.)
 #TODO: Theme files.  Colours hard coded for now. (Probably something for conf.py)
 #TODO: Set radiobutton background colours if possible.
@@ -17,7 +18,9 @@ import wx
 import os
 import signal
 
-__version__ = '0.70.05-dev'
+import traceback
+
+__version__ = '0.70.06-dev'
 
 userHand = 'right'
 
@@ -1669,7 +1672,10 @@ class MyApp(wx.App):
         try:
             result = delayedResult.get()
         except Exception, exc:
-            notify.error("Thread Error", "Result for job %s raised exception: %s" % (jobID, exc) )
+            notify.error("Thread Error", "Result for job %s raised exception: %s" % (jobID, exc))
+            self.log.error("Thread Error: Result for job %s raised exception: %s" % (jobID, exc))
+            print traceback.format_exc()
+            self.log.error(traceback.format_exc())
             return
 
     def OnListCheckout(self, event):

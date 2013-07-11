@@ -371,7 +371,8 @@ class Database:
                 #~ raise DatabaseError(UNKNOWN_ERROR, e.args[0])
                 
         #~ #TODO: Incrament count, update last seen date.
-        count = self.execute("SELECT count FROM data WHERE id = ?;", (person,)).fetchone()
+        count = self.execute("SELECT count FROM data WHERE id = ?;", (person,)).fetchone()[0]
+        self.log.debug("Updating record count: %s" % str(count))
         count = int(count) + 1
         today = datetime.date.today()
         self.execute("UPDATE data SET count = ?, lastSeen = ? WHERE id = ?;", 

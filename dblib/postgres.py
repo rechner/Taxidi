@@ -163,8 +163,8 @@ class Database:
             else:
                 port = 5432
             self.conn = psycopg2.connect(host=host, database=dbname, 
-                user=user, password=password, port=port, 
-                application_name=location)
+                user=user, password=password, port=port)
+                #application_name=location)
                 
             self.cursor = self.conn.cursor()
         except psycopg2.OperationalError as e:
