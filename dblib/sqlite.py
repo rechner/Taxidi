@@ -397,6 +397,14 @@ class Database:
         """
         a = self.dict_factory(self.execute("SELECT * FROM data WHERE id = ?", (ref,)).fetchone())
         return a
+    
+    def GetActivityById(self, ref):
+        """
+        Returns dictionary of a given activity specified by id.
+        """
+        a = self.dict_factory(self.execute("SELECT * FROM activities WHERE id = ?;", (ref,)).fetchone())
+        return a 
+        
 
     def GetStatus(self, ref, full=False):
         """
@@ -1000,6 +1008,8 @@ if __name__ == '__main__':
     #~ db.AddActivity('Explorers', parentTagEnable=True, newsletter=True)
     #~ db.AddActivity('Outfitters', parentTagEnable=False, newsletter=False)
     #~ print db.GetActivities()
+    import pprint
+    pprint.pprint(db.GetActivities())
 
     #Rooms
     #~ print bool(db.AddRoom('Outfitters Room', 2) & SUCCESS)

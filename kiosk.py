@@ -2,6 +2,8 @@
 #-*- coding:utf-8 -*-
 
 #TODO: (BUG, LOW PRIORITY): Fix size issue on screens > (1024x786)
+#TODO: Fix birthday code
+#TODO: Add/fix logging
 
 #Global imports
 import wx
@@ -12,6 +14,8 @@ import subprocess
 import wx.lib.delayedresult as delayedresult
 import hashlib
 from optparse import OptionParser #for CLI options
+import logging
+import traceback
 
 #Set locale to system default (for date/time format):
 import locale
@@ -487,6 +491,7 @@ class KioskApp(wx.App):
     The main program loop class
     """
     def OnInit(self):
+        self.log = logging.getLogger(__name__)  #Setup logging
         #Setup the frame:
         self.frame = wx.Frame(None, size=wx.DisplaySize())
         if opts.fullscreen is None:
@@ -693,7 +698,9 @@ class KioskApp(wx.App):
         panel = button.GetParent()
         
         activity = self.db.GetActivityById(self.ActionPanel.data['activity']) #as dict
+        #~ activity = self.ActionPanel.data['activity']
         room = self.db.GetRoomByID(self.ActionPanel.data['room'])
+        #~ room = self.ActionPanel.data['room']
         services = (self.SearchPanel.service,)
         index = self.ActionPanel.data['id']
         name = self.ActionPanel.data['name']
@@ -712,11 +719,11 @@ class KioskApp(wx.App):
                 #print [ i ['name'] for i in dlg.selected ]
                 if dlg.selected != []: #Make sure something's selected
                     services = [ i['name'] for i in dlg.selected ]
-                    data = { 'id': index, 'name': name, 'surname': surname,
+                    data = [{ 'id': index, 'name': name, 'lastname': surname,
                          'paging': pagingValue, 'medical': medical,
                          'room': room,
                          'activity': activity, 'nametag': True,
-                         'parentTag': parentEnable }
+                         'parentTag': parentEnable }]
                     self.DoMultiCheckin(services, data)
                 else:
                     notify.info("Checkin incomplete", "No services selected.")
@@ -728,12 +735,12 @@ class KioskApp(wx.App):
             dlg.Destroy()
               
         self.jobID += 1
-        self._checkinProducer(0, self.ActionPanel.data, services, activity, room, False)
-        #delayedresult.startWorker(self._checkinConsumer, self._checkinProducer,
-        #                          wargs=(self.jobID, self.ActionPanel.data,
-        #                                 services, activity, room, False),
-        #                          jobID=self.jobID)
-        time.sleep(0.4)  #Give the database time to settle (sqlite3 thread-safe?)
+        #~ self._checkinProducer(0, self.ActionPanel.data, services, activity, room, False)
+        delayedresult.startWorker(self._checkinConsumer, self._checkinProducer,
+                                  wargs=(self.jobID, self.ActionPanel.data,
+                                         services, activity, room, False),
+                                  jobID=self.jobID)
+        time.sleep(0.4)  #FIXME: Give the database time to settle (sqlite3 thread-safe?)
         self.ActionPanelCancel(None)        
         return 0
         
@@ -843,19 +850,31 @@ class KioskApp(wx.App):
             result = delayedResult.get()
         except Exception, exc:
             notify.error("Thread Error", "Result for job %s raised exception: %s" % (jobID, exc) )
+            self.log.error("Thread Error: Result for job %s raised exception: %s" % (jobID, exc))
+            print traceback.format_exc()
+            self.log.error(traceback.format_exc())
             raise
             return
                 
     def OnMultiCheckin(self, event):
         checked = self.ResultsPanel.ResultsList.GetSelected() #Index of checked items
-        
+        copyofChecked = checked[:] #Create a new copy of the list,
+        #since copyofChecked = checked would just create a new reference
+        #to checked, causing manipulation problems.  See
+        #http://henry.precheur.org/python/copy_list
+
         #Remove those already marked as checked-in.
-        for i in checked:
+        for i in copyofChecked:
             if self.ResultsPanel.ResultsList.results[i]['status'] == taxidi.STATUS_CHECKED_IN:
                 checked.remove(i)
             else:
                 self.ResultsPanel.ResultsList.results[i]['status'] = taxidi.STATUS_CHECKED_IN
                 self.ResultsPanel.ResultsList.UpdateStatus(i)
+        
+        #Return to main screen if there's nothing to do
+        if len(checked) == 0:
+            notify.info("Nothing selected", "Please select records which have not yet been checked-in to continue")
+            return
         
         #Convert them to explicit database id references
         selected = [ self.ResultsPanel.ResultsList.results[i]['id'] for i in checked ]
@@ -867,6 +886,11 @@ class KioskApp(wx.App):
                 if i == row['id']:
                     fullResults.append(row)
                     
+        #Convert references to activity and room into explicit dictionary/text
+        for row in fullResults:
+            row['activity'] = self.db.GetActivityById(row['activity']) #as dict
+            row['room'] = self.db.GetRoomByID(row['room'])
+                    
         #Perform check-in on database and printing.
         self.DoMultiCheckin((self.service['name'],), fullResults)
         
@@ -874,7 +898,9 @@ class KioskApp(wx.App):
         self.ResultsPanelCancel(None)
         
     def DoMultiCheckin(self, services, data):
+        #TODO: Debug this for sqlite backend
         self.multiJobID += 1
+        #~ self._multiCheckinProducer(0, data, services)
         delayedresult.startWorker(self._multiCheckinConsumer, self._multiCheckinProducer,
                                   wargs=(self.multiJobID, data, services),
                                   jobID=self.multiJobID)
@@ -888,6 +914,10 @@ class KioskApp(wx.App):
             result = delayedResult.get()
         except Exception, exc:
             notify.error("Thread Error", "Result for job %s raised exception: %s" % (jobID, exc) )
+            notify.error("Thread Error", "Result for job %s raised exception: %s" % (jobID, exc) )
+            self.log.error("Thread Error: Result for job %s raised exception: %s" % (jobID, exc))
+            print traceback.format_exc()
+            self.log.error(traceback.format_exc())
             raise
             return
             
@@ -895,12 +925,17 @@ class KioskApp(wx.App):
         #Note: activity is a dictionary
         #Note: dictionary keys match database, not _checkinProducer()
         #Get secure code, if needed
-        self.activities = self.db.GetActivities()
+        #self.activities = self.db.GetActivities()
         trash = []
         for row in data:
-            #print row['activity']
-            activity = self.activities[row['activity']-1]
-            room = self.db.GetRoomByID(row['room'])
+            import pprint
+            pprint.pprint(data)
+            pprint.pprint(row)
+            
+            #~ activity = self.activities[row['activity']-1]
+            #~ room = self.db.GetRoomByID(row['room'])
+            activity = row['activity']
+            room = row['room']
             
             if activity['securityTag']:
                 if conf.as_bool(conf.config['config']['secureCodeRemote']):
@@ -1002,9 +1037,10 @@ class KioskApp(wx.App):
         
         #Get the selected items.
         checked = self.ResultsPanel.ResultsList.GetSelected() #Index of checked items
+        copyofChecked = checked[:]
         
         #Remove those already marked as checked-in.
-        for i in checked:
+        for i in copyofChecked:
             if self.ResultsPanel.ResultsList.results[i]['status'] == taxidi.STATUS_CHECKED_IN:
                 checked.remove(i)
             else:
@@ -1013,6 +1049,7 @@ class KioskApp(wx.App):
                 
         #Stop if nothing's selected:
         if len(checked) == 0:
+            notify.info("Nothing selected", "Please select records which have not yet been checked-in to continue")
             return
         
         #Convert them to explicit database id references
@@ -1024,6 +1061,11 @@ class KioskApp(wx.App):
             for i in selected:
                 if i == row['id']:
                     fullResults.append(row)
+                    
+         #Convert references to activity and room into explicit dictionary/text
+        for row in fullResults:
+            row['activity'] = self.db.GetActivityById(row['activity']) #as dict
+            row['room'] = self.db.GetRoomByID(row['room'])
         
         #Prompt the user for services selection:
         self.services = self.db.GetServices()
@@ -1129,10 +1171,12 @@ class KioskApp(wx.App):
             self.ActionPanel.CheckinButton.SetLabel('Check-in') #TODO binding
             statusText = rType
         elif status['status'] == taxidi.STATUS_CHECKED_IN:
-            if type(status['checkin']) is str:
+            if type(status['checkin']) in (str, unicode):
                 checkin = datetime.datetime.strftime(datetime.datetime.strptime(str(status['checkin']), "%Y-%m-%dT%H:%M:%S"), "%H:%M:%S")
             elif type(status['checkin']) is datetime.datetime:
                 checkin = datetime.datetime.strftime(status['checkin'], "%H:%M:%S")
+            else:
+                checkin = "???" #Invalid status
             statusText = "{0} - Checked-in at {1}".format(rType, checkin)
             self.ActionPanel.CheckinButton.SetLabel('Check-out') #TODO binding
         elif status['status'] == taxidi.STATUS_CHECKED_OUT:
