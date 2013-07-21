@@ -28928,7 +28928,7 @@
             <property name="id">wxID_ANY</property>
             <property name="maximum_size"></property>
             <property name="minimum_size"></property>
-            <property name="name">MyDialog11</property>
+            <property name="name">activityDialogue</property>
             <property name="pos"></property>
             <property name="size">649,550</property>
             <property name="style">wxDEFAULT_DIALOG_STYLE</property>
@@ -28974,7 +28974,7 @@
             <event name="OnUpdateUI"></event>
             <object class="wxBoxSizer" expanded="1">
                 <property name="minimum_size"></property>
-                <property name="name">bSizer109</property>
+                <property name="name">activitySizer</property>
                 <property name="orient">wxHORIZONTAL</property>
                 <property name="permission">none</property>
                 <object class="sizeritem" expanded="1">
@@ -28992,7 +28992,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="maximum_size"></property>
                         <property name="minimum_size"></property>
-                        <property name="name">ListBox</property>
+                        <property name="name">activityList</property>
                         <property name="permission">protected</property>
                         <property name="pos"></property>
                         <property name="size">250,-1</property>
@@ -29039,7 +29039,7 @@
                     <property name="proportion">1</property>
                     <object class="wxBoxSizer" expanded="1">
                         <property name="minimum_size"></property>
-                        <property name="name">bSizer111</property>
+                        <property name="name">controlSizer</property>
                         <property name="orient">wxVERTICAL</property>
                         <property name="permission">none</property>
                         <object class="sizeritem" expanded="1">
@@ -29048,7 +29048,7 @@
                             <property name="proportion">1</property>
                             <object class="wxBoxSizer" expanded="1">
                                 <property name="minimum_size"></property>
-                                <property name="name">bSizer110</property>
+                                <property name="name">controlSizerb</property>
                                 <property name="orient">wxVERTICAL</property>
                                 <property name="permission">none</property>
                                 <object class="sizeritem" expanded="1">
@@ -29066,7 +29066,7 @@
                                         <property name="label">Select an activty to edit</property>
                                         <property name="maximum_size"></property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">SelectedText</property>
+                                        <property name="name">SelectedSt</property>
                                         <property name="permission">protected</property>
                                         <property name="pos"></property>
                                         <property name="size"></property>
@@ -29110,9 +29110,9 @@
                                     <property name="border">5</property>
                                     <property name="flag">wxEXPAND</property>
                                     <property name="proportion">0</property>
-                                    <object class="wxBoxSizer" expanded="0">
+                                    <object class="wxBoxSizer" expanded="1">
                                         <property name="minimum_size"></property>
-                                        <property name="name">bSizer106</property>
+                                        <property name="name">pagingSizer</property>
                                         <property name="orient">wxHORIZONTAL</property>
                                         <property name="permission">none</property>
                                         <object class="sizeritem" expanded="1">
@@ -29131,7 +29131,7 @@
                                                 <property name="label">Custom paging prefix:</property>
                                                 <property name="maximum_size"></property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_checkBox34</property>
+                                                <property name="name">customPrefixCheckbox</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size"></property>
@@ -29184,9 +29184,9 @@
                                                 <property name="hidden">0</property>
                                                 <property name="id">wxID_ANY</property>
                                                 <property name="maximum_size"></property>
-                                                <property name="maxlength">0</property>
+                                                <property name="maxlength">1</property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_textCtrl67</property>
+                                                <property name="name">customPrefixText</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size">30,-1</property>
@@ -29236,9 +29236,9 @@
                                     <property name="border">5</property>
                                     <property name="flag">wxEXPAND</property>
                                     <property name="proportion">0</property>
-                                    <object class="wxBoxSizer" expanded="0">
+                                    <object class="wxBoxSizer" expanded="1">
                                         <property name="minimum_size"></property>
-                                        <property name="name">bSizer107</property>
+                                        <property name="name">securitySizer</property>
                                         <property name="orient">wxHORIZONTAL</property>
                                         <property name="permission">none</property>
                                         <object class="sizeritem" expanded="1">
@@ -29256,7 +29256,7 @@
                                                 <property name="label">Security mode:</property>
                                                 <property name="maximum_size"></property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_staticText168</property>
+                                                <property name="name">securitySt</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size"></property>
@@ -29311,7 +29311,7 @@
                                                 <property name="id">wxID_ANY</property>
                                                 <property name="maximum_size"></property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_choice21</property>
+                                                <property name="name">securityChoice</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="selection">2</property>
@@ -29357,14 +29357,14 @@
                                     <property name="border">5</property>
                                     <property name="flag">wxEXPAND</property>
                                     <property name="proportion">0</property>
-                                    <object class="wxFlexGridSizer" expanded="0">
+                                    <object class="wxFlexGridSizer" expanded="1">
                                         <property name="cols">2</property>
                                         <property name="flexible_direction">wxBOTH</property>
                                         <property name="growablecols">1</property>
                                         <property name="growablerows"></property>
                                         <property name="hgap">0</property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">fgSizer60</property>
+                                        <property name="name">nametagSizer</property>
                                         <property name="non_flexible_grow_mode">wxFLEX_GROWMODE_SPECIFIED</property>
                                         <property name="permission">none</property>
                                         <property name="rows">2</property>
@@ -29385,7 +29385,7 @@
                                                 <property name="label">Print nametag:</property>
                                                 <property name="maximum_size"></property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_checkBox37</property>
+                                                <property name="name">nametagCheckbox</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size"></property>
@@ -29440,7 +29440,7 @@
                                                 <property name="id">wxID_ANY</property>
                                                 <property name="maximum_size"></property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_choice24</property>
+                                                <property name="name">nametagTemplateChoice</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="selection">0</property>
@@ -29496,7 +29496,7 @@
                                                 <property name="label">Security receipt:</property>
                                                 <property name="maximum_size"></property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_checkBox38</property>
+                                                <property name="name">receiptCheckbox</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size"></property>
@@ -29551,7 +29551,7 @@
                                                 <property name="id">wxID_ANY</property>
                                                 <property name="maximum_size"></property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_choice25</property>
+                                                <property name="name">receiptTemplateChoice</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="selection">0</property>
@@ -29597,9 +29597,9 @@
                                     <property name="border">5</property>
                                     <property name="flag">wxEXPAND</property>
                                     <property name="proportion">0</property>
-                                    <object class="wxBoxSizer" expanded="0">
+                                    <object class="wxBoxSizer" expanded="1">
                                         <property name="minimum_size"></property>
-                                        <property name="name">bSizer112</property>
+                                        <property name="name">adminSizer</property>
                                         <property name="orient">wxHORIZONTAL</property>
                                         <property name="permission">none</property>
                                         <object class="sizeritem" expanded="1">
@@ -29617,7 +29617,7 @@
                                                 <property name="label">Administrator:</property>
                                                 <property name="maximum_size"></property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_staticText169</property>
+                                                <property name="name">adminSt</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size"></property>
@@ -29672,7 +29672,7 @@
                                                 <property name="maximum_size"></property>
                                                 <property name="maxlength">0</property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_textCtrl68</property>
+                                                <property name="name">adminTextbox</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size"></property>
@@ -29734,7 +29734,7 @@
                                         <property name="label">Automatic check-out at end of service</property>
                                         <property name="maximum_size"></property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">m_checkBox40</property>
+                                        <property name="name">autoCheckoutCheckbox</property>
                                         <property name="permission">protected</property>
                                         <property name="pos"></property>
                                         <property name="size"></property>
@@ -29790,7 +29790,7 @@
                                         <property name="label">Notify on auto checkout</property>
                                         <property name="maximum_size"></property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">m_checkBox42</property>
+                                        <property name="name">notifyCheckoutCheckbox</property>
                                         <property name="permission">protected</property>
                                         <property name="pos"></property>
                                         <property name="size"></property>
@@ -29836,7 +29836,7 @@
                                     <property name="proportion">0</property>
                                     <object class="wxBoxSizer" expanded="1">
                                         <property name="minimum_size"></property>
-                                        <property name="name">bSizer113</property>
+                                        <property name="name">newsletterSizer</property>
                                         <property name="orient">wxHORIZONTAL</property>
                                         <property name="permission">none</property>
                                         <object class="sizeritem" expanded="1">
@@ -29855,7 +29855,7 @@
                                                 <property name="label">Newsletter:</property>
                                                 <property name="maximum_size"></property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_checkBox43</property>
+                                                <property name="name">newsletterCheckbox</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size"></property>
@@ -29910,13 +29910,13 @@
                                                 <property name="maximum_size"></property>
                                                 <property name="maxlength">0</property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_textCtrl69</property>
+                                                <property name="name">newsletterURLTextbox</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size"></property>
                                                 <property name="style"></property>
                                                 <property name="subclass"></property>
-                                                <property name="tooltip"></property>
+                                                <property name="tooltip">Enter link to script for adding an email to a mailing list by GET request. {email} will be replaced by the address.&#x0A;&#x0A;http://example.com/newsletter/subscribe.php?address={email}</property>
                                                 <property name="validator_data_type"></property>
                                                 <property name="validator_style">wxFILTER_NONE</property>
                                                 <property name="validator_type">wxDefaultValidator</property>
@@ -29954,62 +29954,6 @@
                                                 <event name="OnUpdateUI"></event>
                                             </object>
                                         </object>
-                                        <object class="sizeritem" expanded="1">
-                                            <property name="border">5</property>
-                                            <property name="flag">wxALIGN_CENTER_VERTICAL|wxRIGHT</property>
-                                            <property name="proportion">0</property>
-                                            <object class="wxButton" expanded="1">
-                                                <property name="bg"></property>
-                                                <property name="context_help"></property>
-                                                <property name="default">0</property>
-                                                <property name="enabled">1</property>
-                                                <property name="fg"></property>
-                                                <property name="font"></property>
-                                                <property name="hidden">0</property>
-                                                <property name="id">wxID_ANY</property>
-                                                <property name="label">...</property>
-                                                <property name="maximum_size"></property>
-                                                <property name="minimum_size"></property>
-                                                <property name="name">m_button94</property>
-                                                <property name="permission">protected</property>
-                                                <property name="pos"></property>
-                                                <property name="size">26,-1</property>
-                                                <property name="style"></property>
-                                                <property name="subclass"></property>
-                                                <property name="tooltip"></property>
-                                                <property name="validator_data_type"></property>
-                                                <property name="validator_style">wxFILTER_NONE</property>
-                                                <property name="validator_type">wxDefaultValidator</property>
-                                                <property name="validator_variable"></property>
-                                                <property name="window_extra_style"></property>
-                                                <property name="window_name"></property>
-                                                <property name="window_style"></property>
-                                                <event name="OnButtonClick"></event>
-                                                <event name="OnChar"></event>
-                                                <event name="OnEnterWindow"></event>
-                                                <event name="OnEraseBackground"></event>
-                                                <event name="OnKeyDown"></event>
-                                                <event name="OnKeyUp"></event>
-                                                <event name="OnKillFocus"></event>
-                                                <event name="OnLeaveWindow"></event>
-                                                <event name="OnLeftDClick"></event>
-                                                <event name="OnLeftDown"></event>
-                                                <event name="OnLeftUp"></event>
-                                                <event name="OnMiddleDClick"></event>
-                                                <event name="OnMiddleDown"></event>
-                                                <event name="OnMiddleUp"></event>
-                                                <event name="OnMotion"></event>
-                                                <event name="OnMouseEvents"></event>
-                                                <event name="OnMouseWheel"></event>
-                                                <event name="OnPaint"></event>
-                                                <event name="OnRightDClick"></event>
-                                                <event name="OnRightDown"></event>
-                                                <event name="OnRightUp"></event>
-                                                <event name="OnSetFocus"></event>
-                                                <event name="OnSize"></event>
-                                                <event name="OnUpdateUI"></event>
-                                            </object>
-                                        </object>
                                     </object>
                                 </object>
                                 <object class="sizeritem" expanded="1">
@@ -30020,7 +29964,7 @@
                                         <property name="id">wxID_ANY</property>
                                         <property name="label">Registration notification</property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">sbSizer8</property>
+                                        <property name="name">registrationSizera</property>
                                         <property name="orient">wxVERTICAL</property>
                                         <property name="permission">none</property>
                                         <event name="OnUpdateUI"></event>
@@ -30030,7 +29974,7 @@
                                             <property name="proportion">1</property>
                                             <object class="wxBoxSizer" expanded="0">
                                                 <property name="minimum_size"></property>
-                                                <property name="name">bSizer114</property>
+                                                <property name="name">registrationSizerb</property>
                                                 <property name="orient">wxHORIZONTAL</property>
                                                 <property name="permission">none</property>
                                                 <object class="sizeritem" expanded="1">
@@ -30049,7 +29993,7 @@
                                                         <property name="label">SMS parents</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_checkBox44</property>
+                                                        <property name="name">registerSMSCheckbox</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -30104,7 +30048,7 @@
                                                         <property name="maximum_size"></property>
                                                         <property name="maxlength">0</property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_textCtrl70</property>
+                                                        <property name="name">registerSMSTextbox</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -30164,7 +30108,7 @@
                                                         <property name="label">...</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_button941</property>
+                                                        <property name="name">registerSMSButton</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size">26,-1</property>
@@ -30210,9 +30154,9 @@
                                             <property name="border">5</property>
                                             <property name="flag">wxEXPAND</property>
                                             <property name="proportion">1</property>
-                                            <object class="wxBoxSizer" expanded="0">
+                                            <object class="wxBoxSizer" expanded="1">
                                                 <property name="minimum_size"></property>
-                                                <property name="name">bSizer1141</property>
+                                                <property name="name">registrationSizerc</property>
                                                 <property name="orient">wxHORIZONTAL</property>
                                                 <property name="permission">none</property>
                                                 <object class="sizeritem" expanded="1">
@@ -30231,7 +30175,7 @@
                                                         <property name="label">Email parent</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_checkBox441</property>
+                                                        <property name="name">registerEmailCheckbox</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -30278,7 +30222,7 @@
                                                     <object class="wxTextCtrl" expanded="1">
                                                         <property name="bg"></property>
                                                         <property name="context_help"></property>
-                                                        <property name="enabled">1</property>
+                                                        <property name="enabled">0</property>
                                                         <property name="fg"></property>
                                                         <property name="font"></property>
                                                         <property name="hidden">0</property>
@@ -30286,13 +30230,13 @@
                                                         <property name="maximum_size"></property>
                                                         <property name="maxlength">0</property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_textCtrl701</property>
+                                                        <property name="name">registerEmailTextbox</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
                                                         <property name="style"></property>
                                                         <property name="subclass"></property>
-                                                        <property name="tooltip"></property>
+                                                        <property name="tooltip">Email templates are located in resources/email/&#x0A;Edit the files there to change the message sent to parents after registration.</property>
                                                         <property name="validator_data_type"></property>
                                                         <property name="validator_style">wxFILTER_NONE</property>
                                                         <property name="validator_type">wxDefaultValidator</property>
@@ -30338,7 +30282,7 @@
                                                         <property name="bg"></property>
                                                         <property name="context_help"></property>
                                                         <property name="default">0</property>
-                                                        <property name="enabled">1</property>
+                                                        <property name="enabled">0</property>
                                                         <property name="fg"></property>
                                                         <property name="font"></property>
                                                         <property name="hidden">0</property>
@@ -30346,13 +30290,13 @@
                                                         <property name="label">...</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_button9411</property>
+                                                        <property name="name">registerEmailButton</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size">26,-1</property>
                                                         <property name="style"></property>
                                                         <property name="subclass"></property>
-                                                        <property name="tooltip"></property>
+                                                        <property name="tooltip">Edit email templates by opening files in resources/email.  See wiki for more information.</property>
                                                         <property name="validator_data_type"></property>
                                                         <property name="validator_style">wxFILTER_NONE</property>
                                                         <property name="validator_type">wxDefaultValidator</property>
@@ -30398,7 +30342,7 @@
                                         <property name="id">wxID_ANY</property>
                                         <property name="label">Check-in notification</property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">sbSizer81</property>
+                                        <property name="name">checkinSizera</property>
                                         <property name="orient">wxVERTICAL</property>
                                         <property name="permission">none</property>
                                         <event name="OnUpdateUI"></event>
@@ -30408,7 +30352,7 @@
                                             <property name="proportion">1</property>
                                             <object class="wxBoxSizer" expanded="1">
                                                 <property name="minimum_size"></property>
-                                                <property name="name">bSizer1142</property>
+                                                <property name="name">checkinSizerb</property>
                                                 <property name="orient">wxHORIZONTAL</property>
                                                 <property name="permission">none</property>
                                                 <object class="sizeritem" expanded="1">
@@ -30427,7 +30371,7 @@
                                                         <property name="label">SMS parents</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_checkBox442</property>
+                                                        <property name="name">checkinSMSCheckbox</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -30482,7 +30426,7 @@
                                                         <property name="maximum_size"></property>
                                                         <property name="maxlength">0</property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_textCtrl702</property>
+                                                        <property name="name">checkinSMSTextbox</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -30542,7 +30486,7 @@
                                                         <property name="label">...</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_button9412</property>
+                                                        <property name="name">checkinSMSButton</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size">26,-1</property>
@@ -30590,7 +30534,7 @@
                                             <property name="proportion">1</property>
                                             <object class="wxBoxSizer" expanded="1">
                                                 <property name="minimum_size"></property>
-                                                <property name="name">bSizer11411</property>
+                                                <property name="name">checkinSizerc</property>
                                                 <property name="orient">wxHORIZONTAL</property>
                                                 <property name="permission">none</property>
                                                 <object class="sizeritem" expanded="1">
@@ -30609,7 +30553,7 @@
                                                         <property name="label">Email parent</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_checkBox4411</property>
+                                                        <property name="name">checkinEmailCheckbox</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -30656,7 +30600,7 @@
                                                     <object class="wxTextCtrl" expanded="1">
                                                         <property name="bg"></property>
                                                         <property name="context_help"></property>
-                                                        <property name="enabled">1</property>
+                                                        <property name="enabled">0</property>
                                                         <property name="fg"></property>
                                                         <property name="font"></property>
                                                         <property name="hidden">0</property>
@@ -30664,13 +30608,13 @@
                                                         <property name="maximum_size"></property>
                                                         <property name="maxlength">0</property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_textCtrl7011</property>
+                                                        <property name="name">checkinEmailTextbox</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
                                                         <property name="style"></property>
                                                         <property name="subclass"></property>
-                                                        <property name="tooltip"></property>
+                                                        <property name="tooltip">Email templates are located in resources/email/&#x0A;Edit the files there to change the message sent to parents after checking in.</property>
                                                         <property name="validator_data_type"></property>
                                                         <property name="validator_style">wxFILTER_NONE</property>
                                                         <property name="validator_type">wxDefaultValidator</property>
@@ -30716,7 +30660,7 @@
                                                         <property name="bg"></property>
                                                         <property name="context_help"></property>
                                                         <property name="default">0</property>
-                                                        <property name="enabled">1</property>
+                                                        <property name="enabled">0</property>
                                                         <property name="fg"></property>
                                                         <property name="font"></property>
                                                         <property name="hidden">0</property>
@@ -30724,7 +30668,7 @@
                                                         <property name="label">...</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_button94111</property>
+                                                        <property name="name">checkinEmailButton</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size">26,-1</property>
@@ -30803,7 +30747,7 @@
                                                 <property name="label">Cancel</property>
                                                 <property name="maximum_size"></property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_button89</property>
+                                                <property name="name">cancelButton</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size"></property>
@@ -30859,7 +30803,7 @@
                                                 <property name="label">OK</property>
                                                 <property name="maximum_size"></property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_button90</property>
+                                                <property name="name">OKButton</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size">-1,-1</property>

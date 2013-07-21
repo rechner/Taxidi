@@ -509,6 +509,31 @@ class CameraError(Exception):
             self.error = value
     def __str__(self):
         return repr(self.error)
+        
+def getVideoDevices():
+    """
+    Returns a list of available system video devices by name.
+    Pass index of this list to video capture class to use that device
+    (Linux only) or pass -1 to use the first available video device.
+    
+    Note that this may have issues on some implementations of OpenCV.
+    """
+    
+    try:
+        import subprocess
+        devices = subprocess.check_output(
+            'for I in /sys/class/video4linux/*; do cat $I/name; done', 
+            shell=True)
+    except AttributeError:
+        #Python < 2.7, use os.popen instead.
+        fdev = os.popen('for I in /sys/class/video4linux/*; do cat $I/name; done')
+        devices = fdev.read()
+        fdev.close()
+        
+    #Cast to list and
+    devices = devices.split('\n')[:-1] #Remove trailing \n
+    return devices
+
 
 
 if __name__ == '__main__':

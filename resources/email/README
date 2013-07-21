@@ -21,3 +21,10 @@ webmail systems will prefer images loaded from an URL.
 
 Relevant configuration sections in config.ini:
 [report][[email]] to, from, host, TLS, user, pass
+
+Text replacements for checkin/checkout include:
+{name}
+{lastname}
+{guardian} 
+{code}
+{phone}
