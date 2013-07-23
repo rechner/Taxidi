@@ -31,6 +31,146 @@ __version__ = '0.1'
 __all__ = ['SignaturePad']
 
 import wx
+import math
+import zlib
+import base64
+
+def encode(lines):
+    if len(lines) == 0: return "0"
+    
+    # check if 3 points are on the same line, in order
+    def ison(a, c, b):
+      within = lambda p, q, r: p <= q <= r or r <= q <= p
+      return ((b[0] - a[0]) * (c[1] - a[1]) == (c[0] - a[0]) * (b[1] - a[1])
+        and (within(a[0], c[0], b[0]) if a[0] != b[0] else 
+          within(a[1], c[1], b[1])))
+    
+    # converts series of lines to 'connect the dots', and looks for single dots
+    strokes = [[lines[0][0:2]]]; dots = []
+    for line in lines:
+      if line[0:2] != strokes[-1][-1]: 
+        if len(strokes[-1]) == 1:
+          dots += strokes.pop()
+        strokes += [[line[0:2]]]
+      if line[2:4] != strokes[-1][-1]:
+        if len(strokes[-1]) > 1 and \
+          ison(strokes[-1][-2], strokes[-1][-1], line[2:4]):
+            strokes[-1][-1] = line[2:4]
+        else:
+          strokes[-1] += [line[2:4]]
+    if len(strokes[-1]) == 1:
+      dots += strokes.pop()
+    
+    # big endian, most significant first
+    def BEVLI4Enc(num):
+      if num == 0: return '0' * 4
+      else:
+        temp = -(-int(math.log(num, 2) + 1) // 3) * 3
+        temp = [bin(num)[2:].zfill(temp)[i:i+3] for i in range(0, temp, 3)]
+        return '1'.join([''] + temp[:-1]) + '0' + temp[-1]
+    
+    # encode dots in binary
+    data = ''.join(map(BEVLI4enc, [len(dots)] + [i for d in dots for i in d]))
+    
+    # convert series of points to deltas, then convert to binary
+    directions = [bin(0x7070563)[2:][i:i+3] for i in range(0,27,3)]
+    for stroke in strokes:
+      prev_point = stroke[0]
+      data += ''.join(map(BEVLI4enc, (len(stroke) - 1,) + prev_point))
+      for point in stroke[1:]:
+        dx, dy = point[0] - prev_point[0], point[1] - prev_point[1]
+        prev_point = point
+        # format: bit 'is this delta more than 1 pixel?', 3xbits direction
+        # directions:   111   000   001
+        #               110    #    010
+        #               101   100   011
+        data += ('1' if abs(dx) > 1 or abs(dy) > 1 else '0') + \
+          directions[cmp(dx, 0) + 1 + (cmp(dy, 0) + 1) * 3]
+        if abs(dx): data += BEVLI4enc(abs(dx))
+        if abs(dy): data += BEVLI4enc(abs(dy))
+    
+    # pad to byte boundry, then convert to binary
+    data = ''.join(map(lambda x: chr(int(x, 2)), \
+      [data[i:i+8].ljust(8, '0') for i in range(0,len(data),8)]))
+    
+    # base 95 encoder
+    def b95btoa(b):
+        b95 = ''; n = int(('_' + b).encode('hex'), 16)
+        while n > 0:
+            b95 += chr(int(n % 95 + 32)); n /= 95
+        return b95[::-1]
+    
+    # compress using zlib if it makes it smaller
+    z = zlib.compress(data)[2:-4]
+    if len(z) < len(data):
+      return "b" + b95btoa(z)
+    else:
+      return "e" + b95btoa(data)
+
+def decode(data):
+    def inflate(z):
+        return zlib.decompress(z, -zlib.MAX_WBITS)
+    
+    def b64atob(b64):
+        return base64.b64decode(b64 + "=" * (4 - len(b64) % 4))
+    
+    def b95atob(b95):
+        n = 0; m = 1
+        
+        for c in b95[::-1]:
+            n += (ord(c) - 32) * m
+            m *= 95
+        
+        return hex(n)[4:-1].decode("hex")
+    
+    def unwrap(d):
+        return {
+            "0": lambda x: "\0",
+            "a": inflate,
+            "b": lambda x: inflate(b95atob(x)),
+            "c": lambda x: inflate(b64atob(x)),
+            "d": lambda x: x,
+            "e": b95atob,
+            "f": b64atob
+        }[d[0]](d[1:])
+    
+    nibs = sum([[(ord(c) & 240) >> 4, ord(c) & 15] for c in unwrap(data)], [])
+    
+    def readnum():
+        a = 0; b = 8
+        
+        while b & 8:
+            b = nibs.pop(0)
+            a <<= 3; a|= b & 7
+        
+        return a
+    
+    output = []
+    
+    for i in range(readnum()):
+        x = readnum()
+        y = readnum()
+        output.append((x, y, x, y))
+    
+    while len(nibs) > 0:
+        j = readnum()
+        if j > 0:
+            x = readnum()
+            y = readnum()
+            for c in range(j):
+                k = nibs.pop(0)
+                b = k & 7
+                g = { 0: 1, 1:  1, 2:  0, 3: -1, 4: -1, 5: -1, 6: 0, 7: 1 }[b]
+                b = { 0: 0, 1: -1, 2: -1, 3: -1, 4:  0, 5:  1, 6: 1, 7: 1 }[b]
+                if k & 8:
+                    if 0 != g: g *= readnum()
+                    if 0 != b: b *= readnum()
+                output.append((x, y, x, y))
+                x += g
+                y += b
+    
+    return output
+
 
 class SignaturePad(wx.Window):
     """Widget for drawing and capturing a signature.
@@ -223,10 +363,13 @@ class SignaturePadControls(wx.Panel):
             wx.MessageBox('Signature cannot be blank!',
               'Error', wx.OK | wx.ICON_ERROR)
         else:
+            encoded = encode(self.sigpad.signature)
             print self.sigpad.signature
-        
-    
-        
+            print '----------------'
+            print encoded
+            print len(str(self.sigpad.signature)), len(encoded)
+
+
 class TestFrame(wx.Frame):
     def __init__(self, parent=None):
         super(TestFrame, self).__init__(parent, title="Signature Pad",
@@ -246,166 +389,7 @@ if __name__ == '__main__':
     frame = TestFrame()
     frame.Show()
     app.MainLoop()
+    
 
-
-
-
-import zlib, base64
-
-def encode(lines):
-    if len(lines) == 0: return "0"
-    
-    data = []
-    a = [(lines[0][0], lines[0][1])]
-    for g in range(1, len(lines)):
-        if lines[g][0] == lines[g - 1][2] and lines[g][1] == lines[g - 1][3]:
-            if a == [] or lines[g][2] != a[len(a) - 1][0] or lines[g][3] != a[len(a) - 1][1]:
-                a.append((lines[g][2], lines[g][3]))
-        else:
-            data.append(a)
-            a = [(lines[g][0], lines[g][1]), (lines[g][2], lines[g][3])]
-    data.append(a)
-    
-    e = []
-    for c in range(len(data)):
-        d = [data[c][0]]
-        f = data[c][1]
-        m = None
-        for h in range(1, len(data[c])):
-            if data[c][h][0] != f[0] or data[c][h][1] != f[1]:
-                t = data[c][h][0] - f[0]
-                if t == 0:
-                    n = None
-                else:
-                    n = (data[c][h][1] - f[1]) / t
-                d.append(f)
-                m = n
-                f = data[c][h]
-        if f[0] != d[0][0] or f[1] != d[0][1]:
-            d.append(f)
-            e.append(d)
-    
-    l = [""]
-    k = [-1]
-    def j(l, k, a):
-        if (k[0] != -1):
-            l[0] += chr((k[0] << 4) + a)
-            k[0] = -1
-        else:
-            k[0] = a
-    j(l, k, 0)
-    
-    def g(l, k, j, a):
-        if 7 >= a:
-            j(l, k, a)
-        else:
-            a = bin(a)[2:]
-            a =a.zfill((len(a) // 3) * 3 + 3)
-            b = []
-            for c in range(len(a) - 1, 0, -3):
-                b.insert(0, a[c - 2: c + 1])
-            for a in range(len(b) -1):
-                j(l, k, int("1" + b[a], 2))
-            j(l, k, int("0" + b[len(b) - 1], 2))
-    
-    for b in range(len(e)):
-        g(l, k, j, len(e[b]) - 1)
-        g(l, k, j, e[b][0][0])
-        g(l, k, j, e[b][0][1])
-        for a in range(1, len(e[b])):
-            c = e[b][a][0] - e[b][a - 1][0]
-            d = e[b][a][1] - e[b][a - 1][1]
-            f = [["111", "000", "001"], ["110", "you found a fox in the code :3", "010"], ["101", "100", "011"]][cmp(0, c) + 1][cmp(0, d) + 1]
-            if abs(c) <= 1 and abs(d) <= 1:
-                j(l, k, int("0" + f, 2))
-            else:
-                j(l, k, int("1" + f, 2))
-                if 0 != c:
-                    g(l, k, j, abs(c))
-                if 0 != d:
-                    g(l, k, j, abs(d))
-    
-    def b95btoa(bin):
-        n = int(("_" + bin).encode("hex"), 16); b95 = ""
-        
-        while n > 0:
-            b95 += chr(int(n % 95 + 32))
-            n /= 95
-        
-        return b95[::-1]
-    
-    if k[0] != -1: j(l, k, 0)
-    #print("f" + base64.b64encode(l[0]))
-    
-    e = zlib.compress(l[0])[2:-4]
-    if len(e) < len(l[0]):
-        return "b" + b95btoa(e)
-    else:
-        #print l[0]
-        return "e" + b95btoa(l[0])
-
-def decode(data):
-    def inflate(z):
-        return zlib.decompress(z, -zlib.MAX_WBITS)
-    
-    def b64atob(b64):
-        return base64.b64decode(b64 + "=" * (4 - len(b64) % 4))
-    
-    def b95atob(b95):
-        n = 0; m = 1
-        
-        for c in b95[::-1]:
-            n += (ord(c) - 32) * m
-            m *= 95
-        
-        return hex(n)[4:-1].decode("hex")
-    
-    def unwrap(d):
-        return {
-            "0": lambda x: "\0",
-            "a": inflate,
-            "b": lambda x: inflate(b95atob(x)),
-            "c": lambda x: inflate(b64atob(x)),
-            "d": lambda x: x,
-            "e": b95atob,
-            "f": b64atob
-        }[d[0]](d[1:])
-    
-    nibs = sum([[(ord(c) & 240) >> 4, ord(c) & 15] for c in unwrap(data)], [])
-    
-    def readnum():
-        a = 0; b = 8
-        
-        while b & 8:
-            b = nibs.pop(0)
-            a <<= 3; a|= b & 7
-        
-        return a
-    
-    output = []
-    
-    for i in range(readnum()):
-        x = readnum()
-        y = readnum()
-        output.append((x, y, x, y))
-    
-    while len(nibs) > 0:
-        j = readnum()
-        if j > 0:
-            x = readnum()
-            y = readnum()
-            for c in range(j):
-                k = nibs.pop(0)
-                b = k & 7
-                g = { 0: 1, 1:  1, 2:  0, 3: -1, 4: -1, 5: -1, 6: 0, 7: 1 }[b]
-                b = { 0: 0, 1: -1, 2: -1, 3: -1, 4:  0, 5:  1, 6: 1, 7: 1 }[b]
-                if k & 8:
-                    if 0 != g: g *= readnum()
-                    if 0 != b: b *= readnum()
-                output.append((x, y, x, y))
-                x += g
-                y += b
-    
-    return output
 
 
