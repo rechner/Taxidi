@@ -36,7 +36,7 @@ import zlib
 import base64
 
 def encode(lines):
-    if len(lines) == 0: return "0"
+    if len(lines) == 0: return '0'
     
     # check if 3 points are on the same line, in order
     def ison(a, c, b):
@@ -103,36 +103,32 @@ def encode(lines):
     # compress using zlib if it makes it smaller
     z = zlib.compress(data)[2:-4]
     if len(z) < len(data):
-      return "b" + b95btoa(z)
+      return 'c' + b95btoa(z)
     else:
-      return "e" + b95btoa(data)
+      return 'e' + b95btoa(data)
 
 def decode(data):
+    if data == '0': return [[]]
+
+    # dewrapper functions
     def inflate(z):
-        return zlib.decompress(z, -zlib.MAX_WBITS)
-    
+      return zlib.decompress(z, -zlib.MAX_WBITS)
     def b64atob(b64):
-        return base64.b64decode(b64 + "=" * (4 - len(b64) % 4))
-    
+      return base64.b64decode(b64 + '=' * (4 - len(b64) % 4))
     def b95atob(b95):
-        n = 0; m = 1
-        
-        for c in b95[::-1]:
-            n += (ord(c) - 32) * m
-            m *= 95
-        
-        return hex(n)[4:-1].decode("hex")
-    
+      n = 0; m = 1
+      for c in b95[::-1]:
+        n += (ord(c) - 32) * m; m *= 95
+      return hex(n)[4:-1].decode('hex')
     def unwrap(d):
-        return {
-            "0": lambda x: "\0",
-            "a": inflate,
-            "b": lambda x: inflate(b95atob(x)),
-            "c": lambda x: inflate(b64atob(x)),
-            "d": lambda x: x,
-            "e": b95atob,
-            "f": b64atob
-        }[d[0]](d[1:])
+      return {
+        'a': inflate,                       # zlib compression
+        'b': lambda x: x,                   # raw version 1 format
+        'c': lambda x: inflate(b95atob(x)), # base 95 encoding, zlib compression
+        'd': lambda x: inflate(b64atob(x)), # base 64 encoding, zlib compression
+        'e': b95atob,                       # base 95 encoding, no compression
+        'f': b64atob                        # base 64 encoding, no compression
+      }[d[0]](d[1:])
     
     nibs = sum([[(ord(c) & 240) >> 4, ord(c) & 15] for c in unwrap(data)], [])
     
