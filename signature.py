@@ -108,7 +108,7 @@ def encode(lines):
       return 'e' + b95btoa(data)
 
 def decode(data):
-    if data == '0': return [[]]
+    if data[0] == '0': return []
     
     # dewrapper functions
     def inflate(z):
@@ -130,7 +130,7 @@ def decode(data):
         'f': b64atob                        # base 64 encoding, no compression
       }[d[0]](d[1:])
      
-    # unwrap 
+    # unwrap, break into groups of 4, and convert to 01
     data = ''.join([bin(ord(c))[2:].rjust(8, '0') for c in unwrap(data)])
     data = [data[i:i+4] for i in range(0, len(data), 4)]
     
@@ -140,12 +140,19 @@ def decode(data):
         temp += [arr.pop(0)]
       return int(''.join([i[1:4] for i in temp]), 2)
     
-    lines = []
-    
     #decode dots
+    lines = []
     for d in range(0, BEVLI4Dec(data)):
       x, y = BEVLI4Dec(data), BEVLI4Dec(data)
       lines += [(x, y, x, y)]
+    
+    #decode strokes
+    num_points = BEVLI4Dec(data)
+    while num_points > 0:
+      x, y = BEVLI4Dec(data), BEVLI4Dec(data)
+      for i in range (0, num_points):
+        pass
+      num_points = BEVLI4Dec(data)
     
     return lines
 
