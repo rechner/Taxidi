@@ -135,7 +135,10 @@ def decode(data):
     data = [data[i:i+4] for i in range(0, len(data), 4)]
     
     def BEVLI4Dec(arr):
-      pass
+      temp = []
+      while arr[0][0] == '1':
+        temp += [arr.pop(0)]
+      return ''
     
     lines = []
 
