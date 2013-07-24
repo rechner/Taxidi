@@ -109,7 +109,7 @@ def encode(lines):
 
 def decode(data):
     if data == '0': return [[]]
-
+    
     # dewrapper functions
     def inflate(z):
       return zlib.decompress(z, -zlib.MAX_WBITS)
@@ -129,19 +129,25 @@ def decode(data):
         'e': b95atob,                       # base 95 encoding, no compression
         'f': b64atob                        # base 64 encoding, no compression
       }[d[0]](d[1:])
-    
+     
     # unwrap 
     data = ''.join([bin(ord(c))[2:].rjust(8, '0') for c in unwrap(data)])
     data = [data[i:i+4] for i in range(0, len(data), 4)]
     
     def BEVLI4Dec(arr):
-      temp = []
-      while arr[0][0] == '1':
+      temp = [arr.pop(0)]
+      while temp[-1][0] == '1':
         temp += [arr.pop(0)]
-      return ''
+      return int(''.join([i[1:4] for i in temp]), 2)
     
     lines = []
-
+    
+    #decode dots
+    for d in range(0, BEVLI4Dec(data)):
+      x, y = BEVLI4Dec(data), BEVLI4Dec(data)
+      lines += [(x, y, x, y)]
+    
+    return lines
 
 class SignaturePad(wx.Window):
     """Widget for drawing and capturing a signature.
