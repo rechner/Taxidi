@@ -70,13 +70,13 @@ def encode(lines):
         return '1'.join([''] + temp[:-1]) + '0' + temp[-1]
     
     # encode dots in binary
-    data = ''.join(map(BEVLI4enc, [len(dots)] + [i for d in dots for i in d]))
+    data = ''.join(map(BEVLI4Enc, [len(dots)] + [i for d in dots for i in d]))
     
     # convert series of points to deltas, then convert to binary
     directions = [bin(0x7070563)[2:][i:i+3] for i in range(0,27,3)]
     for stroke in strokes:
       prev_point = stroke[0]
-      data += ''.join(map(BEVLI4enc, (len(stroke) - 1,) + prev_point))
+      data += ''.join(map(BEVLI4Enc, (len(stroke) - 1,) + prev_point))
       for point in stroke[1:]:
         dx, dy = point[0] - prev_point[0], point[1] - prev_point[1]
         prev_point = point
@@ -86,8 +86,8 @@ def encode(lines):
         #               101   100   011
         data += ('1' if abs(dx) > 1 or abs(dy) > 1 else '0') + \
           directions[cmp(dx, 0) + 1 + (cmp(dy, 0) + 1) * 3]
-        if abs(dx): data += BEVLI4enc(abs(dx))
-        if abs(dy): data += BEVLI4enc(abs(dy))
+        if abs(dx): data += BEVLI4Enc(abs(dx))
+        if abs(dy): data += BEVLI4Enc(abs(dy))
     
     # pad to byte boundry, then convert to binary
     data = ''.join(map(lambda x: chr(int(x, 2)), \
@@ -95,10 +95,10 @@ def encode(lines):
     
     # base 95 encoder
     def b95btoa(b):
-        b95 = ''; n = int(('_' + b).encode('hex'), 16)
-        while n > 0:
-            b95 += chr(int(n % 95 + 32)); n /= 95
-        return b95[::-1]
+      b95 = ''; n = int(('_' + b).encode('hex'), 16)
+      while n > 0:
+        b95 += chr(int(n % 95 + 32)); n /= 95
+      return b95[::-1]
     
     # compress using zlib if it makes it smaller
     z = zlib.compress(data)[2:-4]
@@ -130,42 +130,14 @@ def decode(data):
         'f': b64atob                        # base 64 encoding, no compression
       }[d[0]](d[1:])
     
-    nibs = sum([[(ord(c) & 240) >> 4, ord(c) & 15] for c in unwrap(data)], [])
+    # unwrap 
+    data = ''.join([bin(ord(c))[2:].rjust(8, '0') for c in unwrap(data)])
+    data = [data[i:i+4] for i in range(0, len(data), 4)]
     
-    def readnum():
-        a = 0; b = 8
-        
-        while b & 8:
-            b = nibs.pop(0)
-            a <<= 3; a|= b & 7
-        
-        return a
+    def BEVLI4Dec(arr):
+      pass
     
-    output = []
-    
-    for i in range(readnum()):
-        x = readnum()
-        y = readnum()
-        output.append((x, y, x, y))
-    
-    while len(nibs) > 0:
-        j = readnum()
-        if j > 0:
-            x = readnum()
-            y = readnum()
-            for c in range(j):
-                k = nibs.pop(0)
-                b = k & 7
-                g = { 0: 1, 1:  1, 2:  0, 3: -1, 4: -1, 5: -1, 6: 0, 7: 1 }[b]
-                b = { 0: 0, 1: -1, 2: -1, 3: -1, 4:  0, 5:  1, 6: 1, 7: 1 }[b]
-                if k & 8:
-                    if 0 != g: g *= readnum()
-                    if 0 != b: b *= readnum()
-                output.append((x, y, x, y))
-                x += g
-                y += b
-    
-    return output
+    lines = []
 
 
 class SignaturePad(wx.Window):
@@ -359,11 +331,9 @@ class SignaturePadControls(wx.Panel):
             wx.MessageBox('Signature cannot be blank!',
               'Error', wx.OK | wx.ICON_ERROR)
         else:
-            encoded = encode(self.sigpad.signature)
             print self.sigpad.signature
-            print '----------------'
-            print encoded
-            print len(str(self.sigpad.signature)), len(encoded)
+            encoded = encode(self.sigpad.signature)
+            decode(encoded)
 
 
 class TestFrame(wx.Frame):
