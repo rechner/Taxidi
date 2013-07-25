@@ -152,15 +152,15 @@ def decode(data):
     #decode strokes
     num_points = BEVLI4Dec(data)
     while num_points > 0:
-      last_point = (BEVLI4Dec(data), BEVLI4Dec(data))
+      last_line = (0, 0, BEVLI4Dec(data), BEVLI4Dec(data))
       for i in range (0, num_points):
         isleap = data[0][0] == '1'
         direction = directions.index(data.pop(0)[1:4])
         dx, dy = direction % 3 - 1, direction / 3 - 1
-        coord = (last_point[0] + dx * (BEVLI4Dec(data) if isleap and dx != 0 else 1),
-          last_point[1] + dy * (BEVLI4Dec(data) if isleap and dy != 0 else 1))
-        lines += [last_point + coord]
-        last_point = coord
+        last_line = (last_line[2], last_line[3], 
+          last_line[2] + dx * (BEVLI4Dec(data) if isleap and dx != 0 else 1),
+          last_line[3] + dy * (BEVLI4Dec(data) if isleap and dy != 0 else 1))
+        lines += [last_line]
       num_points = BEVLI4Dec(data) if len(data) > 0 else 0
     
     return lines
