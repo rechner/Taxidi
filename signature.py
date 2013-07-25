@@ -35,6 +35,8 @@ import math
 import zlib
 import base64
 
+directions = [bin(0x7070563)[2:][i:i+3] for i in range(0,27,3)]
+
 def encode(lines):
     if len(lines) == 0: return '0'
     
@@ -73,7 +75,6 @@ def encode(lines):
     data = ''.join(map(BEVLI4Enc, [len(dots)] + [i for d in dots for i in d]))
     
     # convert series of points to deltas, then convert to binary
-    directions = [bin(0x7070563)[2:][i:i+3] for i in range(0,27,3)]
     for stroke in strokes:
       prev_point = stroke[0]
       data += ''.join(map(BEVLI4Enc, (len(stroke) - 1,) + prev_point))
@@ -84,10 +85,12 @@ def encode(lines):
         # directions:   111   000   001
         #               110    #    010
         #               101   100   011
-        data += ('1' if abs(dx) > 1 or abs(dy) > 1 else '0') + \
+        isleap = abs(dx) > 1 or abs(dy) > 1
+        data += ('1' if isleap else '0') + \
           directions[cmp(dx, 0) + 1 + (cmp(dy, 0) + 1) * 3]
-        if abs(dx): data += BEVLI4Enc(abs(dx))
-        if abs(dy): data += BEVLI4Enc(abs(dy))
+        if isleap:
+          if abs(dx): data += BEVLI4Enc(abs(dx))
+          if abs(dy): data += BEVLI4Enc(abs(dy))
     
     # pad to byte boundry, then convert to binary
     data = ''.join(map(lambda x: chr(int(x, 2)), \
@@ -149,10 +152,16 @@ def decode(data):
     #decode strokes
     num_points = BEVLI4Dec(data)
     while num_points > 0:
-      x, y = BEVLI4Dec(data), BEVLI4Dec(data)
+      last_point = (BEVLI4Dec(data), BEVLI4Dec(data))
       for i in range (0, num_points):
-        pass
-      num_points = BEVLI4Dec(data)
+        isleap = data[0][0] == '1'
+        direction = directions.index(data.pop(0)[1:4])
+        dx, dy = direction % 3 - 1, direction / 3 - 1
+        coord = (last_point[0] + dx * (BEVLI4Dec(data) if isleap and dx != 0 else 1),
+          last_point[1] + dy * (BEVLI4Dec(data) if isleap and dy != 0 else 1))
+        lines += [last_point + coord]
+        last_point = coord
+      num_points = BEVLI4Dec(data) if len(data) > 0 else 0
     
     return lines
 
@@ -349,7 +358,7 @@ class SignaturePadControls(wx.Panel):
         else:
             print self.sigpad.signature
             encoded = encode(self.sigpad.signature)
-            decode(encoded)
+            print decode(encoded)
 
 
 class TestFrame(wx.Frame):
