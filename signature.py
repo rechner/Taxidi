@@ -77,7 +77,7 @@ def encode(lines):
     # convert series of points to deltas, then convert to binary
     for stroke in strokes:
       prev_point = stroke[0]
-      data += ''.join(map(BEVLI4Enc, (len(stroke) - 1,) + prev_point))
+      data += ''.join(map(BEVLI4Enc, (len(stroke) - 2,) + prev_point))
       for point in stroke[1:]:
         dx, dy = point[0] - prev_point[0], point[1] - prev_point[1]
         prev_point = point
@@ -153,7 +153,7 @@ def decode(data):
     num_points = BEVLI4Dec(data)
     while num_points > 0:
       last_line = (0, 0, BEVLI4Dec(data), BEVLI4Dec(data))
-      for i in range (0, num_points):
+      for i in range (0, num_points + 1):
         isleap = data[0][0] == '1'
         direction = directions.index(data.pop(0)[1:4])
         dx, dy = direction % 3 - 1, direction / 3 - 1
