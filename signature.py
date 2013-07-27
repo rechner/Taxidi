@@ -31,6 +31,139 @@ __version__ = '0.1'
 __all__ = ['SignaturePad']
 
 import wx
+import math
+import zlib
+import base64
+
+directions = [bin(0x7070563)[2:][i:i+3] for i in range(0,27,3)]
+
+def encode(lines):
+    if len(lines) == 0: return '0'
+    
+    # check if 3 points are on the same line, in order
+    def ison(a, c, b):
+      within = lambda p, q, r: p <= q <= r or r <= q <= p
+      return ((b[0] - a[0]) * (c[1] - a[1]) == (c[0] - a[0]) * (b[1] - a[1])
+        and (within(a[0], c[0], b[0]) if a[0] != b[0] else 
+          within(a[1], c[1], b[1])))
+    
+    # converts series of lines to 'connect the dots', and looks for single dots
+    strokes = [[lines[0][0:2]]]; dots = []
+    for line in lines:
+      if line[0:2] != strokes[-1][-1]: 
+        if len(strokes[-1]) == 1:
+          dots += strokes.pop()
+        strokes += [[line[0:2]]]
+      if line[2:4] != strokes[-1][-1]:
+        if len(strokes[-1]) > 1 and \
+          ison(strokes[-1][-2], strokes[-1][-1], line[2:4]):
+            strokes[-1][-1] = line[2:4]
+        else:
+          strokes[-1] += [line[2:4]]
+    if len(strokes[-1]) == 1:
+      dots += strokes.pop()
+    
+    # big endian, most significant first
+    def BEVLI4Enc(num):
+      if num == 0: return '0' * 4
+      else:
+        temp = -(-int(math.log(num, 2) + 1) // 3) * 3
+        temp = [bin(num)[2:].zfill(temp)[i:i+3] for i in range(0, temp, 3)]
+        return '1'.join([''] + temp[:-1]) + '0' + temp[-1]
+    
+    # encode dots in binary
+    data = ''.join(map(BEVLI4Enc, [len(dots)] + [i for d in dots for i in d]))
+    
+    # convert series of points to deltas, then convert to binary
+    for stroke in strokes:
+      prev_point = stroke[0]
+      data += ''.join(map(BEVLI4Enc, (len(stroke) - 2,) + prev_point))
+      for point in stroke[1:]:
+        dx, dy = point[0] - prev_point[0], point[1] - prev_point[1]
+        prev_point = point
+        # format: bit 'is this delta more than 1 pixel?', 3xbits direction
+        # directions:   111   000   001
+        #               110    #    010
+        #               101   100   011
+        isleap = abs(dx) > 1 or abs(dy) > 1
+        data += ('1' if isleap else '0') + \
+          directions[cmp(dx, 0) + 1 + (cmp(dy, 0) + 1) * 3]
+        if isleap:
+          if abs(dx): data += BEVLI4Enc(abs(dx))
+          if abs(dy): data += BEVLI4Enc(abs(dy))
+    
+    # pad to byte boundry, then convert to binary
+    data = ''.join(map(lambda x: chr(int(x, 2)), \
+      [data[i:i+8].ljust(8, '0') for i in range(0,len(data),8)]))
+    
+    # base 95 encoder
+    def b95btoa(b):
+      b95 = ''; n = int(('_' + b).encode('hex'), 16)
+      while n > 0:
+        b95 += chr(int(n % 95 + 32)); n /= 95
+      return b95[::-1]
+    
+    # compress using zlib if it makes it smaller
+    z = zlib.compress(data)[2:-4]
+    if len(z) < len(data):
+      return 'c' + b95btoa(z)
+    else:
+      return 'e' + b95btoa(data)
+
+def decode(data):
+    if data[0] == '0': return []
+    
+    # dewrapper functions
+    def inflate(z):
+      return zlib.decompress(z, -zlib.MAX_WBITS)
+    def b64atob(b64):
+      return base64.b64decode(b64 + '=' * (4 - len(b64) % 4))
+    def b95atob(b95):
+      n = 0; m = 1
+      for c in b95[::-1]:
+        n += (ord(c) - 32) * m; m *= 95
+      return hex(n)[4:-1].decode('hex')
+    def unwrap(d):
+      return {
+        'a': inflate,                       # zlib compression
+        'b': lambda x: x,                   # raw version 1 format
+        'c': lambda x: inflate(b95atob(x)), # base 95 encoding, zlib compression
+        'd': lambda x: inflate(b64atob(x)), # base 64 encoding, zlib compression
+        'e': b95atob,                       # base 95 encoding, no compression
+        'f': b64atob                        # base 64 encoding, no compression
+      }[d[0]](d[1:])
+     
+    # unwrap, break into groups of 4, and convert to 01
+    data = ''.join([bin(ord(c))[2:].rjust(8, '0') for c in unwrap(data)])
+    data = [data[i:i+4] for i in range(0, len(data), 4)]
+    
+    def BEVLI4Dec(arr):
+      temp = [arr.pop(0)]
+      while temp[-1][0] == '1':
+        temp += [arr.pop(0)]
+      return int(''.join([i[1:4] for i in temp]), 2)
+    
+    #decode dots
+    lines = []
+    for d in range(0, BEVLI4Dec(data)):
+      x, y = BEVLI4Dec(data), BEVLI4Dec(data)
+      lines += [(x, y, x, y)]
+    
+    #decode strokes
+    num_points = BEVLI4Dec(data)
+    while num_points > 0:
+      last_line = (0, 0, BEVLI4Dec(data), BEVLI4Dec(data))
+      for i in range (0, num_points + 1):
+        isleap = data[0][0] == '1'
+        direction = directions.index(data.pop(0)[1:4])
+        dx, dy = direction % 3 - 1, direction / 3 - 1
+        last_line = (last_line[2], last_line[3], 
+          last_line[2] + dx * (BEVLI4Dec(data) if isleap and dx != 0 else 1),
+          last_line[3] + dy * (BEVLI4Dec(data) if isleap and dy != 0 else 1))
+        lines += [last_line]
+      num_points = BEVLI4Dec(data) if len(data) > 0 else 0
+    
+    return lines
 
 class SignaturePad(wx.Window):
     """Widget for drawing and capturing a signature.
@@ -224,9 +357,10 @@ class SignaturePadControls(wx.Panel):
               'Error', wx.OK | wx.ICON_ERROR)
         else:
             print self.sigpad.signature
-        
-    
-        
+            encoded = encode(self.sigpad.signature)
+            print decode(encoded)
+
+
 class TestFrame(wx.Frame):
     def __init__(self, parent=None):
         super(TestFrame, self).__init__(parent, title="Signature Pad",
@@ -246,3 +380,7 @@ if __name__ == '__main__':
     frame = TestFrame()
     frame.Show()
     app.MainLoop()
+    
+
+
+
