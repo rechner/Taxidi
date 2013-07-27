@@ -218,7 +218,7 @@ class Database:
             registerEmailEnable bool, registerEmail text,
             checkinSMSEnable bool, checkinSMS text,
             checkinEmailEnable bool, checkinEmail text,
-            parentURI text);""")
+            parentURI text, alertText text);""")
         #services
         self.execute("""CREATE TABLE services(id integer primary key,
             name text, day integer, time text, endTime text);""")
@@ -660,18 +660,18 @@ class Database:
                     nametag='default', nametagEnable=True,
                     parentTag='default', parentTagEnable=True, admin=None,
                     autoExpire = False, notifyExpire = False, newsletter=False,
-                    newsletterLink=''):
+                    newsletterLink='', alert=''):
         if prefix == '' or prefix == None:
             prefix = name[0].upper()
         self.execute("""INSERT INTO activities(name, prefix, securityTag,
                         securityMode, nametagEnable, nametag,
                         parentTagEnable, parentTag, admin, autoExpire,
-                        notifyExpire, newsletter, newsletterLink)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""",
+                        notifyExpire, newsletter, newsletterLink, alertText)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""",
                         (name, prefix, securityTag, securityMode,
                         nametagEnable, nametag, parentTagEnable, parentTag,
                         admin, autoExpire, notifyExpire, newsletter,
-                        newsletterLink))
+                        newsletterLink, alert))
 
     def RemoveActivity(self, ref):
         self.execute("DELETE FROM activities WHERE id = ?;", (ref,))
