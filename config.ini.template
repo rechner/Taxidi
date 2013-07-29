@@ -18,6 +18,10 @@ enable = False  #True to send output to printer
 preview = True  #Show preview
 printer = ""    #Name of system printer to use.
 
+[barcode]
+#Support for serial barcode scanner (TODO)
+enable = False
+device = "/dev/ttyUSB0"
 
 [database]
 driver = sqlite     #sqlite, postgres, or mysql
@@ -102,7 +106,7 @@ notifoSecret =
 message = "Nursery alert for {code}. {name} needs you. Please come to the {activity} child check-in station."
 sms = True
 smsType = gvoice #Google voice is currently the only one implemented.
-email = # Google Account email address (one associated w/ your Voice account)
+email = # Google Account email address (one associated w/ your Voice accoulnt)
 password = # Raw password used for login
 
 [fellowshipone]

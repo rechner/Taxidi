@@ -10,6 +10,8 @@
 #TODO: Theme files.  Colours hard coded for now. (Probably something for conf.py)
 #TODO: Set radiobutton background colours if possible.
 #TODO: Clean up XML.
+#TODO: Unify dual-name references (e.g. data['surname'] vs. data['lastname']
+#       (According to database specification?)
 
 #Couldn't get the wx-esque validator classes to work, so I wrote my own (validate.py)
 
@@ -20,7 +22,7 @@ import signal
 
 import traceback
 
-__version__ = '0.70.06-dev'
+__version__ = '0.70.07-dev'
 
 userHand = 'right'
 
@@ -876,15 +878,16 @@ class MyApp(wx.App):
         return jobID
                 
     def _notifoProducer(self, jobID, d):
-        from notify import notifo
-        key = conf.config['notifications']['notifoKey']
-        secret = conf.config['notifications']['notifoSecret']
+        #the Notifo service is no longer in service
+        #~ from notify import notifo
+        #~ key = conf.config['notifications']['notifoKey']
+        #~ secret = conf.config['notifications']['notifoSecret']
         
-        note = notifo.Notifo(key, secret)
-        ret = note.sendNotification(d)
-        if ret < 0:
-            notify.error("Notifo error",
-                         "Unable to send alert to tech booth via notifo.")
+        #~ note = notifo.Notifo(key, secret)
+        #~ ret = note.sendNotification(d)
+        #~ if ret < 0:
+            #~ notify.error("Notifo error",
+                         #~ "Unable to send alert to tech booth via notifo.")
                          
         return jobID
         
