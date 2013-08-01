@@ -294,6 +294,7 @@ class MyApp(wx.App):
             pane.SearchButton = xrc.XRCCTRL(pane, 'SearchButton')
             pane.RegisterButton = xrc.XRCCTRL(pane, 'RegisterButton')
             pane.VisitorButton = xrc.XRCCTRL(pane, 'VisitorButton')
+            pane.BusMinistryButton = xrc.XRCCTRL(pane, 'BusMinistryButton')
             pane.SwitchUserButton = xrc.XRCCTRL(pane, 'SwitchUserButton')
             pane.StatisticsButton = xrc.XRCCTRL(pane, 'StatisticsButton')
             pane.EmergencyListButton = xrc.XRCCTRL(pane, 'EmergencyListButton')
@@ -310,6 +311,7 @@ class MyApp(wx.App):
             self.Bind(wx.EVT_BUTTON, self.SwitchUser, pane.SwitchUserButton)
             self.Bind(wx.EVT_BUTTON, self.ShowStatistics, pane.StatisticsButton)
             self.frame.Bind(wx.EVT_BUTTON, self.ExitSearch, pane.ExitButton)
+            self.Bind(wx.EVT_BUTTON, self.BusMinistry, pane.BusMinistryButton)
 
         #Setup keypad:
         for pane in panels:
@@ -393,6 +395,111 @@ class MyApp(wx.App):
         
     def CloseStatisticsDialog(self, event):
         self.StatFrame.Destroy()
+        
+    def BusMinistry(self, event):
+        driverName = ""
+        dlNumber = ""
+        labelText = "0"
+        
+        dlg = dialogues.BusDialog(self.frame, wx.ID_ANY)
+        while driverName == "" or dlNumber == "" or labelText == "":
+            dlg.SetPosition((0, self.frame.GetPosition()[1] + 100))
+            dlg.CentreOnParent(wx.HORIZONTAL)
+            ret = dlg.ShowModal()
+            if ret == wx.ID_CANCEL:
+                dlg.Destroy()
+                return
+            #Read values. Loop will exit when all values are non-blank
+            driverName = dlg.GetNameValue()
+            dlNumber = dlg.GetDLValue()
+            labelText = dlg.GetLabelsValue()
+            if not labelText.isdigit(): labelText = ""
+        dlg.Destroy()
+        
+        #Select default activity per config file
+        self.activities = self.db.GetActivities()
+        defaultActivity = conf.config['config']['defaultActivity']
+        
+        #Most confusing usage of dictionary list comprehension. Probably a better way
+        try:
+            activity = self.activities[[ act['name'] for act in self.activities ].index(defaultActivity)]
+        except ValueError:
+            notify.error("Configuration Error", 
+                "The default activity {0} does not exist.".format(defaultActivity))
+        
+        #Generate secure code if needed
+        if activity['securityTag']:
+            if conf.as_bool(conf.config['config']['secureCodeRemote']):
+                #Use remote
+                code_generator = taxidi.SecureCode(conf.config['config']['secureCodeURI'])
+            else:
+                code_generator = taxidi.SecureCode() #Use local generator
+            secure = code_generator.request() #Draw a code
+            del code_generator #TODO: put generator initialization in BeginCheckinRoutine
+
+            #Hash secure mode if needed
+            if activity['securityMode'].lower() == 'simple':
+                parentSecure = secure
+            elif activity['securityMode'].lower() == 'md5':
+                parentSecure = secure
+                import hashlib
+                secure = hashlib.md5(secure).hexdigest()[:4].upper()
+        else:
+            secure = None
+            parentSecure = None
+        
+        #Produce blank name tag with security code
+        trash = []
+        if secure == None:
+            barcode = False
+        else:
+            barcode = True
+        #Generate the nametag:
+        self.printing.nametag(theme=activity['nametag'], code='BUS',
+                              first='&nbsp;',
+                              last=driverName, room=dlNumber,
+                              secure=secure, barcode=barcode)
+        
+        if conf.as_bool(conf.config['printing']['preview']):
+            #Open print preview
+            self.printing.preview()
+            trash.append(self.printing.pdf) #Delete it later
+            
+        #Print enough labels for everyone
+        for i in range(int(labelText)):
+            if conf.as_bool(conf.config['printing']['enable']):
+                if conf.config['printing']['printer'] == '':
+                    self.printing.printout() #Use default printer
+                else:
+                    #TODO: do validation against printer name.
+                    self.printing.printout(printer=conf.config['printing']['printer'])
+        
+        
+        #Print one security receipt
+        if secure != None:
+            barcode = False
+        else:
+            barcode = True
+        link = activity['parentURI']
+        self.printing.parent(theme=activity['nametag'], 
+                             code='BUS', secure=parentSecure, link=link)
+        if conf.as_bool(conf.config['printing']['preview']):
+            #Open preview
+            self.printing.preview()
+            trash.append(self.printing.pdf)
+        #Do printing if needed
+        for i in range(int(labelText)):
+            if conf.as_bool(conf.config['printing']['enable']):
+                if conf.config['printing']['printer'] == '':
+                    self.printing.printout() #Use default printer
+                else:
+                    #TODO: do validation against printer name.
+                    self.printing.printout(printer=conf.config['printing']['printer'])
+
+        wx.CallLater(1000, self.printing.cleanup, trash) #Delete temporary files later
+        
+        #TODO: FIXME: Insert into database marking the current service
+        
 
     def EditServices(self, event):
         self.setupDatabase() #Open database

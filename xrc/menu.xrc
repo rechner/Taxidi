@@ -854,8 +854,8 @@
                         <option>1</option>
                         <flag>wxALL|wxEXPAND</flag>
                         <border>7</border>
-                        <object class="wxButton" name="LockKioskButton">
-                            <label>Lock Kiosk</label>
+                        <object class="wxButton" name="BusMinistryButton">
+                            <label>Bus Ministry</label>
                             <default>0</default>
                         </object>
                     </object>

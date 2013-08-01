@@ -1,0 +1,23 @@
+#Tested with Brother QL-570
+
+[default]
+zoom = 0.89  #;zoom factor
+height = 100  #;size of page in mm, while in portrait mode
+width = 62
+left = 0
+top = 2
+bottom = 2
+right = 2
+orientation = landscape
+
+[parent]
+zoom = 0.89
+height = 100  #;transpose height and width for portrait orientation
+width = 62
+left = 0
+top = 5
+bottom = 2
+right = 2
+orientation = portrait
+
+

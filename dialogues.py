@@ -1131,7 +1131,144 @@ class EditSMS(wx.Dialog):
         
     def GetText(self):
         return self.TextBox.GetValue()
+        
+        
+class BusDialog(wx.Dialog):
+    def __init__(self, parent, id):
+        pre = wx.PreDialog()
+        pre.Create(parent, id, 'Bus Check-in', size=(468, 190))      
+        self.PostCreate(pre)
+        self.init_dialog(parent)
+        
+        #Better to do this yourself, to allow for dialogue reuse
+        #~ if parent:
+            #~ parentPosition = parent.GetPosition()
+            #~ self.SetPosition((0, parent.GetPosition()[1] + 100))
+            #~ self.CentreOnParent(wx.HORIZONTAL)
+        
+    def init_dialog(self, parent):
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
+        nameSizer = wx.BoxSizer(wx.HORIZONTAL)
+	
+        nameSt = wx.StaticText(self, wx.ID_ANY, "Driver Name")
+        nameSizer.Add(nameSt, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+	
+        self.NameText = wx.TextCtrl(self, wx.ID_ANY, size=(-1,40))
+        self.NameText.SetFont(wx.Font(18, 70, 90, 90, False))
+	
+        nameSizer.Add(self.NameText, 1, wx.ALIGN_CENTER_VERTICAL|wx.TOP|wx.BOTTOM|wx.LEFT, 5)
+	
+        KeyboardButton = wx.Button(self, wx.ID_ANY, u"⌨")
+        KeyboardButton.SetFont(wx.Font( 18, 70, 90, 90, False))
+	
+        nameSizer.Add(KeyboardButton, 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP|wx.BOTTOM, 5)
+        mainSizer.Add(nameSizer, 0, wx.EXPAND|wx.ALL, 5)
+        
+        numberSizer = wx.BoxSizer(wx.HORIZONTAL)
+	
+        dlSt = wx.StaticText(self, wx.ID_ANY, "DL #")
+        numberSizer.Add(dlSt, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+	
+        self.DLText = wx.TextCtrl(self, wx.ID_ANY)
+        numberSizer.Add(self.DLText, 1, wx.ALL|wx.EXPAND, 5)
+	
+        labelsSt = wx.StaticText(self, wx.ID_ANY, "Labels")
+        numberSizer.Add(labelsSt, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+        
+        MinusButton = wx.BitmapButton(self, wx.ID_ANY, wx.Bitmap("resources/icons/list-remove-16.png"), size=(50,-1), style=wx.BU_AUTODRAW)
+        numberSizer.Add(MinusButton, 0, wx.ALIGN_CENTER_VERTICAL|wx.EXPAND|wx.TOP|wx.BOTTOM|wx.LEFT, 5)
+        
+        self.LabelsText = wx.TextCtrl(self, wx.ID_ANY, size=(-1,40), style=wx.TE_CENTRE)
+        #~ self.LabelsText = wx.lib.masked.NumCtrl(self, wx.ID_ANY, size=(-1,40), style=wx.TE_CENTRE, autoSize = False)
+        self.LabelsText.SetFont(wx.Font( 18, 70, 90, 90, False))
+        numberSizer.Add(self.LabelsText, 0, wx.TOP|wx.BOTTOM, 5)
+        
+        PlusButton = wx.BitmapButton(self, wx.ID_ANY, wx.Bitmap("resources/icons/list-add-16.png"), size=(50,-1), style=wx.BU_AUTODRAW)
+        numberSizer.Add(PlusButton, 0, wx.EXPAND|wx.TOP|wx.BOTTOM|wx.RIGHT, 5)
+        
+        mainSizer.Add(numberSizer, 0, wx.EXPAND, 5)
+        
+        buttonSizer =   wx.BoxSizer(wx.HORIZONTAL)
+        
+        self.CancelButton = wx.Button(self, wx.ID_CANCEL, "Cancel", size=(-1,50))
+        buttonSizer.Add(self.CancelButton, 1, wx.ALL, 5)
+        
+        OKButton = wx.Button(self, wx.ID_OK, "OK", size=(-1,50))
+        buttonSizer.Add(OKButton, 1, wx.ALL, 5)
+        
+        mainSizer.Add(buttonSizer, 1, wx.EXPAND, 5)
+        
+        self.SetSizer(mainSizer)
+        self.Layout()
+        self.NameText.SetFocus()
+        
+        #Bind events
+        KeyboardButton.Bind(wx.EVT_NAVIGATION_KEY, self._tab_pressed1)
+        KeyboardButton.Bind(wx.EVT_BUTTON, self.ShowKeyboard)
+        MinusButton.Bind(wx.EVT_NAVIGATION_KEY, self._tab_pressed2)
+        MinusButton.Bind(wx.EVT_BUTTON, self.RemoveLabel)
+        PlusButton.Bind(wx.EVT_NAVIGATION_KEY, self._tab_pressed3)
+        PlusButton.Bind(wx.EVT_BUTTON, self.AddLabel)
+        
+        #Default value
+        self.LabelsText.SetValue("1")
 
+    def AddLabel(self, evt):
+        value = self.LabelsText.GetValue()
+        if not value.isdigit():
+            value = "1"
+            
+        self.LabelsText.SetValue(str(int(value) + 1))
+        
+    def RemoveLabel(self, evt):
+        value = self.LabelsText.GetValue()
+        if not value.isdigit():
+            value = "1"
+            
+        self.LabelsText.SetValue(str(int(value) - 1))
+        
+
+    def _tab_pressed1(self, evt):
+        if evt.IsFromTab():
+            if evt.GetDirection():
+                self.DLText.SetFocus()
+            else:
+                self.NameText.SetFocus()
+            
+    def _tab_pressed2(self, evt):
+        if evt.IsFromTab():
+            if evt.GetDirection():
+                self.LabelsText.SetFocus()
+            else:
+                self.DLText.SetFocus()
+                
+    def _tab_pressed3(self, evt):
+        if evt.IsFromTab():
+            if evt.GetDirection():
+                self.CancelButton.SetFocus()
+            else:
+                self.LabelsText.SetFocus()
+                
+    def ShowKeyboard(self, event):
+        import subprocess
+        try:
+            subprocess.Popen(('/usr/bin/onboard', '-x', '0', 
+                          '-y', '470', '-s', '1024x300'))
+        except OSError:
+            print "Onboard is not installed.  Unable to open keyboard"
+            #~ notify.warning('Onboard not installed', 
+                #~ 'Unable to open on-screen keyboard')
+        self.NameText.SetFocus()
+        
+    def GetNameValue(self):
+        return self.NameText.GetValue()
+        
+    def GetDLValue(self):
+        return self.DLText.GetValue()
+        
+    def GetLabelsValue(self):
+        return self.LabelsText.GetValue()
+        
 
 class HistoryDialog(wx.Dialog):
     def __init__(self, parent, id, history=None, data=None):
@@ -1275,8 +1412,8 @@ if __name__ == '__main__':
     #Services management dialog:
     app = wx.PySimpleApp(0)
 
-    from dblib import sqlite
-    db = sqlite.Database('~/.taxidi/database/users.db')
+    #~ from dblib import sqlite
+    #~ db = sqlite.Database('~/.taxidi/database/users.db')
 #~ 
     #~ dlg = EditServices(None, -1, db)
     #~ services = db.GetServices()
@@ -1308,11 +1445,16 @@ if __name__ == '__main__':
 #~ 
     #~ dlg.Destroy()
     
-    dlg = EditActivities(None, -1, db)
+    #~ dlg = EditActivities(None, -1, db)
+    #~ dlg.ShowModal()
+    #~ dlg.Destroy()
+    #~ db.commit()
+    #~ db.close()
+    
+    #Bus ministry
+    dlg = BusDialog(None, -1)
     dlg.ShowModal()
     dlg.Destroy()
-    db.commit()
-    db.close()
     
     #~ dlg = EditSMS(None, -1, "Testing 123")
     #~ if dlg.ShowModal() == wx.ID_OK:

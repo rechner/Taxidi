@@ -646,9 +646,14 @@ class Main:
 if __name__ == '__main__':
 
     con = Main()
-    con.nametag(theme='outfitters', room='Green Room', first='Johnothan',
+    con.nametag(theme='newlife', room='Green Room', first='Johnothan',
                 last='Churchgoer', code='O-9999', medical=None,
                 secure='5C55', barcode=True)
+                
+    #~ con.nametag(theme='default', code='BUS',
+                              #~ first='&nbsp',
+                              #~ last="Driver Name", room="123456790",
+                              #~ secure="Z1Z", barcode=True)
     con.preview()
     #~ con.printout(printer="Brother-QL-570")
 
