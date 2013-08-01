@@ -206,7 +206,7 @@ class Database:
         self.execute("""CREATE TABLE users(id integer primary key,
             user text UNIQUE NOT NULL, hash text, salt text, admin integer,
             notifoUser text, notifoSecret text, scATR text,
-            leftHanded bool, ref integer);""")
+            leftHanded bool, ref integer, name text);""")
         #activities
         self.execute("""CREATE TABLE activities(id integer primary key,
             name text, prefix text, securityTag text, securityMode text,

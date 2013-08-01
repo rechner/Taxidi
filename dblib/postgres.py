@@ -115,7 +115,7 @@ class Database:
         self.tableSQL.append("""CREATE TABLE users(id SERIAL,
             "user" text UNIQUE NOT NULL, hash text, salt text, 
             admin bool, "notifoUser" text, "notifoSecret" text, 
-            "scATR" text, "leftHanded" bool, ref int);""")
+            "scATR" text, "leftHanded" bool, ref int, name text);""")
         self.tableSQL.append("""CREATE TABLE activities(id SERIAL,
             name text, prefix text, "securityTag" text, "securityMode" text,
             "nametagEnable" bool, nametag text,
