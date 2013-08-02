@@ -22,7 +22,7 @@ import signal
 
 import traceback
 
-__version__ = '0.70.07-dev'
+__version__ = '0.70.08-dev'
 
 userHand = 'right'
 
@@ -300,18 +300,18 @@ class MyApp(wx.App):
             pane.EmergencyListButton = xrc.XRCCTRL(pane, 'EmergencyListButton')
             pane.ExitButton = xrc.XRCCTRL(pane, 'ExitButton')
             
-
             pane.Search.Bind(wx.EVT_TEXT_ENTER, self.OnSearch)
             pane.ServiceSelection.Bind(wx.EVT_CHOICE, self.OnChangeService)
             pane.Search.Bind(wx.EVT_TEXT, self.ResetSearchColour)
             pane.ClearButton.Bind(wx.EVT_BUTTON, self.clearSearchEvent)
-            self.frame.Bind(wx.EVT_BUTTON, self.OnSearch, pane.SearchButton)
-            self.frame.Bind(wx.EVT_BUTTON, self.OnRegister, pane.RegisterButton)
-            self.frame.Bind(wx.EVT_BUTTON, self.OnVisitor, pane.VisitorButton)
-            self.Bind(wx.EVT_BUTTON, self.SwitchUser, pane.SwitchUserButton)
-            self.Bind(wx.EVT_BUTTON, self.ShowStatistics, pane.StatisticsButton)
-            self.frame.Bind(wx.EVT_BUTTON, self.ExitSearch, pane.ExitButton)
-            self.Bind(wx.EVT_BUTTON, self.BusMinistry, pane.BusMinistryButton)
+            pane.SearchButton.Bind(wx.EVT_BUTTON, self.OnSearch)
+            pane.RegisterButton.Bind(wx.EVT_BUTTON, self.OnRegister)
+            pane.VisitorButton.Bind(wx.EVT_BUTTON, self.OnVisitor)
+            pane.SwitchUserButton.Bind(wx.EVT_BUTTON, self.SwitchUser)
+            pane.StatisticsButton.Bind(wx.EVT_BUTTON, self.ShowStatistics)
+            pane.ExitButton.Bind(wx.EVT_BUTTON, self.ExitSearch)
+            pane.BusMinistryButton.Bind(wx.EVT_BUTTON, self.BusMinistry)
+
 
         #Setup keypad:
         for pane in panels:
