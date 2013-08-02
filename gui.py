@@ -22,7 +22,7 @@ import signal
 
 import traceback
 
-__version__ = '0.70.08-dev'
+__version__ = '0.70.09-dev'
 
 userHand = 'right'
 
