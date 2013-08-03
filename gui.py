@@ -22,7 +22,7 @@ import signal
 
 import traceback
 
-__version__ = '0.70.09-dev'
+__version__ = '0.70.10-dev'
 
 userHand = 'right'
 
@@ -2051,6 +2051,9 @@ class MyApp(wx.App):
             pane.NewsletterToggle = xrc.XRCCTRL(pane, 'NewsletterToggle')
             pane.NeverExpireToggle = xrc.XRCCTRL(pane, 'NeverExpireToggle')
             pane.NotifyWhenExpiresToggle = xrc.XRCCTRL(pane, 'NotifyWhenExpiresToggle')
+            
+            pane.MultiServiceButton.Disable()
+            pane.AddSibling.Disable()
 
             pane.CheckinButton.Bind(wx.EVT_BUTTON, self.RegisterVisitor)
             pane.CloseButton.Bind(wx.EVT_BUTTON, self.CloseVisitorPanel)
@@ -2165,7 +2168,7 @@ class MyApp(wx.App):
             return 0  #Don't close the panel
 
         #Do printing if needed: (And checkin!)
-        activity = self.activities[panel.Activity.GetSelection()]
+        activity = self.activities[self.VisitorPanel.Activity.GetSelection()]
         data = {'id': ref, 'name': name, 'surname': surname, 
                 'paging': paging, 'medical': medical, 
                 'activity': activity, 
