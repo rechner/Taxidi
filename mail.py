@@ -18,6 +18,8 @@ global log
 
 def send(to, fromText, subject, text, html='', images=[]):
     fromaddr = conf.config['report']['email']['from']
+    if html == '':
+        html = "<html><body>{}</body></html>".format(text.replace('\n', '<br>'))
 
     #See http://code.activestate.com/recipes/473810/ for details
     #Construct the message:

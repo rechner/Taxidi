@@ -99,9 +99,9 @@ hash = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'
 growl = False
 growlHost =
 growlPort =
-notifo = False
-notifoKey =
-notifoSecret =
+techbooth = False
+techboothEmail = 
+techboothSubject = "Nursurey Alert!"
 #Message to format nursery alerts with:
 message = "Nursery alert for {code}. {name} needs you. Please come to the {activity} child check-in station."
 sms = True

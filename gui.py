@@ -894,7 +894,8 @@ class MyApp(wx.App):
         self.AlertDialog.activity = self.activities[parent.data['activity']-1]
         message = self.AlertDialog.activity['alertText']
         if message == None:
-            message = ""
+            #Use default from config as fallback.
+            message = conf.config['notifications']['message']
         message = message.replace('{code}', parent.data['paging'])
         message = message.replace('{name}', parent.data['name'])
         message = message.replace('{lastname}', parent.data['lastname'])
@@ -906,7 +907,7 @@ class MyApp(wx.App):
             self.SetAlertData(message, parent.data['phone'], []) #Number is landline
         
         #Show the dialog
-        self.AlertDialog.ShowModal()
+        print self.AlertDialog.ShowModal()
 
     def SetAlertData(self, message, parent, recipients):
         """
@@ -933,18 +934,21 @@ class MyApp(wx.App):
         #~ for i in recipients:
         self.AlertDialog.SMSRecipients.SetCheckedStrings(recipients)
             
-        self.AlertDialog.NotifyTech.SetValue(True)
-        self.AlertDialog.NotifyAdmin.SetValue(True)
+        if conf.as_bool(conf.config['notifications']['techbooth']):
+            self.AlertDialog.NotifyTech.Enable()
+            self.AlertDialog.NotifyTech.SetValue(True)
+        else:
+            self.AlertDialog.NotifyTech.Disable()
+        
+        #~ self.AlertDialog.NotifyAdmin.SetValue(True)
+        self.AlertDialog.NotifyAdmin.Disable() #Unimplemented for now
         
     def SendAlert(self, event):
-        #Read in data from form
-        #Create fork:
-            #TODO: Send growl/notifo/openLP alert, if applicable.
-            #Send SMS
         button = event.GetEventObject()
         panel = button.GetParent()
-        
+        print "Got button and panel object"
         message = panel.Message.GetValue()
+        print message
         if panel.NotifyParent.GetValue():
             recipients = [ panel.parent ] #Parent number on SMS list
         else:
@@ -960,16 +964,22 @@ class MyApp(wx.App):
                 "Sending alert for {0}.".format(panel.data['paging']))
                 
         if panel.NotifyTech.GetValue(): #Notify tech booth
-            #Notify via growl and/or notifo:
-            if conf.as_bool(conf.config['notifications']['notifo']):
-                #Use notifo:
-                d = {'msg': message, 'title': 'Nursery Alert',
-                     'label': 'Taxidi',
-                     'uri': conf.config['notifications']['notifyURI'] }
-                self._notifoProducer(None, d)
+            #Since the notifo service is no longer available, we'll use email
+            email = conf.config['notifications']['techboothEmail'] 
+            location = conf.config['config']['name']
+            subject = conf.config['notifications']['techboothSubject']
+            if conf.as_bool(conf.config['notifications']['techbooth']) and email != '':
+                print "Starting email producer"
+                #send the contents of `message`
+                self.EmailJobID += 1
+                delayedresult.startWorker(self._EmailAlertConsumer,
+                    self._EmailAlertProducer,
+                    wargs=(self.EmailJobID, email, location, subject, message),
+                    jobID=self.EmailJobID)
                 
         #Send SMS alert to recipients
-        self._smsProducer(None, recipients, message)
+        if panel.NotifyParent.GetValue():
+            self._smsProducer(None, recipients, message)
             
     def _smsProducer(self, jobID, recipients, message):
         if hasattr(self, 'smsDriver') == False:
@@ -984,25 +994,31 @@ class MyApp(wx.App):
         self.smsDriver.sendMany(recipients, message)
         return jobID
                 
-    def _notifoProducer(self, jobID, d):
-        #the Notifo service is no longer in service
-        #~ from notify import notifo
-        #~ key = conf.config['notifications']['notifoKey']
-        #~ secret = conf.config['notifications']['notifoSecret']
-        
-        #~ note = notifo.Notifo(key, secret)
-        #~ ret = note.sendNotification(d)
-        #~ if ret < 0:
-            #~ notify.error("Notifo error",
-                         #~ "Unable to send alert to tech booth via notifo.")
-                         
-        return jobID
-        
-    def _notifoConsumer(self, delayedResult):
-        pass
-
     def CloseAlert(self, event):
         self.AlertDialog.Destroy()
+        
+    def ShowErrorDialogue(self, message):
+        dlg = wx.MessageDialog(self.frame, message, "Taxidi Error", wx.OK|wx.ICON_ERROR)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _EmailAlertConsumer(self, delayedResult):
+        jobID = delayedResult.getJobID()
+        assert jobID == self.EmailJobID
+        try:
+            result = delayedResult.get()
+        except Exception, exc:
+            print exc
+            wx.CallAfter(self.ShowErrorDialogue, 
+                "Result for job %s raised exception:\n%s.\n\nThe alert may not have been sent." % (jobID, exc))
+            return
+
+    def _EmailAlertProducer(self, JobID, to, fromText, subject, message):
+        import mail
+        print "Sending email"
+        mail.send(to, fromText, subject, message)
+        return JobID
+    
 
     def SetPagingCode(self, event):
         btn = event.GetEventObject()
