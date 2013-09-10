@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
+#TODO:  Update for use with new API
 #TODO: Read config, optionally disable rectangle.
 #TODO: Create Destroy() method
 #TODO: Implement file system organization, handle converting & uploading image to server.
