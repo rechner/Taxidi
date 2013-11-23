@@ -1,3 +1,18 @@
+========= Bugs =========
+- Port specification for database not working
+- Port exception isn't caught as an error
+- Checkout button not shown in individual records for sqlite driver.
+	> (works fine in postgres)
+
+- Search for "richardson" on production server throws:
+	Traceback (most recent call last):
+	  File "gui.py", line 2755, in OnSearch
+		self.ResultsList.results = self.FormatResults(results)
+	  File "gui.py", line 2865, in FormatResults
+		'activity': activities[int(i['activity'])-1],
+	IndexError: list index out of range
+
+
 ========= database backend =========
 - Combine phone fields and allow for international formats
 	¤ Still perform search by last n digits

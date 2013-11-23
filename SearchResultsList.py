@@ -130,6 +130,7 @@ class SearchResultsPanel(wx.Panel):
                 #TODO: Read config and see if check-out action is allowed at this station (disallow for kiosk)
                 #TODO: Display authorized/unauthorized guardians if needed.
                 evt = CheckOutEvent(data = self.results[i])
+                evt.SetEventObject(self.checkboxes[i])
                 wx.PostEvent(self.GetEventHandler(), evt)
                 #Change check-in status:
                 #~ self.results[i]['status'] = taxidi.STATUS_CHECKED_OUT
@@ -234,6 +235,11 @@ class SearchResultsPanel(wx.Panel):
                 if isinstance(self.results[i]['checkout-time'], datetime.datetime):
                     self.results[i]['checkout-time'] = \
                         datetime.datetime.strftime(self.results[i]['checkout-time'], "%X")
+                elif type(self.results[i]['checkout-time'])  in (str, unicode):
+                    self.results[i]['checkout-time'] = \
+                        datetime.datetime.strftime(datetime.datetime.strptime( \
+                        str(self.results[i]['checkout-time']), \
+                        "%Y-%m-%dT%H:%M:%S"), "%X")
                 self.ultimateList.SetStringItem(pos, 4,
                     'Checked-out\n%s' % results[i]['checkout-time'])
                 self.SetCellTextColour(pos, 4, wx.RED)

@@ -165,7 +165,7 @@ class Database:
             self.conn = psycopg2.connect(host=host, database=dbname, 
                 user=user, password=password, port=port)
                 #application_name=location)
-                
+                                                                                        
             self.cursor = self.conn.cursor()
         except psycopg2.OperationalError as e:
             if e.pgcode == '28P01' or e.pgcode == '28000':
@@ -906,7 +906,7 @@ class DatabaseError(Exception):
 
 if __name__ == '__main__':
     try:
-        db = Database('192.168.1.250', 'taxidi', 'taxidi', '@01e769Ef8')
+        db = Database('localhost:15432', 'taxidi', 'taxidi', 'lamepass')
     except DatabaseError as e:
         print e.error
         exit()
@@ -927,7 +927,7 @@ if __name__ == '__main__':
     #~ print
     #~ print [ a['value'] for a in codes ]
     
-    #~ print db.Search("203a")
+    print db.Search("9989")
     
     #Services:
     #~ db.AddService('First Service')

@@ -1297,6 +1297,7 @@ class MyApp(wx.App):
         #TODO: Parent linking
 
         try:
+            panel.Disable()
             ref = self.db.Register(name, surname, phone, parent1, paging=pagingValue,
                 mobileCarrier=carrier, activity=activity['id'], room=room, grade=grade,
                 parent2=parent2, parentEmail=email, dob=DOB, medical=medical,
@@ -1307,17 +1308,22 @@ class MyApp(wx.App):
             wx.MessageBox('The database was unable to commit this record.\n'
                           'The error was: {0}'.format(e), 'Database Error',
                           wx.OK | wx.ICON_ERROR)
+        finally:
+            panel.Enable()
 
         #Save any added barcode values:
         for code in self.BarcodePanel.barcodes:
             if code != '':
                 try:
+                    panel.Disable()
                     self.db.AddBarcode(ref, code)
                     self.db.commit()
                 except self.database.DatabaseError as e:
                     wx.MessageBox('Unable to add barcode value for record {0}.\n'
                                   'The error was: {1}'.format(ref, e),
                                   'Database Error', wx.OK | wx.ICON_ERROR)
+                finally:
+                    panel.Enable()
 
         self.BarcodePanel.barcodes = []
         panel.photo = None #Prevent the saved photo from being deleted in CloseRegisterPanel
@@ -1803,39 +1809,57 @@ class MyApp(wx.App):
             print traceback.format_exc()
             self.log.error(traceback.format_exc())
             return
+            
+    def UpdateStatusCheckedOut(self, i):
+        self.ResultsList.results[i]['status'] = taxidi.STATUS_CHECKED_OUT
+        self.ResultsList.results[i]['checkout-time'] = datetime.now().strftime("%H:%M:%S")
+        self.ResultsList.UpdateStatus(i)
 
     def OnListCheckout(self, event):
         #Do checkout
-        #~ print event.data
+        #FIXME: change calling even back to green check if checkout is cancelled or fails
         data = event.data
+        ctrl = event.GetEventObject()
         self.activities = self.db.GetActivities()
         for act in self.activities:
             if data['activity'] == act['name']:
                 activity = act
-        
+    
+        status = self.db.GetStatus(data['id'], True)
+        code = status['code']
+          
         if activity['securityMode'].lower() == 'simple':
             parent = self.parentPrompt()
             if parent == None:
+                self.ToggleCheckBoxOn(ctrl)
                 return
-            code = self.db.GetStatus(data['id'], True)['code']
 
-            print (code, parent)
             if code.lower() == parent.lower():
                 self.DoCheckout(data, hold=True)
+                self.UpdateStatusCheckedOut(ctrl.id) 
             else:
-                print "CODES DO NOT MATCH!!"
+                wx.MessageBox('The security code was incorrect.', 'Taxidi',
+                        wx.OK | wx.ICON_ERROR)
+                self.ToggleCheckBoxOn(ctrl)
 
         elif activity['securityMode'].lower() == 'md5':
             parent = self.parentPrompt()
-            code = self.db.GetStatus(data['id'], True)['code']
+            if parent == None:
+                self.ToggleCheckBoxOn(ctrl)
+                return
 
             if hashlib.md5(parent).hexdigest()[:4] == code.lower():
                 self.DoCheckout(data, hold=True)
+                self.UpdateStatusCheckedOut(ctrl.id) 
             else: 
-                print "CODES DO NOT MATCH!!"
+                wx.MessageBox('The security code was incorrect.', 'Taxidi',
+                        wx.OK | wx.ICON_ERROR)
+                self.ToggleCheckBoxOn(ctrl)
+            
         else:
-            print "Do check-out."
             self.DoCheckout(data, hold=True)
+            #Update the status column to reflect checkout time
+            self.UpdateStatusCheckedOut(ctrl.id) 
 
 
     def setupResultsList(self):
@@ -2788,7 +2812,8 @@ class MyApp(wx.App):
             if code.lower() == parent.lower():
                 self.DoCheckout(data)
             else:
-                print "CODES DO NOT MATCH!!"
+                wx.MessageBox('The security code was incorrect.', 'Taxidi',
+                        wx.OK | wx.ICON_ERROR)
 
         elif self.activities[data['activity']-1]['securityMode'].lower() == 'md5':
             parent = self.parentPrompt()
@@ -2797,9 +2822,9 @@ class MyApp(wx.App):
             if hashlib.md5(parent).hexdigest()[:4] == code.lower():
                 self.DoCheckout(data)
             else: 
-                print "CODES DO NOT MATCH!!"
+                wx.MessageBox('The security code was incorrect.', 'Taxidi',
+                        wx.OK | wx.ICON_ERROR)
         else:
-            print "Do check-out."
             self.DoCheckout()
             
     def DoCheckout(self, data, hold=False): #hold=True will not close the panel when done.
@@ -2831,32 +2856,33 @@ class MyApp(wx.App):
         Joins with activity name, room name, and check-in status.
         """
         ret = []
-        activities = [ i['name'] for i in self.db.GetActivities() ]
+        activities = [ activity['name'] for activity in self.db.GetActivities() ]
         #~ rooms = { i['id'] : i['name'] for i in self.db.GetRooms() }
         #Fixed for python 2.6. (Dict comprehensions only >= 2.7)
-        rooms = dict( (i['id'], i['name']) for i in self.db.GetRooms() )
-        for i in results:
+        rooms = dict( (room['id'], room['name']) for room in self.db.GetRooms() )
+        for record in results:
             room = ''
-            if i['room'] != None:
-                if int(i['room']) > len(rooms): #Room reference is invalid:
-                    i['room'] = 0
-            if i['room'] == None or i['room'] == 0:
+            if record['room'] != None:
+                if int(record['room']) > len(rooms): #Room reference is invalid:
+                    record['room'] = 0
+            if record['room'] == None or record['room'] == 0:
                 room = u'—'
             else:
-                room = rooms[int(i['room'])]
-            if int(i['activity'])-1 > len(activities): #activity/room index starts at 0
-                i['activity'] = 0
+                room = rooms[int(record['room'])]
+            if int(record['activity'])-1 > len(activities): #activity/room index starts at 0
+                record['activity'] = 0
             #Get status:
-            status = self.db.GetStatus(i['id'], True)
+            status = self.db.GetStatus(record['id'], True)
             if status['status'] == taxidi.STATUS_CHECKED_OUT:
                 checkout = status['checkout']
             else:
                 checkout = None
-            ret.append({ 'id': i['id'], 'name': ('%s %s' % (i['name'], i['lastname'])),
-                         'activity': activities[int(i['activity'])-1],
+
+            ret.append({ 'id': record['id'], 'name': ('%s %s' % (record['name'], record['lastname'])),
+                         'activity': activities[int(record['activity'])-1],
                          'room': room, 'status': status['status'],
                          'checkout-time': checkout, 'code': status['code'],
-                         'picture': str(i['picture']) })
+                         'picture': str(record['picture']) })
         return ret
 
     def SetRecordData(self, data):
@@ -3004,10 +3030,12 @@ class MyApp(wx.App):
             panel.CheckinButton.SetLabel('Check-in')
             panel.CheckinButton.Bind(wx.EVT_BUTTON, self.SaveRecord)
         elif status['status'] == taxidi.STATUS_CHECKED_IN:
-            if type(status['checkin']) is str:
+            if type(status['checkin']) in (str, unicode):
                 checkin = datetime.strftime(datetime.strptime(str(status['checkin']), "%Y-%m-%dT%H:%M:%S"), "%H:%M:%S")
             elif type(status['checkin']) is datetime:
                 checkin = datetime.strftime(status['checkin'], "%H:%M:%S")
+            else:
+                checkin = None
             panel.StatusText.SetLabel(
                 "{0} - Checked-in at {1}".format(
                 rType,
@@ -3016,10 +3044,12 @@ class MyApp(wx.App):
             panel.CheckinButton.SetLabel('Check-out')
             panel.CheckinButton.Bind(wx.EVT_BUTTON, self.OnCheckOut)
         elif status['status'] == taxidi.STATUS_CHECKED_OUT:
-            if type(status['checkout']) is str:
+            if type(status['checkout']) in (str, unicode):
                 checkout = datetime.strftime(datetime.strptime(str(status['checkout']), "%Y-%m-%dT%H:%M:%S"), "%H:%M:%S")
             elif type(status['checkout']) is datetime:
                 checkout = datetime.strftime(status['checkout'], "%H:%M:%S")
+            else:
+                checkout = None
             panel.StatusText.SetLabel(
                 "{0} - Checked out at {1}".format(rType, checkout))
             panel.CheckinButton.Unbind(wx.EVT_BUTTON)

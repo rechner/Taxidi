@@ -382,7 +382,7 @@ class Database:
         """
         Marks a record as checked-out.
         """
-        self.execute("UPDATE statistics SET checkout = ? WHERE id = ?;",
+        self.execute("UPDATE statistics SET checkout = ? WHERE person = ? AND date = DATE('now', 'localtime');",
             (time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime()), person))
         self.commit()
 
@@ -414,7 +414,7 @@ class Database:
         of a dictionary of the matching statistics row.  Only returns values from
         today's date.
         """
-        a = self.execute("SELECT * FROM statistics WHERE person = ? AND checkin > date('now');", (ref,))
+        a = self.execute("SELECT * FROM statistics WHERE person = ? AND checkin > date('now', 'localtime');", (ref,))
         ret = []
         for i in a.fetchall():
             ret.append(self.dict_factory(i)) #return as a nested dictionary
@@ -446,8 +446,20 @@ class Database:
                     ret['status'] = taxidi.STATUS_CHECKED_OUT
                     return ret
                 return taxidi.STATUS_CHECKED_OUT
-                
-    
+        
+    """
+    Returns list of all children checked in to the system, suitable for 
+    printing a report.
+    """
+    def GetEmergencyList(self):
+        #TODO: Filter by activity/room
+        a = self.execute("""SELECT data.*, statistics.* FROM data 
+        INNER JOIN statistics ON data.id = statistics.person 
+        WHERE statistics.date = DATE('now', 'localtime');""")
+        ret = []
+        for i in a.fetchall():
+            ret.append(self.dict_factory(i)) #return as a nested dictionary
+        return ret
 
     # === begin search functions ===
     def Search(self, query):
@@ -1009,7 +1021,7 @@ if __name__ == '__main__':
     #~ db.AddActivity('Outfitters', parentTagEnable=False, newsletter=False)
     #~ print db.GetActivities()
     import pprint
-    pprint.pprint(db.GetActivities())
+    pprint.pprint(db.GetEmergencyList())
 
     #Rooms
     #~ print bool(db.AddRoom('Outfitters Room', 2) & SUCCESS)
